@@ -65,14 +65,25 @@ Boolean exists = false;
 try {
     ConnectApi.Credential existing = ConnectApi.NamedCredentials.getCredential(
         EXTERNAL_CREDENTIAL, PRINCIPAL_NAME, ConnectApi.CredentialPrincipalType.NamedPrincipal);
-    exists = existing != null;
+    // A deployed principal with no values yet still comes back as a Credential, but
+    // updateCredential then fails with "no existing authentication credentials to update".
+    // Only a principal that already carries parameters is an update.
+    exists = existing != null && existing.credentials != null && !existing.credentials.isEmpty();
 } catch (Exception e) {
     // No credential yet. getCredential throws rather than returning null on a bare principal.
     exists = false;
 }
 
 if (exists) {
-    ConnectApi.NamedCredentials.updateCredential(input);
+    try {
+        ConnectApi.NamedCredentials.updateCredential(input);
+    } catch (ConnectApi.ConnectApiException e) {
+        if (!e.getMessage().contains('no existing authentication credentials')) {
+            throw e;
+        }
+        exists = false;
+        ConnectApi.NamedCredentials.createCredential(input);
+    }
 } else {
     ConnectApi.NamedCredentials.createCredential(input);
 }
