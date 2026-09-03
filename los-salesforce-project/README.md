@@ -4,7 +4,7 @@ This Salesforce DX project contains the portable `LOS_Loan__c` data model, layou
 
 Start with [LOS Demo Operator Start Here](../docs/operator/start-here.md). The root automation deploys the portable components and deliberately excludes tenant-specific OAuth metadata.
 
-Provenance: this project is a port of the Box + Salesforce CLM demo's Salesforce project to commercial loan origination. Nothing in it has been deployed or verified against a live org yet; where the predecessor claimed a live verification, the same code path was proven there and not yet here.
+Provenance: this project is a port of the Box + Salesforce CLM demo's Salesforce project to commercial loan origination. It was deployed and smoke-tested against a live org on 2026-09-03 (103/103 Apex tests, every governed action probed); the operator's deploy set was corrected in that run to include `LOS_Box_Config__c`, the credentials and the CSP trusted sites.
 
 ## Local UI development
 

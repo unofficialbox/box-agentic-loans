@@ -22,9 +22,9 @@ A commercial **loan origination** (LOS) demo built on **Box + Salesforce**, port
 
 ## 3. Current state
 
-- **Ported, not deployed.** Every mechanical identifier was renamed (CLM → LOS, `CLM_Contract__c` → `LOS_Loan__c`, `Clm*` → `Los*`, `/clm/` → `/los/`, `/clm` → `/loans`) and the prose, fixtures, field semantics and storyboard were rewritten for loans. **No part of this repository has been run against a live Box enterprise or Salesforce org.** The CLM predecessor proved the same code paths live (Box preview, Doc Gen, Sign preparation, the MCP server, the scoped external workspace, the Automate intake); the loans variant inherits the code, not the evidence.
+- **Ported, then deployed once.** Every mechanical identifier was renamed (CLM → LOS, `CLM_Contract__c` → `LOS_Loan__c`, `Clm*` → `Los*`, `/clm/` → `/los/`, `/clm` → `/loans`) and the prose, fixtures, field semantics and storyboard were rewritten for loans. On 2026-09-03 the repository was deployed to one Salesforce org and one Box enterprise (the same ones as the CLM demo, reusing its CCG app) and smoke-tested: token endpoint, loan package, Box AI ask and extract, refused unconfirmed write-back, signature guard on an Underwriting loan, bounded portfolio search, Doc Gen template registration, credit policy Hub. The Box App, Form, Automate intake and the borrower-portal login remain untested browser surfaces. IDs from that run live only in the gitignored `config/runtime/*.json`.
 - Validation expectation: `python3 scripts/validate_los.py` should report every repository-mode check passed with one skip (live receipts). Which checks run offline: secrets and runtime-ID scan, JSON/BCL parse, Markdown links, Mermaid/SVG drift, Python unit tests, React lint/test/build/Playwright, deterministic fixture drift, presenter HTML rebuild, screenshot manifest (allowed to be empty here — MT-072), reset and idempotency rules, and the SOQL-projection-versus-permission-set check. Four checks shell out to the UI bundle, so `npm ci` in `los-salesforce-project/force-app/main/default/uiBundles/losreactapp` has to run first.
-- Two Apex actions are **new in this port** and have no CLM ancestor: `LosExtractLoanTerms` (Box AI structured extract of `loanAmount, interestRate, termMonths, collateralValue, ltv, dscr, maturityDate` from one file of the named loan, compared to the record, read-only) and `LosApplyLoanTerms` (writes human-accepted values to an allow-list of `LOS_Loan__c` fields; refuses without `confirmed = true` and refuses on Closed/Servicing loans). Together they are the storyboard's Extract and write-back. They have unit tests and no live run.
+- Two Apex actions are **new in this port** and have no CLM ancestor: `LosExtractLoanTerms` (Box AI structured extract of `loanAmount, interestRate, termMonths, collateralValue, ltv, dscr, maturityDate` from one file of the named loan, compared to the record, read-only) and `LosApplyLoanTerms` (writes human-accepted values to an allow-list of `LOS_Loan__c` fields; refuses without `confirmed = true` and refuses on Closed/Servicing loans). Together they are the storyboard's Extract and write-back. Both ran live on 2026-09-03: Extract returned five values from the term-sheet markup and flagged the LTV and DSCR mismatches against the record; Apply with `confirmed = false` wrote nothing.
 - The Loan Copilot (`LOS_Loan_Copilot`) is an internal surface only. No version has been published from this repo.
 
 The CLM repo got live Box working through two waves of stacked failures, each masking the next; every constraint they discovered that still governs the code is in §6. The one habit worth carrying forward is why they were so slow to find — the workspace used to answer *any* Box failure with synthetic fixtures, so a CORS rejection, a dead endpoint and a crashed component all rendered the same plausible screen. That fallback is gone; every failure names itself on the page.
@@ -355,10 +355,10 @@ back the consumer secret.
    deploy or packaging.
 6. **The generate/sign tail of the Automate workflow is spec-only.**
    `config/box/automate-workflows.bcl` orders 8–10 are designed, not built.
-7. **The Extract write-back has never been run live.** `LosExtractLoanTerms` and
-   `LosApplyLoanTerms` have unit tests only; the `extract_structured` request shape and the
-   allow-listed write need a labeled loan in a real org before the storyboard's flow 2 can be
-   described as more than a fixture.
+7. **The Extract write-back has run live only in refusal mode.** `LosExtractLoanTerms`
+   extracted and validated against LN-2026-0042 in a real org; `LosApplyLoanTerms` was
+   exercised with `confirmed = false` and wrote nothing. A confirmed write (MT-057) is still
+   the demo owner's call.
 8. **`default_agent_user` in `LOS_Loan_Copilot` must be bound per org** before publish.
 9. **No live-org state in commits.** Any org mutation needs explicit approval and a
    confirmed target, and is the user's call to fire.

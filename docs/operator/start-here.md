@@ -1,6 +1,6 @@
 # LOS Demo Operator Start Here
 
-Use this guide to build the demo in a **new Box enterprise and Salesforce org**. Do not copy IDs, URLs, users, or credentials from another environment. Nothing in this repository has yet been run against a live environment; expect to be the first, and record what you find.
+Use this guide to build the demo in a **new Box enterprise and Salesforce org**. Do not copy IDs, URLs, users, or credentials from another environment. The repository has been run once against a live environment (2026-09-03); the manual task register records what that run left to browser work.
 
 ## What the automation does
 
