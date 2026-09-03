@@ -65,7 +65,7 @@ request body at callout time.
 4. Under **Application Scopes**, enable reading **and writing** all files and folders.
    Write is required because the workspace embeds the Box Content Uploader; delete, share,
    and admin scopes are not required and should stay off. The downscoped token the browser
-   receives is limited to `base_explorer,item_preview,item_read,item_upload` on one folder.
+   receives is limited to one folder; its scopes (`base_explorer item_preview item_read item_upload item_download item_delete item_rename item_share`) mirror the workspace controls and are listed in `LosBoxTokenService.DOWNSCOPE_SCOPE`.
 5. Under **CORS Domains**, add the Experience Cloud origin, for example
    `https://<your-site>.my.site.com`. The browser calls `api.box.com` directly with the
    downscoped token, so Box refuses the folder listing without this.
