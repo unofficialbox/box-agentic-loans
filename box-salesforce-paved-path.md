@@ -114,6 +114,18 @@ the harness to match production's load order, not the one that is convenient.
 
 ---
 
+- **Put every environment-bound value in one declared file, with placeholders committed
+  and real values gitignored.** Scattering them across shell exports means a new
+  environment fails one refusal at a time, on stage, and the person deploying has no list
+  to work from. Declare each setting with the field it lands in, how to find it, and the
+  sentence describing what breaks without it -- then a `--check` command answers "is this
+  environment ready" before anyone opens a browser. Two rules make it hold: a config
+  writer must treat a missing value as *leave the stored one alone*, or one forgotten
+  export silently erases working configuration; and the file must never carry a real id,
+  or the secret scan is right to reject it.
+
+---
+
 ## 4. Box
 
 ### 4.1 Downscoped tokens
