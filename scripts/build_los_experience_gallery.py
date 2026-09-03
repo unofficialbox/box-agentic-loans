@@ -42,7 +42,7 @@ BOX_EXPERIENCES = [
         "file": "box-hub-credit-policy-library-live.png",
         "eyebrow": "Box Hubs",
         "title": "Crestline Credit Policy Library",
-        "description": "The published Hub pins LOS-LTV-001, LOS-DSCR-001, and LOS-RATE-001 and combines the governed policy folder, current-standard status, intake/App/executed-loan cards, and review-cadence guidance.",
+        "description": "The Crestline Credit Policy Library Hub over the eight governed policy files (standard positions and approved exceptions for LTV, DSCR, pricing and guaranty). The Loan Copilot's policy check reads this Hub and no other.",
     },
     {
         "file": "automate-intake-agents.png",
@@ -66,7 +66,45 @@ BOX_EXPERIENCES = [
         "file": "box-docgen-templates.png",
         "eyebrow": "Box Doc Gen",
         "title": "LOS document templates",
-        "description": "The Box Doc Gen catalog containing the credit memo, commitment letter, closing summary, and maturity notice templates.",
+        "description": "The four Word templates (credit memo, commitment letter, closing summary, maturity notice) in the workspace, each registered as a Box Doc Gen template.",
+    },
+    {
+        "file": "box-workspace-live.png",
+        "eyebrow": "Box workspace",
+        "title": "LOS-2026-Harborview workspace",
+        "description": "The governed loan workspace: numbered lifecycle folders from application intake to covenants and servicing, the Doc Gen templates folder, and the credit policy folder.",
+    },
+    {
+        "file": "box-loan-folder-live.png",
+        "eyebrow": "Box loan folder",
+        "title": "LN-2026-0042 loan folder",
+        "description": "The Box folder the Salesforce loan record resolves to, holding the borrower package with losDocument metadata and the generated draft commitment letter.",
+    },
+    {
+        "file": "box-commitment-letter-preview.png",
+        "eyebrow": "Box Doc Gen output",
+        "title": "Draft commitment letter",
+        "description": "The commitment letter Box Doc Gen rendered from the governed action: policy at issue, requested and approved positions, approved exceptions, proposed terms. A draft pending Credit Committee approval.",
+    },
+]
+SALESFORCE_EXPERIENCES = [
+    {
+        "file": "los-loan-record-page.png",
+        "eyebrow": "Salesforce",
+        "title": "LOS Loan record",
+        "description": "The Loan Origination app's record page for LN-2026-0042: amount, rate, term, LTV, DSCR and collateral value beside the borrower, opportunity and status, with the Box tab alongside Details.",
+    },
+    {
+        "file": "los-agentforce-agents.png",
+        "eyebrow": "Agentforce",
+        "title": "Loan Copilot published and active",
+        "description": "Setup's Agentforce Agents list showing Loan Copilot as an active service agent next to the CLM demo's Contract Copilot in the same org.",
+    },
+    {
+        "file": "los-loan-copilot-builder.png",
+        "eyebrow": "Agentforce Builder",
+        "title": "Loan Copilot agent topology",
+        "description": "The Agent Script topology: the loan router start agent routing to Document Answers (three governed Apex actions) and the fallback response.",
     },
 ]
 
@@ -82,7 +120,7 @@ REACT_EXPERIENCES = [
 for experience in BOX_EXPERIENCES:
     experience["source"] = "box-automate-loan-orchestration"
 
-for experience in REACT_EXPERIENCES:
+for experience in REACT_EXPERIENCES + SALESFORCE_EXPERIENCES:
     experience["source"] = "box-salesforce-los"
 
 SCENARIOS = [
@@ -92,8 +130,8 @@ SCENARIOS = [
         "title": "Box + Salesforce Loan Origination",
         "headline": "The complete multi-platform LOS operating model.",
         "description": "The governed Box loan file plus the Salesforce Agentforce experience in the borrower portal.",
-        "status": "Screen capture pending (MT-072). No loan-demo screens have been captured yet.",
-        "experiences": REACT_EXPERIENCES + BOX_EXPERIENCES,
+        "status": "Captured from the live org and enterprise where a screen exists; Box App, Automate and the signed-in borrower workspace remain capture pending (MT-072).",
+        "experiences": SALESFORCE_EXPERIENCES + REACT_EXPERIENCES + BOX_EXPERIENCES,
         "brands": ("box", "salesforce"),
     },
 ]

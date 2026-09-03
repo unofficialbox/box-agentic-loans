@@ -25,10 +25,12 @@ class ExecutiveMarketectureTests(unittest.TestCase):
         self.assertIn("Salesforce Agentforce", document)
         self.assertNotIn("Optional orchestration", document)
         self.assertIn("Governed loan origination, accelerated by AI.", document)
-        # No loan-demo screenshot has been captured yet (MT-072): every proof card renders
-        # the capture-pending placeholder, so no PNG is embedded and none is fabricated.
-        self.assertEqual(document.count("data:image/png;base64,"), 0)
-        self.assertEqual(document.count("<strong>Screen capture pending</strong>"), 3)
+        # A proof card embeds a PNG only when its capture exists on disk (MT-072); every
+        # other card renders the capture-pending placeholder, so nothing is fabricated.
+        captured = sum(1 for item in module.PROOF if item["path"].is_file())
+        # Each captured PNG is embedded twice: once in its proof card and once in the lightbox.
+        self.assertEqual(document.count("data:image/png;base64,"), captured * 2)
+        self.assertEqual(document.count("<strong>Screen capture pending</strong>"), len(module.PROOF) - captured)
         self.assertEqual(document.count("data:image/jpeg;base64,"), 1)
         self.assertGreaterEqual(document.count("data:image/svg+xml;base64,"), 1)
         for brand in ("box", "salesforce"):

@@ -17,7 +17,7 @@ python3 scripts/build_presenter_portal.py
 
 ## Screenshot requirements
 
-No real loan screens have been captured yet (MT-072). Until they are, the gallery and marketecture render a "Screen capture pending" placeholder in place of each image; they never fabricate one. When capturing:
+Real loan screens captured from the live org and enterprise are listed in `config/demo/screenshot-manifest.bcl` (MT-072). A surface without a capture (Box App, Box Automate, the signed-in borrower workspace) renders a "Screen capture pending" placeholder in the gallery and marketecture; nothing is fabricated in its place. When capturing:
 
 - Capture the real Box, Salesforce, or React page viewport.
 - Exclude browser tabs, address bars, desktop content, notifications, and unrelated records.

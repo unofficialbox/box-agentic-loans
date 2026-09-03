@@ -100,7 +100,9 @@ class BCLLoaderTests(unittest.TestCase):
         self.assertEqual(finding["properties"]["findingId"]["pattern"], "^UWF-[0-9]{3,}$")
         self.assertIn("applicationFileId", finding["required"])
         manifest = bcl.load_bcl(CONFIG / "demo" / "screenshot-manifest.bcl")
-        self.assertEqual(manifest["screenshots"], [])
+        for entry in manifest["screenshots"]:
+            self.assertEqual(entry["readiness"], "real-demo")
+            self.assertTrue(entry["path"].startswith("output/screenshots/"))
         self.assertIn("MT-072", manifest["captureStatus"])
 
 

@@ -74,7 +74,7 @@ Status values: **Required**, **Per run**, **Optional**, and **Confirmation requi
 |---|---|---|---|---|
 | MT-070 | Rehearse the selected tell/show/tell script | Presenter | Per run | Script completes inside its time box without hidden setup |
 | MT-071 | Pre-open only the selected scenario's surfaces | Presenter | Per run | Every page loads under the intended account |
-| MT-072 | Capture screenshots from the real page viewport and update `config/demo/screenshot-manifest.bcl` | Maintainer | After UI changes | **No loan screens are captured yet.** The inventory is empty and the presenter builders render "Screen capture pending" placeholders. When captured: no browser chrome, documentation pages, or unrelated content appears; source, date, scenario, and readiness are current |
+| MT-072 | Capture screenshots from the real page viewport and update `config/demo/screenshot-manifest.bcl` | Maintainer | After UI changes | Salesforce screens (loan record page, Agentforce agents list, Agent Builder topology) were captured 2026-09-03 from the live org; Box App, Box Automate and the signed-in borrower workspace still render "Screen capture pending" placeholders. When captured: no browser chrome, documentation pages, or unrelated content appears; source, date, scenario, and readiness are current |
 | MT-073 | Record test artifacts and restore demo state | Operator | Per run | Workflows/tasks are ready for the next session |
 | MT-074 | Delete data or remove collaborators | System owner | Confirmation required | Impact is reviewed and exact objects are approved |
 

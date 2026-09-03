@@ -33,6 +33,12 @@ PROOF = (
         "title": "Loan context where teams and borrowers work",
         "copy": "The borrower portal brings the governed Box loan file and Salesforce Agentforce context into one experience.",
     },
+    {
+        "path": SCREENSHOTS / "box-salesforce-los" / "los-loan-copilot-builder.png",
+        "label": "Decide",
+        "title": "A Loan Copilot that cites and never signs",
+        "copy": "The Agentforce agent routes loan questions to governed Apex actions over the Box loan file: summarize, compare to credit policy, extract terms for human confirmation.",
+    },
 )
 
 
