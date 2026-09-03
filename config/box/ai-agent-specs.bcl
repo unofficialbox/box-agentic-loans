@@ -1,0 +1,101 @@
+# Box Dispatch BCL config artifact. BCL is the only supported import format.
+locals {
+  "bcl" = {
+    "context" = "loans"
+    "generatedAt" = "2026-07-23T11:55:20Z"
+    "metadata" = {
+    }
+    "provider" = "generic"
+    "resources" = [
+      {
+        "config" = {
+          "agents" = [
+            {
+              "humanGate" = "Review Needs Triage findings and expert routing before task creation"
+              "instructions" = "Compare the borrower's marked-up term sheet with the Bank's standard form, the credit policy library, and Schedule 1 of the borrower's prior executed loan agreements. Read reporting sections and schedules, not only the section titled Financial Covenants. Return only findings supported by citations to both the changed document and the approved policy or precedent. Use allowed domain and risk values. Never invent a reviewer, login, policy, or approval. Mark low-confidence and unclassified findings Needs Triage."
+              "key" = "underwriting-difference-router"
+              "name" = "LOS Underwriting Difference Router"
+              "outputSchema" = "config/los/underwriting-finding.schema.bcl"
+              "sources" = [
+                "file:${box.files.termSheetMarkup}"
+                "folder:${box.folders.policies}"
+                "folder:${box.folders.executed}"
+              ]
+            }
+            {
+              "humanGate" = "Validate extracted loan record"
+              "instructions" = "Review the submitted application package against the approved credit policy files and extracted metadata. Return a concise risk rating, three material policy departures, required review domains, and evidence item IDs. Compute loan-to-value from the bank-ordered appraisal, never from a borrower-stated value. Never approve terms or infer missing financial figures."
+              "key" = "loan-risk-triage"
+              "name" = "LOS Loan Risk Triage"
+              "output" = [
+                "riskRating"
+                "materialDeviations"
+                "requiredReviewers"
+                "evidenceItemIds"
+              ]
+              "sources" = [
+                "folder:${box.folders.workspace}"
+                "folder:${box.folders.policies}"
+              ]
+            }
+            {
+              "humanGate" = "Confirm credit approval brief and remaining exceptions"
+              "instructions" = "Summarize resolved and unresolved policy exceptions, completed human review tasks, exposure, and recommended next human action. Cite Box file and policy IDs. Never state that a loan is approved."
+              "key" = "credit-approval-brief"
+              "name" = "LOS Credit Approval Brief"
+              "output" = [
+                "executiveSummary"
+                "resolvedItems"
+                "openItems"
+                "recommendedAction"
+                "evidenceItemIds"
+              ]
+              "sources" = [
+                "folder:${box.folders.workspace}"
+                "folder:${box.folders.policies}"
+              ]
+            }
+            {
+              "humanGate" = "Validate extracted covenants"
+              "instructions" = "Review extracted covenants from the executed loan documents. Deduplicate equivalent duties, flag missing owners or dates, and return structured records for human validation. Do not create calendar commitments or contact the borrower."
+              "key" = "covenant-review"
+              "name" = "LOS Covenant Review"
+              "output" = [
+                "covenants"
+                "missingOwners"
+                "missingDates"
+                "sourceEvidence"
+              ]
+              "sources" = [
+                "folder:${box.folders.executed}"
+              ]
+            }
+          ]
+          "artifact_name" = "ai-agent-specs"
+          "artifact_type" = "config"
+          "created_at" = "2026-07-23T11:55:20Z"
+          "enterprise_id" = ""
+          "provider" = "generic"
+          "provider_object_id" = "box/ai-agent-specs"
+          "schemaVersion" = "2.0"
+        }
+        "metadata" = {
+          "artifactName" = "ai-agent-specs"
+          "artifactType" = "config_file"
+          "createdAt" = "2026-07-23T11:55:20Z"
+          "enterpriseId" = ""
+          "provider" = "generic"
+          "providerObjectId" = "box/ai-agent-specs"
+          "scenario" = "box-claudeforce-loans"
+        }
+        "name" = "config_box_ai-agent-specs"
+        "provider" = "generic"
+        "scenario" = "box-claudeforce-loans"
+        "terraformType" = "null_resource"
+        "type" = "config_file"
+      }
+    ]
+    "scenario" = "box-claudeforce-loans"
+    "version" = "1.0"
+  }
+}

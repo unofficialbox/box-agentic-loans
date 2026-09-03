@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CommunitiesSettings xmlns="http://soap.sforce.com/2006/04/metadata">
+    <enableNetworksEnabled>true</enableNetworksEnabled>
+    <!--
+      Required before an external user can be created on a standard profile such as
+      Customer Community User. Without it, user creation fails with an error telling you to
+      select "Allow using standard external profiles" in Digital Experiences settings, which
+      is this flag under its UI name.
+    -->
+    <enableOotbProfExtUserOpsEnable>true</enableOotbProfExtUserOpsEnable>
+</CommunitiesSettings>

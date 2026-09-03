@@ -1,0 +1,104 @@
+# Box Dispatch BCL config artifact. BCL is the only supported import format.
+locals {
+  "bcl" = {
+    "context" = "loans"
+    "generatedAt" = "2026-07-23T11:55:20Z"
+    "metadata" = {
+    }
+    "provider" = "generic"
+    "resources" = [
+      {
+        "config" = {
+          "activationRules" = [
+            "Replace shared demo reviewer bindings with real domain experts when available."
+            "Verify each selected expert can access the application file before creating a task."
+            "Never infer a person or login from document text."
+            "Do not create more than one open task for the same loan, file, and domain."
+          ]
+          "artifact_name" = "expert-routing"
+          "artifact_type" = "config"
+          "confidenceThreshold" = 0.85
+          "created_at" = "2026-07-23T11:55:20Z"
+          "enterprise_id" = ""
+          "fallback" = {
+            "boxLogin" = "${box.reviewers.primary}"
+            "directoryKey" = "credit-admin-triage"
+            "displayName" = "Credit Administration Triage"
+            "rule" = "Use for unclassified findings, confidence below threshold, missing experts, or experts without file access."
+          }
+          "provider" = "generic"
+          "provider_object_id" = "los/expert-routing"
+          "routes" = [
+            {
+              "boxLogin" = "${box.reviewers.primary}"
+              "directoryKey" = "chief-credit-officer"
+              "displayName" = "Priya Shah"
+              "domain" = "Credit Risk"
+              "title" = "Chief Credit Officer"
+            }
+            {
+              "boxLogin" = "${box.reviewers.primary}"
+              "directoryKey" = "collateral-review"
+              "displayName" = "Marcus Reed"
+              "domain" = "Collateral"
+              "title" = "Collateral and Appraisal Review"
+            }
+            {
+              "boxLogin" = "${box.reviewers.primary}"
+              "directoryKey" = "regulatory-compliance"
+              "displayName" = "Elena Torres"
+              "domain" = "Compliance"
+              "title" = "Regulatory Compliance"
+            }
+            {
+              "boxLogin" = "${box.reviewers.primary}"
+              "directoryKey" = "loan-documentation"
+              "displayName" = "Dana Okafor"
+              "domain" = "Loan Documentation"
+              "title" = "Loan Documentation (Legal)"
+            }
+            {
+              "boxLogin" = "${box.reviewers.primary}"
+              "directoryKey" = "pricing-committee"
+              "displayName" = "Pricing Committee"
+              "domain" = "Pricing"
+              "title" = "Pricing Committee"
+            }
+            {
+              "boxLogin" = "${box.reviewers.primary}"
+              "directoryKey" = "risk-manager"
+              "displayName" = "Risk Manager"
+              "domain" = "Insurance"
+              "title" = "Corporate Risk Manager"
+            }
+            {
+              "boxLogin" = "${box.reviewers.primary}"
+              "directoryKey" = "portfolio-manager"
+              "displayName" = "Portfolio Manager"
+              "domain" = "Servicing"
+              "title" = "Portfolio Manager"
+            }
+          ]
+          "schemaVersion" = "2.0"
+          "strategy" = "Group findings for the same loan, file, and domain into one human-owned Box task."
+        }
+        "metadata" = {
+          "artifactName" = "expert-routing"
+          "artifactType" = "config_file"
+          "createdAt" = "2026-07-23T11:55:20Z"
+          "enterpriseId" = ""
+          "provider" = "generic"
+          "providerObjectId" = "los/expert-routing"
+          "scenario" = "box-claudeforce-loans"
+        }
+        "name" = "config_los_expert-routing"
+        "provider" = "generic"
+        "scenario" = "box-claudeforce-loans"
+        "terraformType" = "null_resource"
+        "type" = "config_file"
+      }
+    ]
+    "scenario" = "box-claudeforce-loans"
+    "version" = "1.0"
+  }
+}

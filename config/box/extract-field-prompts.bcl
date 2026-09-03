@@ -1,0 +1,104 @@
+# Box Dispatch BCL config artifact. BCL is the only supported import format.
+locals {
+  "bcl" = {
+    "context" = "loans"
+    "generatedAt" = "2026-07-23T11:55:20Z"
+    "metadata" = {
+    }
+    "provider" = "generic"
+    "resources" = [
+      {
+        "config" = {
+          "artifact_name" = "extract-field-prompts"
+          "artifact_type" = "config"
+          "created_at" = "2026-07-23T11:55:20Z"
+          "enterprise_id" = ""
+          "executedCovenants" = {
+            "fields" = [
+              {
+                "field" = "covenantType"
+                "prompt" = "Classify as Financial Reporting, DSCR Test, Insurance Renewal, Collateral Inspection, Tax Escrow, or Maturity Notice."
+              }
+              {
+                "field" = "owner"
+                "prompt" = "Return the named responsible party or team. If not explicit, return Unassigned."
+              }
+              {
+                "field" = "dueDate"
+                "prompt" = "Return the explicit due date in YYYY-MM-DD format. If only a relative period exists (for example, within 45 days after quarter end), quote the period and return null."
+              }
+              {
+                "field" = "sourceSection"
+                "prompt" = "Quote only the section heading and number (for example, Section 9.3 Financial Reporting); do not reproduce the full section."
+              }
+              {
+                "field" = "reminderWindowDays"
+                "prompt" = "Return the explicit notice or reminder window in days. Otherwise return null."
+              }
+            ]
+            "purpose" = "Extract explicit post-closing covenants and servicing dates from the executed loan documents for human validation."
+          }
+          "loanIntake" = {
+            "fields" = [
+              {
+                "field" = "loanType"
+                "prompt" = "Classify as Term Loan, Line of Credit, Equipment Finance, Commercial Real Estate, or SBA 7(a)."
+              }
+              {
+                "field" = "riskRating"
+                "prompt" = "Classify the credit risk as Low, Medium, High, or Critical using only the express terms of the application package and the approved credit policy library. Treat any covenant restated outside the financial covenant section, or any collateral definition widened beyond the appraisal, as High or above."
+              }
+              {
+                "field" = "keyIssues"
+                "prompt" = "Return a concise list of material departures from the credit policy library with section references, including departures found in reporting sections and schedules. Do not provide a final credit decision."
+              }
+              {
+                "field" = "loanAmount"
+                "prompt" = "Return the requested principal amount as a number with no currency symbol or separators. Cite the page."
+              }
+              {
+                "field" = "interestRate"
+                "prompt" = "Return the requested or stated annual interest rate as a decimal percentage (for example, 6.85). Cite the page."
+              }
+              {
+                "field" = "termMonths"
+                "prompt" = "Return the loan term in months as an integer. Convert years to months. Cite the page."
+              }
+              {
+                "field" = "collateralValue"
+                "prompt" = "Return the appraised value of the collateral from a bank-ordered appraisal as a number. If only a borrower-stated or broker value exists, return it and state that it is not an appraisal."
+              }
+              {
+                "field" = "ltv"
+                "prompt" = "Return the loan-to-value as a percentage computed from the requested amount and the appraised value. Exclude furniture, fixtures, and equipment from the collateral value even where the document includes them."
+              }
+              {
+                "field" = "dscr"
+                "prompt" = "Return the debt service coverage ratio as a decimal (for example, 1.12) from trailing-twelve-month net operating income divided by proposed annual debt service. Cite the statement and period used."
+              }
+            ]
+            "purpose" = "Create a reviewable loan record from an application package; every value is a candidate until a loan officer accepts or corrects it."
+          }
+          "provider" = "generic"
+          "provider_object_id" = "box/extract-field-prompts"
+        }
+        "metadata" = {
+          "artifactName" = "extract-field-prompts"
+          "artifactType" = "config_file"
+          "createdAt" = "2026-07-23T11:55:20Z"
+          "enterpriseId" = ""
+          "provider" = "generic"
+          "providerObjectId" = "box/extract-field-prompts"
+          "scenario" = "box-claudeforce-loans"
+        }
+        "name" = "config_box_extract-field-prompts"
+        "provider" = "generic"
+        "scenario" = "box-claudeforce-loans"
+        "terraformType" = "null_resource"
+        "type" = "config_file"
+      }
+    ]
+    "scenario" = "box-claudeforce-loans"
+    "version" = "1.0"
+  }
+}

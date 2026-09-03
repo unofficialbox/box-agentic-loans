@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Gate for the Claude MCP external client app. Deliberately empty: it grants nothing and exists only so the app can be restricted to pre-authorized users. Without it any user in the org could authenticate through the app.</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>LOS MCP Client</label>
+</PermissionSet>

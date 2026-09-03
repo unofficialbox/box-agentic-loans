@@ -1,0 +1,27 @@
+flowchart LR
+    User["Lending, Credit Risk, Compliance, Finance"] --> App["Box App LOS dashboard<br/>portfolio, quick actions, policy views"]
+    App --> Intake["Box metadata + Automate"]
+    App --> Hub["Credit Policy Hub<br/>standards, exceptions, ownership"]
+    App --> Executed["Executed loan documents<br/>covenants and maturities"]
+    Intake --> Validate["Human validates intake"]
+    Validate --> Rest["HTTPS Connector<br/>Salesforce standard REST"]
+    Rest --> Record["Salesforce LOS record"]
+    Record --> React["Salesforce Multi-Framework React app"]
+    React --> Box["Box LOS workspace"]
+    React --> Agentforce["Agentforce Loan Copilot"]
+    Agentforce --> Box
+    Box --> Compare["Term sheet + credit policy<br/>cited structured findings"]
+    Compare --> Route["Domain expert routing<br/>one Box task per domain"]
+    Route --> React
+    Box --> Content["Loan files, metadata, tasks, DocGen, Sign"]
+    Agentforce --> Human["Human review and confirmation"]
+    Human --> Box
+    Hub --> Box
+    Executed --> Box
+
+    classDef surface fill:#e9f1ff,stroke:#1166e8,color:#071b33
+    classDef system fill:#f8fafc,stroke:#627a98,color:#071b33
+    classDef human fill:#fff1d6,stroke:#b16a00,color:#522f00
+    class App,React,Agentforce surface
+    class Intake,Rest,Record,Box,Hub,Executed,Compare,Route,Content system
+    class User,Validate,Human human

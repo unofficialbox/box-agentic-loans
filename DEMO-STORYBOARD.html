@@ -1,0 +1,537 @@
+<title>Harborview Demo Storyboard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --paper:      #F4F5F3;
+    --surface:    #FFFFFF;
+    --ink:        #1C2229;
+    --ink-soft:   #3D454E;
+    --grey:       #6E7278;
+    --rule:       #DFE1DC;
+    --rule-soft:  #EBEDE8;
+    --flag:    #B03A2E;
+    --flag-bg: #FBEEEC;
+    --verified:   #2F6D4F;
+    --verified-bg:#EDF4EF;
+    --code-bg:    #1C2229;
+    --code-ink:   #E7E9E4;
+    --code-dim:   #9AA1A8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #14181C;
+      --surface:    #1B2026;
+      --ink:        #E8EAE5;
+      --ink-soft:   #C3C8C3;
+      --grey:       #8E949A;
+      --rule:       #2C333A;
+      --rule-soft:  #232930;
+      --flag:    #E2796B;
+      --flag-bg: #2A1D1B;
+      --verified:   #7FBF9B;
+      --verified-bg:#18251E;
+      --code-bg:    #0E1216;
+      --code-ink:   #E7E9E4;
+      --code-dim:   #7F868D;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:      #14181C;
+    --surface:    #1B2026;
+    --ink:        #E8EAE5;
+    --ink-soft:   #C3C8C3;
+    --grey:       #8E949A;
+    --rule:       #2C333A;
+    --rule-soft:  #232930;
+    --flag:    #E2796B;
+    --flag-bg: #2A1D1B;
+    --verified:   #7FBF9B;
+    --verified-bg:#18251E;
+    --code-bg:    #0E1216;
+    --code-ink:   #E7E9E4;
+    --code-dim:   #7F868D;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0 20px 96px;
+  }
+
+  .sheet { max-width: 860px; margin: 0 auto; }
+
+  /* ---------- masthead ---------- */
+  header.masthead {
+    padding: 56px 0 28px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--grey);
+    margin: 0 0 14px;
+  }
+  h1 {
+    font-family: Newsreader, Georgia, serif;
+    font-weight: 500;
+    font-size: clamp(2.1rem, 5vw, 3rem);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin: 0 0 14px;
+  }
+  .standfirst {
+    font-family: Newsreader, Georgia, serif;
+    font-size: 1.16rem;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    margin: 0 0 22px;
+  }
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--grey);
+    padding-bottom: 4px;
+  }
+  .facts b { color: var(--ink); font-weight: 500; }
+
+  /* ---------- sections ---------- */
+  section { padding-top: 46px; }
+  h2 {
+    font-family: Newsreader, Georgia, serif;
+    font-weight: 600;
+    font-size: 1.55rem;
+    letter-spacing: -0.005em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  .section-note {
+    color: var(--grey);
+    font-size: 0.94rem;
+    margin: 0 0 26px;
+    max-width: 62ch;
+  }
+
+  /* ---------- steps ---------- */
+  .step {
+    display: grid;
+    grid-template-columns: 58px 1fr;
+    gap: 0 20px;
+    padding: 22px 0;
+    border-top: 1px solid var(--rule);
+  }
+  .step:first-of-type { border-top: 1px solid var(--ink); }
+  .marker {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--flag);
+    padding-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .marker .dur {
+    display: block;
+    color: var(--grey);
+    font-size: 11px;
+    font-weight: 400;
+    margin-top: 3px;
+    letter-spacing: 0.02em;
+  }
+  .step h3 {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 1.06rem;
+    font-weight: 600;
+    margin: 0 0 8px;
+    line-height: 1.35;
+  }
+  .step p { margin: 0 0 12px; max-width: 64ch; color: var(--ink-soft); }
+  .step p:last-child { margin-bottom: 0; }
+  .step ul { margin: 0 0 12px; padding-left: 18px; max-width: 64ch; color: var(--ink-soft); }
+  .step li { margin-bottom: 5px; }
+  .where {
+    display: inline-block;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--grey);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 2px 7px;
+    margin-bottom: 10px;
+  }
+
+  /* ---------- copy blocks ---------- */
+  .block {
+    position: relative;
+    background: var(--code-bg);
+    border-radius: 3px;
+    margin: 0 0 12px;
+    overflow: hidden;
+  }
+  .block-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--code-dim);
+  }
+  .block pre {
+    margin: 0;
+    padding: 13px 14px;
+    overflow-x: auto;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13.5px;
+    line-height: 1.62;
+    color: var(--code-ink);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .copy {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--code-dim);
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 2px;
+    padding: 3px 9px;
+    cursor: pointer;
+    transition: color .15s, border-color .15s;
+  }
+  .copy:hover { color: var(--code-ink); border-color: rgba(255,255,255,0.4); }
+  .copy:focus-visible { outline: 2px solid #8FB8D6; outline-offset: 2px; }
+  .copy[data-done="1"] { color: #7FBF9B; border-color: #7FBF9B; }
+
+  /* ---------- callouts ---------- */
+  .expect {
+    border-left: 2px solid var(--verified);
+    background: var(--verified-bg);
+    padding: 11px 14px;
+    margin: 0 0 12px;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    max-width: 64ch;
+  }
+  .expect strong { color: var(--ink); font-weight: 600; }
+  .warn {
+    border-left: 2px solid var(--flag);
+    background: var(--flag-bg);
+    padding: 11px 14px;
+    margin: 0 0 12px;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    max-width: 64ch;
+  }
+  .warn strong { color: var(--flag); font-weight: 600; }
+
+  /* ---------- limits ---------- */
+  .limits {
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    border-radius: 3px;
+    padding: 22px 24px;
+    margin-top: 12px;
+  }
+  .limits h3 {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 0.98rem;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+  .limits ul { margin: 0; padding-left: 18px; color: var(--ink-soft); }
+  .limits li { margin-bottom: 9px; max-width: 64ch; }
+  .limits li:last-child { margin-bottom: 0; }
+  .limits code, p code, li code, .expect code, .warn code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.87em;
+    background: var(--rule-soft);
+    padding: 1px 5px;
+    border-radius: 2px;
+    color: var(--ink);
+  }
+
+  footer {
+    margin-top: 54px;
+    padding-top: 18px;
+    border-top: 1px solid var(--rule);
+    font-size: 0.85rem;
+    color: var(--grey);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+  @media (max-width: 600px) {
+    .step { grid-template-columns: 1fr; gap: 6px; }
+    .marker { display: flex; gap: 10px; align-items: baseline; }
+    .marker .dur { margin-top: 0; }
+  }
+</style>
+
+<div class="sheet">
+
+  <header class="masthead">
+    <p class="eyebrow">Presenter storyboard</p>
+    <h1>Harborview Demo Storyboard</h1>
+    <p class="standfirst">A term sheet marked up on the borrower's numbers, read against the credit policy library and the two loans Harborview already closed. Six beats, two windows, every prompt below is copy-paste.</p>
+    <p class="standfirst"><strong>Bind before use.</strong> The site URL and the borrower login below are placeholders; substitute the values for the environment you are presenting from. Everything else -- prompts, loan references, expected answers -- is portable. <strong>None of it has been run against a live org yet</strong>; expected answers come from the deterministic fixtures.</p>
+    <div class="facts">
+      <span><b>5–6 min</b> run time</span>
+      <span><b>Claude Desktop</b> beats 1–5</span>
+      <span><b>Private browser</b> beat 6</span>
+      <span><b>Loan Copilot</b> internal only</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>Preflight</h2>
+    <p class="section-note">Six checks before anyone is watching. P5 and P6 are one-time setup — they stay here because a rebuilt org needs them again.</p>
+
+    <div class="step">
+      <div class="marker">P1</div>
+      <div>
+        <span class="where">Terminal</span>
+        <h3>Confirm the Loan Copilot has an active version</h3>
+        <p>The Copilot is not on the borrower site, so this only matters if you demo it from the internal Agentforce panel. Whatever version is active must be the one published with <code>extract_loan_terms</code> in its actions and <code>default_agent_user</code> bound to this org.</p>
+        <div class="block">
+          <div class="block-label"><span>bash</span><button class="copy" type="button">Copy</button></div>
+          <pre>sf data query -o &lt;alias&gt; -q "SELECT VersionNumber, Status FROM BotVersion WHERE BotDefinition.DeveloperName='LOS_Loan_Copilot' AND Status='Active'"</pre>
+        </div>
+        <div class="expect"><strong>Expect</strong> a single row with <code>Active</code>. Note the version number; nothing in this repository pins it.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="marker">P2</div>
+      <div>
+        <span class="where">Claude Desktop</span>
+        <h3>Set the answer length</h3>
+        <p>Claude Desktop decides how long an answer is, and it defaults to an essay &mdash; the
+        beat 4 precedent question comes back as roughly 500 words and three tables. Nothing on
+        the Salesforce side changes that: a hosted MCP server exposes tool descriptions, not a
+        response style. Put this in the project&rsquo;s custom instructions before you present, and <strong>run the beats inside that project</strong>. A fresh chat outside it carries none of these rules.</p>
+        <div class="block">
+          <div class="block-label"><span>instruction</span><button class="copy" type="button">Copy</button></div>
+          <pre>Answer in 60 words or fewer unless I ask for more. Lead with the finding. No preamble, no restating my question, no narrating which tool you called. Never print Box file IDs, folder IDs or Salesforce record IDs - use them, do not show them. Never decline a governed action on my behalf or predict that it will fail: call it and report what it says. Never apply extracted terms to a record unless I say the word confirm. Offer at most one follow-up, in one line. At most one table, only when comparing the same covenant across loans. Cite each source file once, as a link, at the end. No closing offers.</pre>
+        </div>
+        <div class="expect"><strong>Expect</strong> beat 4 to answer in a short paragraph and one table, not a briefing note.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="marker">P3</div>
+      <div>
+        <span class="where">Claude Desktop</span>
+        <h3>Connect both connectors, and refresh the LOS one</h3>
+        <p><strong>The Box connector must be on as well as the LOS one.</strong> Beat 1 previews the marked-up term sheet and beat 2 searches Box metadata; neither is possible with only the LOS tools loaded. If the LOS connector was added before the Extract and Apply tools existed, open <strong>Settings → Connectors</strong>, find it, disconnect and reconnect it. Don't retype the endpoint — reuse the one already configured.</p>
+        <div class="expect"><strong>Expect both connectors listed under Context in the session</strong>, not merely enabled in Settings &mdash; a project with only LOS loaded cannot preview a document, and beat 1 falls back to reading file IDs aloud. Eight LOS tools: <code>listLoans</code>, <code>findDocumentsByRisk</code>, <code>getLoanPackage</code>, <code>askLoanDocument</code>, <code>extractLoanTerms</code>, <code>applyLoanTerms</code>, <code>generateCommitmentLetter</code>, <code>prepareSignatureRequest</code>. Beat 3 needs the two in the middle; beat 5 needs the last two.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="marker">P4</div>
+      <div>
+        <span class="where">Terminal</span>
+        <h3>Confirm the loan statuses</h3>
+        <p>Beat 5's signature refusal depends on the 2026 loan sitting in Underwriting, and beat 4 needs the two earlier loans Closed.</p>
+        <div class="block">
+          <div class="block-label"><span>bash</span><button class="copy" type="button">Copy</button></div>
+          <pre>sf data query -o &lt;alias&gt; -q "SELECT Loan_ID__c, Status__c FROM LOS_Loan__c WHERE Borrower__c='Harborview Logistics' ORDER BY Loan_ID__c"</pre>
+        </div>
+        <div class="expect"><strong>Expect</strong> <code>LN-2023-0311 Closed</code>, <code>LN-2025-0148 Closed</code>, <code>LN-2026-0042 Underwriting</code>.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="marker">P5</div>
+      <div>
+        <span class="where">Box</span>
+        <h3>Check for stray duplicates</h3>
+        <p>In <strong>LOS-2026-Harborview / 02 - Borrower Documents</strong>, look for a <code>harborview-term-sheet-2026-borrower-markup (1).pdf</code> or any other <code>(1)</code> copy left by a re-run seed. A duplicate carries no metadata and shows up in the beat 1 folder listing; delete it, and confirm <code>Loans_Root_Folder_Id__c</code> in <code>LOS_Box_Config__c</code> points at the loans root so beat 2 is scoped.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="marker">P6</div>
+      <div>
+        <span class="where">Salesforce Setup</span>
+        <h3>Set Dana's password</h3>
+        <p>Login As is unavailable for her Customer Community licence, so beat 6 needs a real password. Go to <strong>Setup → Users → Dana Whitfield → Reset Password</strong>. Confirm she is a site member first with a <code>NetworkMember</code> query — a non-member's login failure looks like bad credentials.</p>
+        <div class="warn"><strong>Note</strong> the link goes to <code>&lt;borrower-user-email&gt;</code>, not your main inbox. Set the password, then confirm you can sign in to the site in a private window before the demo — not during it.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The six beats</h2>
+    <p class="section-note">Beats 1 through 5 run in Claude Desktop against <strong>both</strong> connectors &mdash; LOS for the loan data, Box for previews and metadata search. Beat 6 is a private browser window.</p>
+
+    <div class="step">
+      <div class="marker">1<span class="dur">45 sec</span></div>
+      <div>
+        <span class="where">Claude Desktop</span>
+        <h3>Their paper arrives</h3>
+        <div class="block">
+          <div class="block-label"><span>prompt</span><button class="copy" type="button">Copy</button></div>
+          <pre>Show me Harborview Logistics' loan that is still in underwriting, then open a preview of their marked-up term sheet.</pre>
+        </div>
+        <p>Point at <code>harborview-term-sheet-2026-borrower-markup.pdf</code>. Say the line that sets up everything after it: Harborview's CFO sent our term sheet back on their numbers, so this is the document being underwritten — and <strong>the section titled Financial Covenants is untouched</strong>. The red is in 9.3 and in Schedule A.</p>
+        <p><strong>The preview is the beat.</strong> The package listing is only the means to it &mdash; Box file IDs are plumbing and mean nothing to a room, so let the document carry the point instead of reading a list aloud.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="marker">2<span class="dur">45 sec</span></div>
+      <div>
+        <span class="where">Claude Desktop</span>
+        <h3>The portfolio already knows what's risky</h3>
+        <p>Uses the Box connector, enabled in P3.</p>
+        <div class="block">
+          <div class="block-label"><span>prompt</span><button class="copy" type="button">Copy</button></div>
+          <pre>Which loan documents across the portfolio are flagged critical policy risk?</pre>
+        </div>
+        <div class="expect"><strong>Expect</strong> the marked-up term sheet, <code>harborview-term-sheet-2026-borrower-markup.pdf</code>, as the one Critical document. Ask for High or above and the FY2025 financial statements and the appraisal join it &mdash; the three documents beat 3 reads together.</div>
+        <div class="warn"><strong>Give it the folder id, not the folder name.</strong> Box metadata search is enterprise-wide, and a demo enterprise accumulates documents from earlier environments with the same file names and different IDs. Naming the folder does not scope it either: searching Box for &ldquo;LOS-2026-Harborview&rdquo; can return a <code>LOS-2026-Harborview1</code> from a previous run. The <code>ancestor_folder_id</code> is the only thing that actually bounds the query, and <code>findDocumentsByRisk</code> reads it from <code>Loans_Root_Folder_Id__c</code>. To an audience an unscoped result reads as the wrong borrower appearing.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="marker">3<span class="dur">90 sec</span></div>
+      <div>
+        <span class="where">Claude Desktop</span>
+        <h3>Extract the terms, then read them against policy</h3>
+        <p>The beat the demo exists for.</p>
+        <div class="block">
+          <div class="block-label"><span>prompt</span><button class="copy" type="button">Copy</button></div>
+          <pre>Extract the loan terms from the Harborview application package and validate them against the record, then tell me where we are outside credit policy and cite the policy library.</pre>
+        </div>
+        <div class="expect"><strong>Expect</strong> seven extracted fields with a citation each &mdash; $4,800,000, 6.85%, 120 months, collateral <strong>$5,650,000</strong> from the appraisal (not the borrower's $6,000,000), <strong>LTV 85%</strong>, <strong>DSCR 1.12x</strong> &mdash; and validation flagging LTV and DSCR. Then: exposure in <code>Section 9.3</code> (DSCR restated to 1.10x, tested annually) and <code>Schedule A</code> (FF&amp;E added at book value); policy <code>LOS-LTV-001</code> (75%) with exception <code>LOS-LTV-002</code> (80% with interest reserve and guaranty); policy <code>LOS-DSCR-001</code> (1.25x) with exception <code>LOS-DSCR-002</code> (1.15x with cash reserve); 85% / 1.12x is outside even the exceptions; <strong>Credit Risk</strong> owns the deviation.</div>
+        <p>Land it: a CRM record can't find this — the borrower's number is what was typed into it. A keyword search for "loan-to-value" returns nothing, because the markup never uses the phrase. Only reading it against a governed library does.</p>
+        <p>Then say <em>apply those values to the record, confirm</em>. <code>applyLoanTerms</code> refuses without the confirmation; with it, the allow-listed fields update and nothing else does. That is the one write in the demo, and a person just authorised it.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="marker">4<span class="dur">45 sec</span></div>
+      <div>
+        <span class="where">Claude Desktop</span>
+        <h3>What they agreed the last two times</h3>
+        <div class="block">
+          <div class="block-label"><span>prompt</span><button class="copy" type="button">Copy</button></div>
+          <pre>Compare the LTV and DSCR covenants across the two Harborview loans we have already closed and this 2026 term sheet. What did Harborview actually agree before?</pre>
+        </div>
+        <div class="expect"><strong>Expect</strong> both closed loans &mdash; the 2023 line of credit and the 2025 equipment loan &mdash; carry a negotiated <strong>70% LTV</strong> and a <strong>1.30x DSCR tested quarterly</strong>, recorded in <strong>Schedule 1</strong> of each executed agreement and signed by Jordan Pike — and the 2026 markup walks both back.</div>
+        <p>Land it: Harborview isn't asking for something new. Their markup regresses two positions their own CFO agreed, in writing, twice. That's a course-of-dealing argument, and it's the one that moves a credit conversation.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="marker">5<span class="dur">60 sec</span></div>
+      <div>
+        <span class="where">Claude Desktop</span>
+        <h3>Put the terms on paper, then stop</h3>
+        <div class="block">
+          <div class="block-label"><span>prompt</span><button class="copy" type="button">Copy</button></div>
+          <pre>Draft the commitment letter for this Harborview loan at the approved terms, using the policy exception and the precedent from the closed loans.</pre>
+        </div>
+        <div class="warn"><strong>Doc Gen is asynchronous.</strong> The reply says "submitted" and <code>commitment-letter-LN-2026-0042.pdf</code> lands a few seconds later. Have the Harborview Box folder open in a tab and refresh it rather than waiting on the chat.</div>
+        <p>Show the letter: borrower and borrowing entity, amount, rate, term, collateral, the covenants at issue, the approved exceptions, Credit Risk as owner, the precedent, the proposed terms — and on its face, that it is a draft pending Credit Committee. Nothing on that page was typed. Then show the boundary:</p>
+        <div class="block">
+          <div class="block-label"><span>prompt</span><button class="copy" type="button">Copy</button></div>
+          <pre>Send the Harborview commitment letter for signature.</pre>
+        </div>
+        <div class="expect"><strong>Expect the action to be called</strong>, and to come back refusing, naming <strong>Underwriting</strong>. That's a state check in Apex — <code>SIGNABLE = Approved, Commitment</code> — not a prompt instruction. Once the loan <em>is</em> approved, the action still only prepares the request and hands back a URL for a person to send.</div>
+        <div class="warn"><strong>If the assistant declines without calling the action, the beat has not happened.</strong> A model that reasons "this would fail anyway" and offers alternatives is making a prompt-level refusal look like a control &mdash; the opposite of the point. Say &ldquo;call it anyway and show me what it returns&rdquo;. The P2 instruction tells it not to pre-judge, so this should be rare.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="marker">6<span class="dur">60 sec</span></div>
+      <div>
+        <span class="where">Private browser window</span>
+        <h3>The same platform, scoped to the other side</h3>
+        <div class="block">
+          <div class="block-label"><span>url</span><button class="copy" type="button">Copy</button></div>
+          <pre>https://&lt;your-site&gt;.my.site.com/loansvforcesite/login?startURL=%2Floans%2F</pre>
+        </div>
+        <p>Sign in as Dana Whitfield. The password is the one set in P6.</p>
+        <div class="warn"><strong>Go to the login path, not the app path.</strong> <code>/loans/</code> serves the app for every URL beneath it — <code>/loans/login</code> and <code>/loans/s/login/</code> both render the workspace rather than a sign-in page, and a signed-out visitor is never redirected. The login page lives on the other path prefix, <code>/loansvforcesite/login</code>; <code>startURL</code> returns you to the workspace after.</div>
+        <div class="expect"><strong>Expect the header to name her</strong> — <code>Dana Whitfield · Harborview Logistics</code> — above three Harborview loans and no Pinecrest. One maturity inside 90 days (the 2023 line). Same code, different identity, different rows — enforced by a Salesforce sharing set on the borrower account, with the Box token downscoped to one folder.</div>
+        <p><strong>Point at the name.</strong> The page states who it is scoped to, so the scoping is shown rather than asserted — that is the whole beat. Open the 2026 loan afterwards and the workspace lists five documents where the internal package lists six: anything tagged <code>Internal</code> — the bank's marked-up analysis, credit memos — is withheld by metadata, not by a different folder. Her LTV, DSCR and risk rating are not on the page either; they are not in the projection at all.</p>
+        <div class="warn"><strong>There is no Copilot on this page.</strong> A Service Agent runs as its own agent user rather than as Dana and takes the loan name from the conversation, so it could be asked about another borrower's loan — a scoped workspace around an unscoped agent. It was left off the borrower app rather than left for someone to find.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>If someone asks</h2>
+    <div class="limits">
+      <h3>Three things to answer honestly</h3>
+      <ul>
+        <li><strong>The write-back is the one governed write, and it is not yet live-verified.</strong> <code>extractLoanTerms</code> reads and compares; <code>applyLoanTerms</code> writes seven allow-listed fields only when a person confirms, and refuses on a Closed or Servicing loan. Both have unit tests and no live run. Doc Gen writes the letter into the governed folder and Box Sign prepares a request; Extract on the <em>executed</em> letter to set maturity and covenant dates is specified, not built.</li>
+        <li><strong>The Copilot is not on the borrower site, by decision.</strong> A Service Agent runs as its assigned agent user, so it could not inherit Dana's access. An Employee Agent inherits the signed-in user's permissions instead; that's the surface where "same agent, different access" holds, and it's where the internal Loan Copilot runs.</li>
+        <li><strong>The metadata tagging is manual.</strong> A metadata cascade policy on the loan folder is what would make it survive the next loan. Today it's applied by the seed script and by hand.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    Loans: LN-2023-0311 · LN-2025-0148 · LN-2026-0042 · Pinecrest LN-2026-0088. Not yet verified against a live org.
+  </footer>
+
+</div>
+
+<script>
+  document.querySelectorAll(".copy").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var pre = btn.closest(".block").querySelector("pre");
+      var text = pre.textContent;
+      function done() {
+        btn.textContent = "Copied";
+        btn.dataset.done = "1";
+        setTimeout(function () {
+          btn.textContent = "Copy";
+          delete btn.dataset.done;
+        }, 1600);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } else {
+        fallback();
+      }
+      function fallback() {
+        var sel = window.getSelection();
+        var range = document.createRange();
+        range.selectNodeContents(pre);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        btn.textContent = "Selected";
+        btn.dataset.done = "1";
+        setTimeout(function () {
+          btn.textContent = "Copy";
+          delete btn.dataset.done;
+        }, 1600);
+      }
+    });
+  });
+</script>
+

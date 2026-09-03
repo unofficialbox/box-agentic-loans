@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Maturity_Date__c</fullName>
+    <description>When the loan matures, and the date covenant review and maturity notices are measured back from. Empty until the loan closes: a loan still in underwriting has no term running, and a date here would imply one had been agreed.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Maturity date. Leave empty until the loan is closed.</inlineHelpText>
+    <label>Maturity Date</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Date</type>
+</CustomField>

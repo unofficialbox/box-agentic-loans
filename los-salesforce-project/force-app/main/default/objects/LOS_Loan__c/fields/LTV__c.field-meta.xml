@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>LTV__c</fullName>
+    <description>Loan-to-value as a percentage of appraised collateral value (85 means 85%). LOS-LTV-001 caps owner-occupied commercial real estate at 75%; the approved exception LOS-LTV-002 allows 80% with an interest reserve and an additional guaranty.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Loan amount over appraised collateral value, as a percentage. Policy maximum 75% (LOS-LTV-001).</inlineHelpText>
+    <label>Loan-to-Value</label>
+    <precision>5</precision>
+    <required>false</required>
+    <scale>2</scale>
+    <trackTrending>false</trackTrending>
+    <type>Percent</type>
+</CustomField>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtlClntAppGlobalOauthSettings xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!--
+      Authored, never retrieved. A retrieve of this type brings back consumerKey and
+      consumerSecret, and Salesforce says explicitly that they must not go into source
+      control. Nothing here is a secret: the key pair is generated server-side and read
+      from Setup when connecting the client.
+    -->
+    <callbackUrl>https://claude.ai/api/mcp/auth_callback</callbackUrl>
+    <externalClientApplication>LOS_Claude_MCP</externalClientApplication>
+    <isConsumerSecretOptional>true</isConsumerSecretOptional>
+    <isNamedUserJwtEnabled>true</isNamedUserJwtEnabled>
+    <isPkceRequired>true</isPkceRequired>
+    <isSecretRequiredForRefreshToken>false</isSecretRequiredForRefreshToken>
+    <label>LOS Claude MCP OAuth</label>
+</ExtlClntAppGlobalOauthSettings>

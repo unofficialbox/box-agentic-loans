@@ -1,0 +1,45 @@
+%% The seed stabilizes rough.js terminal-shape paths emitted by Mermaid 11.12 classic rendering. %%
+%%{init: {"handDrawnSeed": 42}}%%
+flowchart TD
+    App["Box App LOS dashboard<br/>portfolio charts and quick actions"] --> Start(["Start a New Application<br/>single intake entry point"])
+    App -.-> Hub
+    App -.-> Executed
+    Start --> Automate["Box Automate<br/>Extract and Box Agent review"]
+    Automate --> IntakeGate{"Human validates<br/>intake enrichment?"}
+    IntakeGate -- "No" --> IntakeRework["Return for correction"]
+    IntakeRework --> Start
+    IntakeGate -- "Yes" --> CreateRecord["HTTPS connector<br/>standard REST upsert + lookup"]
+    CreateRecord --> RecordGate{"Salesforce record ID<br/>returned?"}
+    RecordGate -- "No" --> IntegrationReview["Keep Box request<br/>queue connector retry"]
+    IntegrationReview --> CreateRecord
+    RecordGate -- "Yes" --> React["React LOS workspace<br/>Salesforce record + Box context"]
+    React --> BoxEvidence["Box workspace<br/>files, versions, metadata"]
+    BoxEvidence --> Hub["Box Hub<br/>credit policy library"]
+    Hub --> AgentReview["Agentforce review<br/>summary, citations, term-sheet comparison"]
+    AgentReview --> Findings["Structured underwriting findings<br/>requested, policy, exception, risk"]
+    Findings --> Route{"Domain and confidence<br/>route is valid?"}
+    Route -- "No" --> Triage["Credit Administration triage<br/>unclassified or low confidence"]
+    Triage --> Tasks
+    Route -- "Yes" --> Tasks["One Box review task per domain<br/>named expert assignment"]
+    Tasks --> Gate{"All named human<br/>approvals complete?"}
+    Gate -- "No" --> Blocked["Signature blocked<br/>Agentforce explains next actions"]
+    Blocked --> Tasks
+    Gate -- "Yes" --> MemoConfirm{"Confirm DocGen<br/>draft creation?"}
+    MemoConfirm -- "No" --> NoDraft(["No draft created<br/>remain approval-ready"])
+    MemoConfirm -- "Yes" --> DocGen["Box DocGen<br/>credit memo and commitment letter"]
+    DocGen --> Sign["Box Sign<br/>closing packet"]
+    Sign --> Executed["Executed loan agreement<br/>in Box"]
+    Executed --> Obligations["Agentforce extracts candidate covenants<br/>human validates owners and dates"]
+    Obligations --> Finish(["Governed covenant and maturity tracking"])
+
+    classDef surface fill:#e9f1ff,stroke:#1166e8,color:#071b33,stroke-width:2px
+    classDef box fill:#f8fafc,stroke:#627a98,color:#071b33
+    classDef decision fill:#fff1d6,stroke:#b16a00,color:#522f00,stroke-width:2px
+    classDef blocked fill:#ffe8eb,stroke:#c63846,color:#7c1621,stroke-width:2px
+    classDef terminal fill:#e7f7ec,stroke:#368453,color:#174a2b
+
+    class App,React,AgentReview surface
+    class Automate,CreateRecord,BoxEvidence,Hub,Findings,Tasks,DocGen,Sign,Executed,Obligations box
+    class IntakeGate,RecordGate,Route,Gate,MemoConfirm decision
+    class IntakeRework,IntegrationReview,Triage,Blocked blocked
+    class Start,NoDraft,Finish terminal

@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" role="img" aria-labelledby="title description">
+  <title id="title">AI-Assisted Loan Origination</title>
+  <desc id="description">A governed loan file is applied for, underwritten, approved, and signed across Box and Salesforce, with human credit authority retained.</desc>
+
+  <defs>
+    <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="2" fill="#16233a"/>
+    </pattern>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#dceaff"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#48b97d"/>
+      <stop offset="1" stop-color="#177245"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="300" fill="#0b172a"/>
+  <rect width="1200" height="300" fill="url(#dots)"/>
+  <rect width="1200" height="6" fill="#0061d5"/>
+  <rect x="0" y="6" width="294" height="3" fill="#ff9900"/>
+
+  <!-- Governed loan file with a signature -->
+  <g stroke-linejoin="round">
+    <rect x="77" y="88" width="148" height="166" rx="8" fill="#16233a" stroke="#37639c" stroke-width="2"/>
+    <rect x="95" y="72" width="148" height="166" rx="8" fill="#1a2942" stroke="#5c9df2" stroke-width="2"/>
+    <path d="M117 53h91l28 28v138a8 8 0 0 1-8 8H117a8 8 0 0 1-8-8V61a8 8 0 0 1 8-8Z" fill="url(#paper)" stroke="#cfe0fb" stroke-width="2"/>
+    <path d="M208 53v28h28" fill="#dceaff" stroke="#cfe0fb" stroke-width="2"/>
+    <line x1="133" y1="103" x2="208" y2="103" stroke="#0061d5" stroke-width="5" stroke-linecap="round"/>
+    <line x1="133" y1="124" x2="211" y2="124" stroke="#7a8eac" stroke-width="4" stroke-linecap="round"/>
+    <line x1="133" y1="142" x2="198" y2="142" stroke="#7a8eac" stroke-width="4" stroke-linecap="round"/>
+    <!-- signature block: cursive stroke over a signature rule -->
+    <path d="M134 176c8-14 16-14 21-4s12 12 20-2 15-8 21 0" fill="none" stroke="#0061d5" stroke-width="3" stroke-linecap="round"/>
+    <line x1="133" y1="188" x2="200" y2="188" stroke="#7a8eac" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- Human decision authority and governed system signals -->
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M276 83c24 10 42 11 61 0v43c0 42-25 66-61 82-36-16-61-40-61-82V83c19 11 37 10 61 0Z" fill="url(#shield)" stroke="#8bdbaf" stroke-width="2"/>
+    <path d="m249 141 18 18 35-39" stroke="#ffffff" stroke-width="6"/>
+    <path d="M249 205C264 219 284 219 302 205" stroke="#5c9df2" stroke-width="2"/>
+    <circle cx="249" cy="205" r="6" fill="#0061d5" stroke="none"/>
+    <circle cx="276" cy="219" r="6" fill="#00a1e0" stroke="none"/>
+    <circle cx="302" cy="205" r="6" fill="#ff3621" stroke="none"/>
+  </g>
+
+  <!-- Message -->
+  <text x="424" y="69" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17" letter-spacing="3.1" fill="#8fbcf7" font-weight="700">LOAN ORIGINATION · AGENTIC ORCHESTRATION</text>
+  <text x="424" y="135" font-family="Arial, Helvetica, sans-serif" font-size="52" font-weight="800" letter-spacing="-1.3" fill="#fffefa">AI-Assisted Loan</text>
+  <text x="424" y="191" font-family="Arial, Helvetica, sans-serif" font-size="52" font-weight="800" letter-spacing="-1.3" fill="#fffefa">Origination<tspan fill="#ff9900">.</tspan></text>
+  <text x="427" y="233" font-family="Georgia, 'Times New Roman', serif" font-size="22" font-style="italic" fill="#b8c7dd">Governed loan files · structured credit truth · human authority</text>
+
+  <g font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" letter-spacing="1.1">
+    <circle cx="430" cy="268" r="5" fill="#0061d5"/>
+    <text x="443" y="273" fill="#d9e7fb">BOX</text>
+    <circle cx="510" cy="268" r="5" fill="#00a1e0"/>
+    <text x="523" y="273" fill="#d9e7fb">SALESFORCE</text>
+    <circle cx="645" cy="268" r="5" fill="#ff3621"/>
+    <circle cx="790" cy="268" r="5" fill="#ff9900"/>
+  </g>
+</svg>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Credit_Policy_Hub_Id__c</fullName>
+    <description>Box Hub ID of the approved credit policy library. Configuration rather than a caller argument: the agent may read the policy, but it may not name which policy library to read.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Box Hub ID for the credit policy library. Set per environment; not stored in source.</inlineHelpText>
+    <label>Credit Policy Hub ID</label>
+    <length>32</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

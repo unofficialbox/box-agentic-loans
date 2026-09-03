@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Box_Workspace_Folder_ID__c</fullName>
+    <description>Denormalised copy of the Box for Salesforce folder association for this loan's governed folder. Read as a fallback when box__FRUP__c is unavailable to the caller, so losing the association lookup does not cost the answer.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Box folder ID of the loan file. Normally set from the Box for Salesforce association; edit only when that association is missing.</inlineHelpText>
+    <label>Box Workspace Folder ID</label>
+    <length>32</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

@@ -1,0 +1,28 @@
+{
+  "receiptVersion": "1.0.0",
+  "freshnessDays": 30,
+  "receipts": [
+    {
+      "platform": "Box",
+      "environment": "replace-with-enterprise-name",
+      "validatedAt": "2026-07-17T00:00:00Z",
+      "actionMode": "live",
+      "validationType": "smoke-test",
+      "businessKey": "LN-2026-0042",
+      "status": "passed",
+      "evidence": "replace-with-external-run-log-reference",
+      "cleanupOwner": "replace-with-owner"
+    },
+    {
+      "platform": "Salesforce",
+      "environment": "replace-with-org-alias",
+      "validatedAt": "2026-07-17T00:00:00Z",
+      "actionMode": "live",
+      "validationType": "smoke-test",
+      "businessKey": "LN-2026-0042",
+      "status": "passed",
+      "evidence": "replace-with-external-run-log-reference",
+      "cleanupOwner": "replace-with-owner"
+    }
+  ]
+}

@@ -1,0 +1,235 @@
+# Box Dispatch BCL config artifact. BCL is the only supported import format.
+locals {
+  "bcl" = {
+    "context" = "loans"
+    "generatedAt" = "2026-07-23T11:55:20Z"
+    "metadata" = {
+    }
+    "provider" = "generic"
+    "resources" = [
+      {
+        "config" = {
+          "artifact_name" = "https-connectors"
+          "artifact_type" = "config"
+          "connectors" = [
+            {
+              "apiVersion" = "67.0"
+              "authentication" = {
+                "runAsUser" = "${salesforce.integrationUsername}"
+                "scope" = "api"
+                "secretStorage" = "Box-managed connection only"
+                "tokenUrl" = "${salesforce.myDomainUrl}/services/oauth2/token"
+                "type" = "OAuth 2.0 client credentials"
+              }
+              "baseUrl" = "${salesforce.myDomainUrl}"
+              "initialStatus" = "unconfigured"
+              "key" = "salesforce-los-rest"
+              "name" = "Salesforce LOS REST API"
+              "operations" = {
+                "routeUnderwritingFindings" = {
+                  "endpoint" = "/services/apexrest/los/underwriting-routing"
+                  "method" = "POST"
+                  "requiredFor" = "Box + Salesforce Loan Origination live underwriting routing"
+                  "status" = "not implemented"
+                }
+                "salesforceLoanCreate" = {
+                  "authType" = "OAUTH2_CLIENT_CREDENTIALS_GRANT"
+                  "blankSafety" = "Only loanId, loanAmount, and targetClosingDate are bound dynamically. They supply Salesforce's three required demo fields: Name, Amount, and Target Closing Date. Optional metadata is deliberately omitted because Box substitutes the literal string 'Variable unavailable' for an unresolved value."
+                  "body" = {
+                    "Loan_Amount__c" = {
+                      "bind" = "metadata.loanAmount"
+                      "demoRequired" = true
+                    }
+                    "Loan_ID__c" = {
+                      "bind" = "metadata.loanId"
+                      "integrationKey" = true
+                    }
+                    "Name" = {
+                      "bind" = "metadata.loanId"
+                      "demoRequired" = true
+                      "literalPrefix" = "Loan Application - "
+                    }
+                    "Record_Source__c" = "Box Automate"
+                    "Target_Closing_Date__c" = {
+                      "bind" = "metadata.targetClosingDate"
+                      "demoRequired" = true
+                      "format" = "YYYY-MM-DD"
+                    }
+                  }
+                  "bodyEncoding" = {
+                    "blankSafetySupersedes" = "The CLM predecessor once claimed an unresolved value yields an empty string and that quoting numeric fields made the body blank-safe. Its live run disproved both. Quoting keeps the JSON syntactically valid but does not stop Salesforce rejecting the value."
+                    "fieldGuidPortability" = "The metadata field GUID is enterprise-specific and must be resolved from the target template at provisioning time. It is not portable."
+                    "note" = "Box Automate stores an HTTPS body as an ordered CONCAT of operands. Literal JSON segments are VALUE operands; each dynamic value is its own operand spliced between them. Merge tokens are not brace-delimited text inside the stored body."
+                    "operandTypes" = {
+                      "DATE_FORMAT" = "Renders one component of a date or datetime variable. The editor offers a full ISO string or single components; there is no YYYY-MM-DD preset, so a date-only value is built from three DATE_FORMAT operands joined by literal hyphens."
+                      "DYNAMIC_VARIABLE" = "Trigger-derived property, addressed by ref, for example ref trigger.fileParentFolderName."
+                      "GET_FILE_METADATA_FIELD" = "Reads one metadata field. Operands in order: VARIABLE(file path), VALUE(templateKey, METADATA_TEMPLATE_KEY), VALUE(fieldGuid, STRING), VALUE(scope, METADATA_TEMPLATE_SCOPE)."
+                      "VALUE" = "Literal string segment. dataType STRING."
+                      "VARIABLE" = "Graph variable addressed by path, for example path trigger.metadata.<key>."
+                    }
+                    "storedAs" = "CONCAT operand list, not a single string"
+                    "unresolvedVariableBehaviour" = "Observed in the CLM predecessor's live run. Box Automate substitutes the literal string 'Variable unavailable' for a variable that does not resolve. It does not substitute an empty string or a null. Any Salesforce field that cannot accept that text will reject the request, which covers every Number, Currency, Percent, Date, and restricted Picklist field. Only bind a value whose source is mandatory, or accept that the field may receive the phrase 'Variable unavailable'."
+                  }
+                  "bodyImplementation" = {
+                    "designRule" = "Bind only values whose losLoan metadata field is guaranteed populated before the trigger fires. Box substitutes the literal 'Variable unavailable' for anything unresolved, so an unpopulated source can poison a typed Salesforce field."
+                    "history" = "The CLM predecessor's 19-field version bound every Form field, including optional ones, and failed live because a Currency and a Number field received 'Variable unavailable'. The Form was later removed entirely and every dynamic value re-sourced from metadata."
+                    "note" = "The current metadata body is intentionally reduced to loanId, loanAmount, and targetClosingDate. It has NOT been run against a live org in this repository."
+                    "trigger" = "metadata"
+                    "verification" = "The predecessor's form-triggered body was proven live, but that evidence does not cover this loans variant. Verify the request end to end before activation."
+                  }
+                  "bodyOmissions" = {
+                    "howToRestore" = "Populate the source losLoan metadata field before the trigger fires, then bind it. That is the only way to guarantee it resolves."
+                    "neverBound" = {
+                      "Risk_Rating__c" = "The Box Agent emits unstructured text, not a picklist value. Restore once a human-validated losLoan riskRating value supplies it."
+                      "Status__c" = "Defaults to Application in Salesforce; the workflow does not advance status."
+                    }
+                    "note" = "Deliberately absent. Each is sourced from an optional losLoan metadata field, so binding it risks sending 'Variable unavailable' into a typed Salesforce field."
+                    "textAndOptional" = {
+                      "Applicant_Email__c" = "Email."
+                      "Applicant_Name__c" = "Text. Would read 'Variable unavailable' rather than fail."
+                      "Borrower__c" = "Text."
+                      "Loan_Officer_Name__c" = "Text."
+                      "Loan_Type__c" = "Restricted picklist with a Salesforce default."
+                      "Underwriting_Notes__c" = "Text."
+                    }
+                    "typeSensitiveAndOptional" = {
+                      "Collateral_Type__c" = "Restricted picklist."
+                      "Collateral_Value__c" = "Currency."
+                      "DSCR__c" = "Number. Written only through LosApplyLoanTerms after human acceptance."
+                      "Interest_Rate__c" = "Percent."
+                      "LTV__c" = "Percent. Written only through LosApplyLoanTerms after human acceptance."
+                      "Region__c" = "Restricted picklist."
+                      "Term_Months__c" = "Number. The field that caused the predecessor's live failure."
+                    }
+                  }
+                  "connectorTargeting" = {
+                    "predecessorObservation" = "Two similarly named connectors in the predecessor's environment pointed at different orgs. Posting a valid payload to the org without the object failed with an opaque UNKNOWN_ERROR. No org hostnames are recorded here."
+                    "rule" = "The connector determines which Salesforce org receives the request. Confirm the connector's base URL is the org that actually holds LOS_Loan__c before debugging anything else."
+                  }
+                  "demoRequiredFields" = {
+                    "fields" = [
+                      "Name"
+                      "Loan_Amount__c"
+                      "Target_Closing_Date__c"
+                    ]
+                    "note" = "The Salesforce record layout intentionally requires only Name, Amount, and Target Closing Date. The custom fields remain schema-optional so existing demo records do not block an upgrade. Name is generated from loanId for Box intake, keeping the metadata trigger to three inputs."
+                  }
+                  "endpoint" = "services/data/v67.0/sobjects/LOS_Loan__c"
+                  "endpointNote" = "Stored without a leading slash and resolved against the connector base URL. This is the plain sobject collection endpoint, not an external-ID upsert path."
+                  "expectedStatus" = null
+                  "expectedStatusNote" = "The HTTPS Request outcome exposes no expected-status configuration in the editor. Do not claim status gating that the surface cannot enforce."
+                  "headers" = {
+                  }
+                  "headersNote" = "The reference outcome enables no headers and no query parameters. Authorization is handled entirely by the Box-managed OAuth 2.0 connector."
+                  "idempotency" = {
+                    "reason" = "A plain POST to the sobject collection creates a new record on every run. Resubmitting the same loan duplicates it. Use the external-ID upsert path if duplicate safety is required."
+                    "safe" = false
+                  }
+                  "method" = "POST"
+                  "outputVariables" = {
+                    "id" = {
+                      "jsonPath" = "$.id"
+                      "key" = "id"
+                      "type" = "text"
+                    }
+                  }
+                  "restrictedPicklistValues" = {
+                    "Record_Source__c" = [
+                      "Box Automate"
+                      "Manual"
+                      "API"
+                    ]
+                    "note" = "The literal is a valid member of its restricted picklist."
+                  }
+                  "verified" = {
+                    "evidence" = "None in this repository. The CLM predecessor created a real record through the same POST shape from a Form trigger and confirmed every mapped field on the Salesforce record; that proves the code path, not this variant."
+                    "loansVariantRunLive" = false
+                    "predecessorProvedCodePath" = true
+                    "reVerifyBeforeActivation" = "Run the minimized three-input metadata request end to end against the target org before activation."
+                  }
+                }
+                "salesforceLoanLookup" = {
+                  "endpoint" = "/services/data/v67.0/sobjects/LOS_Loan__c/Loan_ID__c/{urlEncodedLoanId}?fields=Id,Loan_ID__c"
+                  "expectedStatus" = [
+                    200
+                  ]
+                  "method" = "GET"
+                  "outputVariables" = {
+                    "loanId" = "$.Loan_ID__c"
+                    "recordId" = "$.Id"
+                  }
+                  "verified" = {
+                    "note" = "No live workflow performs a lookup. Designed operation only."
+                    "status" = "not present in any live workflow"
+                  }
+                }
+                "salesforceLoanUpsert" = {
+                  "body" = {
+                    "Applicant_Email__c" = "applicantEmail"
+                    "Applicant_Name__c" = "applicantName"
+                    "Borrower__c" = "borrower"
+                    "Collateral_Type__c" = "collateralType"
+                    "Loan_Amount__c" = "loanAmount"
+                    "Loan_Officer_Name__c" = "owner"
+                    "Loan_Type__c" = "loanType"
+                    "Name" = "Loan Application - <loanId>"
+                    "Record_Source__c" = "Box Automate"
+                    "Region__c" = "region"
+                    "Risk_Rating__c" = "riskRating"
+                    "Target_Closing_Date__c" = "targetClosingDate"
+                    "Term_Months__c" = "termMonths"
+                    "Underwriting_Notes__c" = "underwritingNotes"
+                  }
+                  "endpoint" = "/services/data/v67.0/sobjects/LOS_Loan__c/Loan_ID__c/{urlEncodedLoanId}"
+                  "expectedStatus" = [
+                    200
+                    201
+                    204
+                  ]
+                  "headers" = {
+                    "Content-Type" = "application/json"
+                  }
+                  "idempotencyKey" = "loanId"
+                  "method" = "PATCH"
+                  "verified" = {
+                    "liveState" = "Not run live in this repository. In the predecessor the Approved branch called PATCH against a hardcoded external ID with a fully literal body as a smoke test only; it carried no submission data and must not be treated as a working operation."
+                    "status" = "designed; smoke-tested only in the predecessor"
+                    "supersededForCreate" = "salesforceLoanCreate"
+                  }
+                }
+              }
+              "prohibitedPayload" = [
+                "loan document bytes"
+                "Box access tokens"
+                "connector secrets"
+                "signer credentials"
+                "unreviewed AI output"
+              ]
+            }
+          ]
+          "created_at" = "2026-07-23T11:55:20Z"
+          "enterprise_id" = ""
+          "provider" = "generic"
+          "provider_object_id" = "box/https-connectors"
+          "schemaVersion" = "2.0"
+        }
+        "metadata" = {
+          "artifactName" = "https-connectors"
+          "artifactType" = "config_file"
+          "createdAt" = "2026-07-23T11:55:20Z"
+          "enterpriseId" = ""
+          "provider" = "generic"
+          "providerObjectId" = "box/https-connectors"
+          "scenario" = "box-claudeforce-loans"
+        }
+        "name" = "config_box_https-connectors"
+        "provider" = "generic"
+        "scenario" = "box-claudeforce-loans"
+        "terraformType" = "null_resource"
+        "type" = "config_file"
+      }
+    ]
+    "scenario" = "box-claudeforce-loans"
+    "version" = "1.0"
+  }
+}

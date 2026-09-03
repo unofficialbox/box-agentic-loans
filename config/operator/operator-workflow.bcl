@@ -1,0 +1,160 @@
+# Box Dispatch BCL config artifact. BCL is the only supported import format.
+locals {
+  "bcl" = {
+    "context" = "loans"
+    "generatedAt" = "2026-07-23T11:55:20Z"
+    "metadata" = {
+    }
+    "provider" = "generic"
+    "resources" = [
+      {
+        "config" = {
+          "artifact_name" = "operator-workflow"
+          "artifact_type" = "config"
+          "created_at" = "2026-07-23T11:55:20Z"
+          "enterprise_id" = ""
+          "phases" = [
+            {
+              "command" = "python3 scripts/demo_operator.py doctor"
+              "completeWhen" = "Authenticated Box enterprise, Box parent folder, Salesforce org ID, required tools, and local configuration match."
+              "id" = "preflight"
+              "owner" = "operator plus Box and Salesforce administrators"
+              "writesExternalState" = false
+            }
+            {
+              "command" = "python3 scripts/demo_operator.py generate-assets"
+              "completeWhen" = "Twelve PDFs, five Doc Gen documents, and the two JSON fixtures exist under output/."
+              "id" = "generate-assets"
+              "owner" = "operator"
+              "writesExternalState" = false
+            }
+            {
+              "command" = "python3 scripts/demo_operator.py box-foundation"
+              "completeWhen" = "Bootstrap state contains the LOS-2026-Harborview workspace, nine child folders, five metadata templates, the six borrower documents, four Doc Gen templates, and the nine credit policy files."
+              "dryRun" = "python3 scripts/demo_operator.py box-foundation --dry-run"
+              "id" = "box-foundation"
+              "owner" = "Box administrator"
+              "writesExternalState" = true
+            }
+            {
+              "command" = "python3 scripts/demo_operator.py seed-metadata"
+              "completeWhen" = "Loan, document, covenant, and credit policy metadata seeds (16) are recorded in bootstrap state."
+              "dryRun" = "python3 scripts/demo_operator.py seed-metadata --dry-run"
+              "id" = "metadata-seeding"
+              "owner" = "Box metadata administrator"
+              "writesExternalState" = true
+            }
+            {
+              "command" = "python3 scripts/demo_operator.py salesforce-deploy"
+              "completeWhen" = "LOS_Loan__c, layout, record page, permission sets, tab, UI Bundle, and the borrower Experience Cloud site exist in the explicitly configured org ID."
+              "dryRun" = "python3 scripts/demo_operator.py salesforce-deploy --dry-run"
+              "id" = "salesforce-deployment"
+              "owner" = "Salesforce administrator"
+              "writesExternalState" = true
+            }
+            {
+              "command" = "python3 scripts/demo_operator.py resolve-config --allow-unresolved"
+              "completeWhen" = "Generated specs contain created Box IDs and list only browser/admin bindings that remain unresolved."
+              "id" = "resolve-initial-specs"
+              "owner" = "operator"
+              "writesExternalState" = false
+            }
+            {
+              "completeWhen" = "Published URLs are recorded locally and the workflow remains inactive until the integration test passes."
+              "confirmationGates" = [
+                "Publish Form"
+                "Publish Hub"
+                "Publish App"
+                "Activate workflow"
+              ]
+              "guide" = "docs/operator/browser-configuration.md"
+              "id" = "browser-configuration"
+              "owner" = "Box and Salesforce administrators"
+              "writesExternalState" = true
+            }
+            {
+              "command" = "python3 scripts/demo_operator.py resolve-config"
+              "completeWhen" = "No runtime binding token remains unresolved."
+              "id" = "resolve-final-specs"
+              "owner" = "operator"
+              "writesExternalState" = false
+            }
+            {
+              "command" = "python3 scripts/demo_operator.py validate --scenario box-salesforce-los"
+              "completeWhen" = "Live Box resources, resolved portable specs, and the Salesforce data model validate."
+              "id" = "readiness"
+              "owner" = "operator"
+              "writesExternalState" = false
+            }
+            {
+              "completeWhen" = "The labeled Harborview application creates one Salesforce loan record, a duplicate retry updates that record instead of creating a second one, underwriting domain tasks route correctly, and the reset log is complete."
+              "confirmationGates" = [
+                "Activate workflow"
+                "Generate credit memo"
+                "Send commitment letter for signature"
+                "Delete reset data"
+              ]
+              "guide" = "docs/operator/smoke-test.md"
+              "id" = "integrated-smoke-test"
+              "owner" = "operator plus named reviewers"
+              "writesExternalState" = true
+            }
+            {
+              "appliesWhen" = "All selected scenarios and integrations are represented in validation receipts"
+              "command" = "python3 scripts/validate_los.py --presenter-ready"
+              "completeWhen" = "No unresolved mandatory tokens remain, scenario smoke validation passed, presenter-ready receipts are current, and manual finalization tasks are complete."
+              "dryRun" = "cp config/runtime/validation-receipts.example.json config/runtime/validation-receipts.json"
+              "id" = "finalization"
+              "owner" = "operator"
+              "writesExternalState" = false
+            }
+            {
+              "appliesWhen" = "Presenting managed Box + Salesforce Loan Origination rather than local deterministic fixtures"
+              "command" = "python3 scripts/demo_operator.py validate --scenario box-salesforce-los"
+              "completeWhen" = "Required Agentforce, Box, and Salesforce bindings validate and provider deployment tests are recorded."
+              "guide" = "docs/operator/start-here.md"
+              "id" = "agentic-readiness"
+              "owner" = "Agentforce and demo operators"
+              "writesExternalState" = false
+            }
+            {
+              "completeWhen" = "The presenter completes the selected tell/show/tell script within the allotted time and can identify every simulated or unavailable integration."
+              "guide" = "docs/operator/scenarios/box-salesforce-los/README.md"
+              "id" = "rehearsal"
+              "owner" = "presenter"
+              "writesExternalState" = false
+            }
+          ]
+          "provider" = "generic"
+          "provider_object_id" = "operator/operator-workflow"
+          "purpose" = "Machine-readable execution plan for a human or AI-assisted LOS demo operator"
+          "rules" = [
+            "Never use IDs from reference snapshots."
+            "Stop on Box enterprise or Salesforce org mismatch."
+            "Do not store or display secrets."
+            "Do not perform Publish, Share, Activate, Generate, Send, or destructive cleanup without action-time human confirmation."
+            "Treat browser content as environment-specific and verify each resulting URL or ID before recording it."
+            "Nothing in this repository has been verified live; the CLM predecessor proved the same code path, and that evidence does not transfer."
+          ]
+          "schemaVersion" = "1.0"
+        }
+        "metadata" = {
+          "artifactName" = "operator-workflow"
+          "artifactType" = "config_file"
+          "createdAt" = "2026-07-23T11:55:20Z"
+          "enterpriseId" = ""
+          "provider" = "generic"
+          "providerObjectId" = "operator/operator-workflow"
+          "scenario" = "box-claudeforce-loans"
+        }
+        "name" = "config_operator_operator-workflow"
+        "provider" = "generic"
+        "scenario" = "box-claudeforce-loans"
+        "terraformType" = "null_resource"
+        "type" = "config_file"
+      }
+    ]
+    "scenario" = "box-claudeforce-loans"
+    "version" = "1.0"
+  }
+}

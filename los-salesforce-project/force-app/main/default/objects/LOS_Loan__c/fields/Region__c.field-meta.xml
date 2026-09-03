@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Region__c</fullName>
+    <description>The lending market the loan belongs to. Credit policies carry a market scope, so this decides which policies apply.</description>
+    <label>Market</label>
+    <required>false</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>Northeast</fullName><default>true</default><label>Northeast</label></value>
+            <value><fullName>Southeast</fullName><default>false</default><label>Southeast</label></value>
+            <value><fullName>Midwest</fullName><default>false</default><label>Midwest</label></value>
+            <value><fullName>West</fullName><default>false</default><label>West</label></value>
+            <value><fullName>National</fullName><default>false</default><label>National</label></value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

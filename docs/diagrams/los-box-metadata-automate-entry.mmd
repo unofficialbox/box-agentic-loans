@@ -1,0 +1,19 @@
+flowchart LR
+    Intake["Box Application Intake folder<br/>upload + losLoan metadata"] --> Automate["Box Automate<br/>Loan Application Intake Enrichment"]
+    Automate --> Extract["Extract + Box AI Agent<br/>candidate loan terms and risk"]
+    Extract --> Gate{"Human validates<br/>the enrichment?"}
+    Gate -- "Reject" --> Rework["Correct metadata or package"]
+    Rework --> Intake
+    Gate -- "Approve" --> Create["HTTPS Connector<br/>standard REST create (POST)"]
+    Create --> Context["Map recordId and<br/>loanId from the response"]
+    Context --> React["Open React LOS workspace"]
+
+    classDef box fill:#f8fafc,stroke:#1166e8,color:#071b33,stroke-width:2px
+    classDef decision fill:#fff1d6,stroke:#b16a00,color:#522f00,stroke-width:2px
+    classDef salesforce fill:#e9f1ff,stroke:#1166e8,color:#071b33,stroke-width:2px
+    classDef blocked fill:#ffe8eb,stroke:#c63846,color:#7c1621,stroke-width:2px
+
+    class Intake,Automate,Extract,Create box
+    class Gate decision
+    class Context,React salesforce
+    class Rework blocked

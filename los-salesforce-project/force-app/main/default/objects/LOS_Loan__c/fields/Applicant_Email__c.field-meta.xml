@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Applicant_Email__c</fullName>
+    <description>Email of the person who submitted the application on the borrower's behalf, usually the borrower's finance lead. Matched by the email intake handler to a Contact.</description>
+    <label>Applicant Email</label>
+    <required>false</required>
+    <type>Email</type>
+</CustomField>

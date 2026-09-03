@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Loan_Officer__c</fullName>
+    <description>The commercial loan officer working the deal.</description>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <label>Loan Officer</label>
+    <referenceTo>User</referenceTo>
+    <relationshipLabel>Assigned Loans</relationshipLabel>
+    <relationshipName>Owned_LOS_Loans</relationshipName>
+    <required>false</required>
+    <type>Lookup</type>
+</CustomField>

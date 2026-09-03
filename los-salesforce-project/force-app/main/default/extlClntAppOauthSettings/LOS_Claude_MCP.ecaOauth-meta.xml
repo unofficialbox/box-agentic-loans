@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtlClntAppOauthSettings xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!--
+      The metadata spelling is MCP and RefreshToken; the Setup UI shows the same two as
+      mcp_api and refresh_token. At GA these replaced the beta's api / sfap_api /
+      einstein_gpt_api set, so a longer list here is a sign of following stale guidance.
+    -->
+    <commaSeparatedOauthScopes>MCP, RefreshToken</commaSeparatedOauthScopes>
+    <externalClientApplication>LOS_Claude_MCP</externalClientApplication>
+    <label>LOS Claude MCP Scopes</label>
+</ExtlClntAppOauthSettings>

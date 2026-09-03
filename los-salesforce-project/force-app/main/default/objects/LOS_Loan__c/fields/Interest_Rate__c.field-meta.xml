@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Interest_Rate__c</fullName>
+    <description>Annual interest rate as a percentage (6.85 means 6.85%). Pricing policy LOS-RATE-001 sets the floor; anything below it is a Pricing Committee decision.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Annual rate as a percentage, for example 6.85.</inlineHelpText>
+    <label>Interest Rate</label>
+    <precision>5</precision>
+    <required>false</required>
+    <scale>3</scale>
+    <trackTrending>false</trackTrending>
+    <type>Percent</type>
+</CustomField>

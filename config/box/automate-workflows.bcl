@@ -1,0 +1,410 @@
+# Box Dispatch BCL config artifact. BCL is the only supported import format.
+locals {
+  "bcl" = {
+    "context" = "loans"
+    "generatedAt" = "2026-07-23T11:55:20Z"
+    "metadata" = {
+    }
+    "provider" = "generic"
+    "resources" = [
+      {
+        "config" = {
+          "artifact_name" = "automate-workflows"
+          "artifact_type" = "config"
+          "bindingModel" = "Resolve with python3 scripts/demo_operator.py resolve-config"
+          "created_at" = "2026-07-23T11:55:20Z"
+          "designPrinciples" = [
+            "Use resolved Box content IDs rather than display names in workflow bindings."
+            "Place a human validation or approval task after every generative or extractive AI result."
+            "Send only allowlisted structured fields through HTTPS connectors; never send loan document bytes or secrets."
+            "Keep workflows inactive until trigger, permissions, OAuth, idempotency, and rollback tests pass."
+          ]
+          "enterprise_id" = ""
+          "provider" = "generic"
+          "provider_object_id" = "box/automate-workflows"
+          "schemaVersion" = "2.0"
+          "workflows" = [
+            {
+              "description" = "Trigger on applied LOS loan metadata, run the LOS intake agent, route human validation, emit an approved integration event, then generate the credit memo and request signature on the commitment letter."
+              "initialStatus" = "inactive"
+              "key" = "loan-application-intake-enrichment"
+              "name" = "LOS - Loan Application Intake Enrichment"
+              "openIssues" = [
+                "This loans variant has NOT been run against a live Box Automate workflow at all. The CLM predecessor proved the form-triggered POST end to end and then redesigned it around a metadata trigger; this workflow inherits that metadata-triggered design and every step must be built and re-tested before activation."
+                "The metadata trigger assumes the losLoan structured fields are already applied to the file. If the demo should derive them from the application package, add an Extract Agent plus Apply Metadata pre-step so the connector reads populated metadata rather than blank fields."
+                "Duplicate safety: the POST is not idempotent (see the connector step's duplicateStrategy). Switch to the external-ID PATCH upsert plus lookup for dedup if re-triggers are expected."
+                "Risk_Rating__c is written only after the human validates it (see the approval task's riskRatingGate); the reviewer applies the validated value to losLoan metadata so the connector never binds raw Box Agent text into the picklist."
+                "Box substitutes the literal string 'Variable unavailable' for an unresolved variable, not an empty string. The CLM predecessor's live run failed because Currency and Number fields received that text. Only bind values whose losLoan metadata field is guaranteed populated before the trigger fires."
+                "The connector failure surfaced only as errorCode UNKNOWN_ERROR with an empty payload in the predecessor. Box does not expose the Salesforce error body, so connector faults have to be diagnosed from the request payload in the run events."
+                "The connector must target the Salesforce org that actually holds LOS_Loan__c. Two similarly named connectors in one environment pointed at different orgs in the predecessor, and the wrong one failed with an opaque UNKNOWN_ERROR even when the payload was valid."
+                "The created record id is captured (outputVariables.recordId = $.id) but no Salesforce lookup step exists; add one only if a later step needs to re-read the record (e.g. when switching to the upsert path)."
+                "The Box Agent instructions must bind the credit-policy-library folder ID rather than embed it as literal text, which is not portable across environments."
+                "The Generate Document + Request Signature tail (orders 8-10) has NOT been built or verified in a live Automate workflow. docgenCreditMemo must resolve to the uploaded template file, and the Request Signature recipient (borrower signer) is bound at provisioning time - no live signer email is stored here."
+              ]
+              "optionalMetadataFields" = [
+                "termMonths"
+                "region"
+                "collateralType"
+                "owner"
+              ]
+              "placeholderConvention" = {
+                "${binding}" = "Resolved by python3 scripts/demo_operator.py resolve-config from runtime state."
+                "<name>" = "Resolved by hand at provisioning time. The operator tooling has no runtime binding for these yet, so they are deliberately not written as ${} bindings."
+                "note" = "Box Automate's own variable tokens also use ${}. To avoid collision with the resolver, Automate expressions are stored as a template plus a token map rather than as interpolated strings."
+              }
+              "required" = true
+              "requiredMetadataFields" = [
+                "loanId"
+                "loanAmount"
+                "targetClosingDate"
+              ]
+              "requiredMetadataFieldsNote" = "The demo intentionally asks for only three values: Loan ID, Amount, and Target Closing Date. Loan ID becomes both the integration key and the Salesforce Name (Loan Application - <loanId>); the other two populate the Salesforce record form's only required custom fields. All remaining business metadata is optional and omitted from the POST when unresolved."
+              "steps" = [
+                {
+                  "destinationFolderId" = "${box.folders.intake}"
+                  "eventSubType" = "copy"
+                  "name" = "Copy the LOS workspace template into the intake folder"
+                  "order" = 1
+                  "outputs" = [
+                    "folderId"
+                  ]
+                  "sourceFolderId" = "<workspaceTemplateFolderId>"
+                  "type" = "Folder Action"
+                }
+                {
+                  "eventSubType" = "rename"
+                  "folderId" = {
+                    "type" = "variable"
+                    "value" = "static.outcome_<step1>.folderId"
+                  }
+                  "name" = "Name the workspace from the workflow year and Loan ID"
+                  "newName" = {
+                    "note" = "Stored in the editor as one interpolated string. Each token appears wrapped in a dollar sign and braces."
+                    "template" = "LOS-{year}-{loanId}"
+                    "tokens" = {
+                      "loanId" = "static.trigger.metadata.loanId"
+                      "year" = "static.workflow.createdAt__YYYY__"
+                    }
+                  }
+                  "order" = 2
+                  "type" = "Folder Action"
+                }
+                {
+                  "agentId" = "default_box_agent"
+                  "agentName" = "Box Agent"
+                  "agentRef" = "config/box/ai-agent-specs.bcl#loan-risk-triage"
+                  "contextItems" = [
+                    {
+                      "type" = "variable"
+                      "value" = "static.trigger.fileId"
+                    }
+                  ]
+                  "eventSubType" = "default"
+                  "expectedOutput" = [
+                    "riskRating"
+                    "materialDeviations"
+                    "requiredReviewers"
+                    "evidenceItemIds"
+                  ]
+                  "instructions" = {
+                    "note" = "The policy-library folder ID must be bound, not typed as a literal; a literal is the portability defect recorded in openIssues."
+                    "template" = "Review Box file ID {fileIds} against the credit policy library in folder ID {policyLibraryFolderId}. Produce a concise credit brief covering risk rating, policy departures (including any found in reporting sections and schedules), responsible reviewers, and the recommended standard or approved exception. Treat Extract output as draft and require human validation."
+                    "tokens" = {
+                      "fileIds" = "static.trigger.fileId"
+                      "policyLibraryFolderId" = "${box.folders.policies}"
+                    }
+                  }
+                  "name" = "LOS Loan Risk Triage"
+                  "order" = 3
+                  "outputFormat" = "textValue"
+                  "type" = "Box Agent"
+                }
+                {
+                  "assignees" = [
+                    "${box.reviewers.primary}"
+                  ]
+                  "dueDate" = null
+                  "eventSubType" = "approval"
+                  "fileId" = {
+                    "type" = "variable"
+                    "value" = "static.trigger.fileId"
+                  }
+                  "inviteAssigneesAsViewers" = true
+                  "managers" = [
+                    {
+                      "type" = "variable"
+                      "value" = "static.workflow.ownerId"
+                    }
+                  ]
+                  "message" = "Validate Extract values and the Box Agent credit brief. Confirm the policy position, risk rating, and reviewer routing before any downstream connector runs."
+                  "name" = "Validate extracted loan terms and credit brief"
+                  "order" = 4
+                  "outcomes" = [
+                    "Approved"
+                    "Rejected"
+                  ]
+                  "requireOnlyOneAssigneeToComplete" = false
+                  "required" = true
+                  "riskRatingGate" = "The reviewer sets or confirms the risk rating here. Apply the validated value to the losLoan metadata so the connector binds Risk_Rating__c from validated metadata, never from raw Box Agent text."
+                  "type" = "Approval Task"
+                }
+                {
+                  "branches" = [
+                    {
+                      "condition" = {
+                        "leftOperand" = "static.outcome_<step4>.taskStatus"
+                        "logicalConnector" = "EQUALS"
+                        "rightOperand" = "APPROVED"
+                        "type" = "task"
+                      }
+                      "label" = "Approved"
+                      "next" = [
+                        "salesforceLoanCreate"
+                      ]
+                    }
+                    {
+                      "behavior" = "Returns the application for correction; makes no Salesforce call."
+                      "condition" = {
+                        "leftOperand" = "static.outcome_<step4>.taskStatus"
+                        "logicalConnector" = "EQUALS"
+                        "rightOperand" = "REJECTED"
+                        "type" = "task"
+                      }
+                      "label" = "Rejected"
+                      "next" = [
+                        "returnForCorrection"
+                      ]
+                    }
+                  ]
+                  "gatewaySubtype" = "exclusive"
+                  "gatewayType" = "split"
+                  "order" = 5
+                  "type" = "Conditional Split"
+                }
+                {
+                  "authType" = "OAUTH2_CLIENT_CREDENTIALS_GRANT"
+                  "bodyBinding" = "metadata-trigger variables, see config/box/https-connectors.bcl#salesforceLoanCreate.bodyImplementation"
+                  "branch" = "Approved"
+                  "connectorId" = "<salesforceConnectorId>"
+                  "connectorName" = "the Salesforce connector whose base URL is the org holding LOS_Loan__c"
+                  "connectorRef" = "config/box/https-connectors.bcl#salesforce-los-rest"
+                  "credentialId" = "<salesforceCredentialId>"
+                  "duplicateStrategy" = "This POST is not idempotent: a re-trigger on the same Loan_ID__c creates a second record. For dedup, switch to the external-ID PATCH upsert (salesforceLoanUpsert) plus the lookup in config/box/https-connectors.bcl, or gate on an existing-record check before calling."
+                  "endpoint" = "services/data/v67.0/sobjects/LOS_Loan__c"
+                  "endpointNote" = "Stored without a leading slash. The connector switch normalised this to match the reference outcome."
+                  "eventSubType" = "call"
+                  "liveState" = "Not run live in this repository. The CLM predecessor proved the same POST shape end to end from a Form trigger; this design re-sources every dynamic value from static.trigger.metadata.<field> and must be verified against a live metadata-triggered graph before activation."
+                  "method" = "POST"
+                  "operation" = "salesforceLoanCreate"
+                  "order" = 6
+                  "outputVariables" = {
+                    "recordId" = {
+                      "jsonPath" = "$.id"
+                      "key" = "recordId"
+                      "note" = "Created LOS_Loan__c record id; retained for downstream steps or a lookup."
+                    }
+                  }
+                  "type" = "HTTPS Request"
+                }
+                {
+                  "assignees" = [
+                    "${box.reviewers.primary}"
+                  ]
+                  "branch" = "Rejected"
+                  "fileId" = {
+                    "type" = "variable"
+                    "value" = "static.trigger.fileId"
+                  }
+                  "key" = "returnForCorrection"
+                  "message" = "Correct the flagged terms or metadata, then re-apply the losLoan metadata to re-enter intake. No Salesforce record was created."
+                  "name" = "Return the application for correction"
+                  "order" = 7
+                  "type" = "Create Task"
+                }
+                {
+                  "branch" = "Approved"
+                  "name" = "Approve credit memo generation and signature send"
+                  "order" = 8
+                  "purpose" = "Human confirmation before generating the credit memo and sending the commitment letter for signature. Required by the guardrail: never create a Box Sign request until all required approvals are complete and the send is separately approved."
+                  "type" = "Human Confirmation"
+                }
+                {
+                  "branch" = "Approved"
+                  "destinationFolderId" = "${box.folders.creditApproval}"
+                  "name" = "Generate the credit memo"
+                  "order" = 9
+                  "templateFileId" = "${box.files.docgenCreditMemo}"
+                  "type" = "Generate Document"
+                }
+                {
+                  "branch" = "Approved"
+                  "gate" = "Never created before the approval task (order 4) is Approved and the Human Confirmation (order 8) is passed. Apex additionally refuses to prepare a Sign request unless the loan is Approved or Commitment."
+                  "message" = "Please review and sign the attached commitment letter."
+                  "name" = "Request signature on the commitment letter"
+                  "order" = 10
+                  "recipients" = [
+                    {
+                      "note" = "Add the borrower signer at provisioning time; do not store a live email here."
+                      "source" = "borrower Contact on the linked Account"
+                    }
+                  ]
+                  "signFile" = {
+                    "note" = "The commitment letter PDF produced by LosGenerateCommitmentLetter, or the Generate Document step (order 9) when the credit memo is the signed artifact."
+                    "type" = "priorStepOutput"
+                    "value" = "static.outcome_<step9>.fileId"
+                  }
+                  "subject" = "Signature requested: <borrower> commitment letter"
+                  "type" = "Request Signature"
+                }
+              ]
+              "testGate" = {
+                "approvedExecution" = "After the Salesforce record: a human confirmation gates Generate Document (credit memo into the credit approval folder) and Request Signature; signature is never requested before that confirmation"
+                "firstTrigger" = "Creates one Salesforce record and captures its recordId"
+                "rejectedValidation" = "Makes no Salesforce request; creates a return-for-correction task"
+                "repeatTrigger" = "Creates a second record (POST is not idempotent); restore the external-ID upsert if dedup is required"
+              }
+              "trigger" = {
+                "condition" = "losLoan metadata applied on a file with the Salesforce-required fields (loanId, loanAmount, targetClosingDate) populated"
+                "folderId" = "${box.folders.intake}"
+                "templateKey" = "losLoan"
+                "type" = "Metadata updated"
+              }
+              "variableSyntax" = {
+                "freeTextField" = "Interpolates the token wrapped in a dollar sign and braces."
+                "metadataField" = "static.trigger.metadata.<key>"
+                "note" = "Metadata-trigger tokens. A metadata trigger yields the triggering file as static.trigger.fileId and each template value as static.trigger.metadata.<key>. These bindings have not been verified against a live metadata-triggered graph in this repository."
+                "priorOutcomeProperty" = "static.outcome_<outcomeId>.<property>"
+                "structuredField" = "Stores {\"type\":\"variable\",\"value\":\"<token>\"}."
+                "triggerFileId" = "static.trigger.fileId"
+                "workflowCreatedYear" = "static.workflow.createdAt__YYYY__"
+                "workflowProperty" = "static.workflow.<property>"
+              }
+              "verification" = {
+                "everPublished" = false
+                "liveStatus" = "NOT BUILT"
+                "method" = "Designed from the CLM predecessor's proven form-triggered live draft, then converted to a losLoan metadata trigger and re-labelled for loan origination."
+                "note" = "The loans variant has not been run against a live Box Automate workflow at all. The CLM predecessor proved the same code path live; that evidence does not transfer. Trigger, file, and metadata bindings must be confirmed against a live metadata-triggered graph before activation. Environment-specific workflow, folder, connector, credential, and user IDs are bound at provisioning time and are deliberately not stored here."
+                "predecessor" = "CLM form-triggered live draft, proven end to end in the predecessor repository"
+              }
+            }
+            {
+              "initialStatus" = "inactive"
+              "key" = "underwriting-domain-review-routing"
+              "name" = "LOS - Underwriting Domain Review Routing"
+              "required" = false
+              "steps" = [
+                {
+                  "agentRef" = "config/box/ai-agent-specs.bcl#underwriting-difference-router"
+                  "order" = 1
+                  "type" = "Box Agent"
+                }
+                {
+                  "condition" = "Unclassified or confidence below 0.85 routes to Credit Administration triage"
+                  "order" = 2
+                  "type" = "Conditional Split"
+                }
+                {
+                  "operation" = "routeUnderwritingFindings"
+                  "order" = 3
+                  "status" = "requires custom Apex implementation"
+                  "type" = "HTTPS Request"
+                }
+                {
+                  "order" = 4
+                  "templateKey" = "losUnderwritingReview"
+                  "type" = "Apply Metadata"
+                }
+                {
+                  "assignee" = "${box.reviewers.primary}"
+                  "order" = 5
+                  "type" = "Create Task"
+                  "when" = "Needs Triage"
+                }
+              ]
+              "trigger" = {
+                "condition" = "versionStatus equals Internal and documentType equals Term Sheet"
+                "folderId" = "${box.folders.underwriting}"
+                "templateKey" = "losDocument"
+                "type" = "Metadata updated"
+              }
+            }
+            {
+              "initialStatus" = "inactive"
+              "key" = "credit-approval-packet-readiness"
+              "name" = "LOS - Credit Approval Packet Readiness"
+              "required" = false
+              "steps" = [
+                {
+                  "agentRef" = "config/box/ai-agent-specs.bcl#credit-approval-brief"
+                  "order" = 1
+                  "type" = "Box Agent"
+                }
+                {
+                  "order" = 2
+                  "purpose" = "Approve Doc Gen creation of the credit memo"
+                  "type" = "Human Confirmation"
+                }
+                {
+                  "destinationFolderId" = "${box.folders.creditApproval}"
+                  "order" = 3
+                  "templateFileId" = "${box.files.docgenCreditMemo}"
+                  "type" = "Generate Document"
+                }
+              ]
+              "trigger" = "All required human review tasks completed"
+            }
+            {
+              "initialStatus" = "inactive"
+              "key" = "executed-loan-covenants"
+              "name" = "LOS - Executed Loan Covenants"
+              "required" = false
+              "steps" = [
+                {
+                  "configurationRef" = "config/box/extract-field-prompts.bcl#executedCovenants"
+                  "order" = 1
+                  "type" = "Extract Agent"
+                }
+                {
+                  "agentRef" = "config/box/ai-agent-specs.bcl#covenant-review"
+                  "order" = 2
+                  "type" = "Box Agent"
+                }
+                {
+                  "assignee" = "${box.reviewers.primary}"
+                  "order" = 3
+                  "type" = "Approval Task"
+                }
+                {
+                  "destinationFolderId" = "${box.folders.covenants}"
+                  "order" = 4
+                  "templateKey" = "losCovenant"
+                  "type" = "Apply Metadata"
+                }
+              ]
+              "trigger" = {
+                "folderId" = "${box.folders.executed}"
+                "type" = "File uploaded"
+              }
+            }
+          ]
+        }
+        "metadata" = {
+          "artifactName" = "automate-workflows"
+          "artifactType" = "config_file"
+          "createdAt" = "2026-07-23T11:55:20Z"
+          "enterpriseId" = ""
+          "provider" = "generic"
+          "providerObjectId" = "box/automate-workflows"
+          "scenario" = "box-claudeforce-loans"
+        }
+        "name" = "config_box_automate-workflows"
+        "provider" = "generic"
+        "scenario" = "box-claudeforce-loans"
+        "terraformType" = "null_resource"
+        "type" = "config_file"
+      }
+    ]
+    "scenario" = "box-claudeforce-loans"
+    "version" = "1.0"
+  }
+}

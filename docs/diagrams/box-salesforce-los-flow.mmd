@@ -1,0 +1,19 @@
+flowchart LR
+    Event["Application package arrives<br/>Box intake or Salesforce record"] --> Folder["Governed loan folder<br/>metadata applied"]
+    Folder --> Internal["Internal reader<br/>MCP or Loan Copilot"]
+    Internal --> Actions["Governed Apex actions"]
+    Actions --> Evidence["Cited findings from Box<br/>files, versions, credit policy library"]
+    Actions --> Record["LOS record<br/>credit truth and approval state"]
+    Evidence --> Memo["Commitment letter<br/>Box Doc Gen"]
+    Record --> Gate{"Loan approved?"}
+    Memo --> Gate
+    Gate -- "No" --> Block["Signature refused<br/>state check in Apex"]
+    Gate -- "Yes" --> Prepare["Box Sign preparation<br/>a person presses send"]
+    Folder --> Borrower["Borrower workspace<br/>scoped folder, internal documents withheld"]
+
+    classDef agent fill:#eee9ff,stroke:#6b46c1,color:#24134f
+    classDef system fill:#e9f1ff,stroke:#1166e8,color:#071b33
+    classDef human fill:#fff1d6,stroke:#b16a00,color:#522f00
+    class Internal,Actions agent
+    class Event,Folder,Evidence,Record,Memo,Prepare,Borrower system
+    class Gate,Block human

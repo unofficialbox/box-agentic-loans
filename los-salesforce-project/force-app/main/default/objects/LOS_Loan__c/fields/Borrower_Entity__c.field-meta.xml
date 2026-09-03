@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Borrower_Entity__c</fullName>
+    <description>The legal entity that signs, where a borrower borrows through a subsidiary. Access still hangs off Borrower_Account__c: a sharing set matches a Contact to one Account and does not walk a hierarchy, so child Accounts would hide loans from their signers.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Borrowing entity, where the borrower borrows through a subsidiary or holding company. Leave empty when the parent borrows directly.</inlineHelpText>
+    <label>Borrowing Entity</label>
+    <length>120</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

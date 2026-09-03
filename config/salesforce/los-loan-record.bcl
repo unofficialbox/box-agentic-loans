@@ -1,0 +1,238 @@
+# Box Dispatch BCL config artifact. BCL is the only supported import format.
+locals {
+  "bcl" = {
+    "context" = "loans"
+    "generatedAt" = "2026-07-23T11:55:20Z"
+    "metadata" = {
+    }
+    "provider" = "generic"
+    "resources" = [
+      {
+        "config" = {
+          "artifact_name" = "los-loan-record"
+          "artifact_type" = "config"
+          "created_at" = "2026-07-23T11:55:20Z"
+          "enterprise_id" = ""
+          "fieldMappings" = [
+            {
+              "required" = false
+              "source" = "loanId"
+              "target" = "Loan_ID__c"
+              "validation" = "non-blank"
+            }
+            {
+              "required" = true
+              "source" = "loanId"
+              "target" = "Name"
+              "transform" = "Loan Application - <loanId>"
+            }
+            {
+              "required" = false
+              "source" = "applicantName"
+              "target" = "Applicant_Name__c"
+            }
+            {
+              "required" = false
+              "source" = "applicantEmail"
+              "target" = "Applicant_Email__c"
+            }
+            {
+              "required" = false
+              "source" = "borrower"
+              "target" = "Borrower__c"
+            }
+            {
+              "required" = false
+              "source" = "borrowerEntity"
+              "target" = "Borrower_Entity__c"
+            }
+            {
+              "required" = false
+              "source" = "loanType"
+              "target" = "Loan_Type__c"
+            }
+            {
+              "required" = true
+              "source" = "loanAmount"
+              "target" = "Loan_Amount__c"
+            }
+            {
+              "required" = false
+              "source" = "termMonths"
+              "target" = "Term_Months__c"
+            }
+            {
+              "humanValidated" = true
+              "required" = false
+              "source" = "interestRate"
+              "target" = "Interest_Rate__c"
+            }
+            {
+              "humanValidated" = true
+              "required" = false
+              "source" = "ltv"
+              "target" = "LTV__c"
+            }
+            {
+              "humanValidated" = true
+              "required" = false
+              "source" = "dscr"
+              "target" = "DSCR__c"
+            }
+            {
+              "humanValidated" = true
+              "required" = false
+              "source" = "collateralValue"
+              "target" = "Collateral_Value__c"
+            }
+            {
+              "humanValidated" = true
+              "required" = false
+              "source" = "maturityDate"
+              "target" = "Maturity_Date__c"
+            }
+            {
+              "required" = false
+              "source" = "region"
+              "target" = "Region__c"
+            }
+            {
+              "required" = false
+              "source" = "collateralType"
+              "target" = "Collateral_Type__c"
+            }
+            {
+              "required" = true
+              "source" = "targetClosingDate"
+              "target" = "Target_Closing_Date__c"
+            }
+            {
+              "required" = false
+              "source" = "owner"
+              "target" = "Loan_Officer_Name__c"
+            }
+            {
+              "required" = false
+              "source" = "resolvedLoanOfficerUserId"
+              "target" = "Loan_Officer__c"
+              "validation" = "existing active Salesforce User"
+            }
+            {
+              "humanValidated" = true
+              "required" = false
+              "source" = "riskRating"
+              "target" = "Risk_Rating__c"
+            }
+            {
+              "required" = false
+              "source" = "underwritingNotes"
+              "target" = "Underwriting_Notes__c"
+            }
+            {
+              "default" = "Box Automate"
+              "required" = false
+              "source" = "recordSource"
+              "target" = "Record_Source__c"
+            }
+          ]
+          "humanValidatedNote" = "The extracted numeric terms (interestRate, ltv, dscr, collateralValue, maturityDate) and riskRating reach the record only through LosApplyLoanTerms with confirmed = true, after a loan officer accepts or corrects each value. The intake connector never binds them."
+          "idempotency" = {
+            "externalId" = true
+            "field" = "Loan_ID__c"
+            "operation" = "upsert"
+            "rule" = "The Box workflow supplies loanId. Retries must return the existing record instead of creating a duplicate."
+            "unique" = true
+          }
+          "intakeIntegration" = {
+            "authentication" = "OAuth 2.0 through a Box Automate managed HTTPS connection"
+            "customApexRequired" = false
+            "operations" = [
+              {
+                "method" = "PATCH"
+                "name" = "salesforceLoanUpsert"
+                "pathTemplate" = "/services/data/{apiVersion}/sobjects/LOS_Loan__c/Loan_ID__c/{urlEncodedLoanId}"
+              }
+              {
+                "method" = "GET"
+                "name" = "salesforceLoanLookup"
+                "pathTemplate" = "/services/data/{apiVersion}/sobjects/LOS_Loan__c/Loan_ID__c/{urlEncodedLoanId}?fields=Id,Loan_ID__c"
+              }
+            ]
+            "responseMapping" = {
+              "loanId" = "Loan_ID__c"
+              "recordId" = "Id"
+            }
+            "status" = "specified-pending-org-configuration"
+            "type" = "Salesforce standard REST API"
+          }
+          "label" = "Loan"
+          "nameField" = {
+            "apiName" = "Name"
+            "type" = "Text"
+            "value" = "User-entered in Salesforce; Box intake uses Loan Application - <loanId>"
+          }
+          "objectApiName" = "LOS_Loan__c"
+          "ownership" = {
+            "businessOwnerField" = "Loan_Officer__c"
+            "defaultOwner" = "Authenticated integration user"
+            "externalSharingModel" = "Private"
+            "model" = "Standard OwnerId"
+            "sharingModel" = "Private"
+            "sharingSet" = "LOS_Borrower_Access maps Borrower_Account__c to the signed-in borrower's Contact.Account"
+            "unresolvedBusinessOwnerField" = "Loan_Officer_Name__c"
+          }
+          "pluralLabel" = "Loans"
+          "provider" = "generic"
+          "provider_object_id" = "salesforce/los-loan-record"
+          "schemaVersion" = "1.0"
+          "security" = {
+            "borrowerProjection" = [
+              "recordId"
+              "loanId"
+              "name"
+              "borrower"
+              "borrowerEntity"
+              "loanType"
+              "status"
+              "loanAmount"
+              "termMonths"
+              "maturityDate"
+              "boxFolderId"
+            ]
+            "browserWritableFields" = []
+            "documentsRemainIn" = "Box"
+            "integrationWritableFields" = "Only targets in fieldMappings"
+            "prohibited" = [
+              "loan document bytes"
+              "Box access tokens"
+              "connector secrets"
+              "unreviewed AI output"
+            ]
+            "withheldFromBorrower" = [
+              "Risk_Rating__c"
+              "LTV__c"
+              "DSCR__c"
+              "Underwriting_Notes__c"
+            ]
+          }
+        }
+        "metadata" = {
+          "artifactName" = "los-loan-record"
+          "artifactType" = "config_file"
+          "createdAt" = "2026-07-23T11:55:20Z"
+          "enterpriseId" = ""
+          "provider" = "generic"
+          "providerObjectId" = "salesforce/los-loan-record"
+          "scenario" = "box-claudeforce-loans"
+        }
+        "name" = "config_salesforce_los-loan-record"
+        "provider" = "generic"
+        "scenario" = "box-claudeforce-loans"
+        "terraformType" = "null_resource"
+        "type" = "config_file"
+      }
+    ]
+    "scenario" = "box-claudeforce-loans"
+    "version" = "1.0"
+  }
+}

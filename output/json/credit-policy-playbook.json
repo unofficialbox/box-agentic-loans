@@ -1,0 +1,30 @@
+{
+  "loanToValue": {
+    "standardPolicyId": "LOS-LTV-001",
+    "standard": "Maximum 75% loan-to-value on owner-occupied commercial real estate, measured against a bank-ordered appraisal; furniture, fixtures and equipment excluded.",
+    "exceptionPolicyId": "LOS-LTV-002",
+    "exception": "Up to 80% with a 12-month interest reserve and an additional guaranty; Chief Credit Officer approval.",
+    "escalateWhen": "Loan-to-value exceeds 80%, the collateral value relies on personal property or a borrower-supplied valuation, or the collateral definition is widened outside the covenant section."
+  },
+  "debtServiceCoverage": {
+    "standardPolicyId": "LOS-DSCR-001",
+    "standard": "Minimum 1.25x on trailing-twelve-month net operating income, tested quarterly.",
+    "exceptionPolicyId": "LOS-DSCR-002",
+    "exception": "Minimum 1.15x with a cash reserve of six months' debt service, tested quarterly; Chief Credit Officer approval.",
+    "escalateWhen": "Coverage falls below 1.15x, the test frequency is reduced, or the threshold is restated anywhere other than the financial covenant section."
+  },
+  "pricing": {
+    "standardPolicyId": "LOS-RATE-001",
+    "standard": "Floor of SOFR plus 2.75%, never below 6.50%.",
+    "exceptionPolicyId": "LOS-RATE-002",
+    "exception": "Relationship pricing down to 6.00% with $500,000 or more in operating deposits; Pricing Committee approval.",
+    "escalateWhen": "A rate below the floor is requested without qualifying deposits."
+  },
+  "guaranty": {
+    "standardPolicyId": "LOS-GUAR-001",
+    "standard": "Unlimited personal guaranty from every owner of 20% or more.",
+    "exceptionPolicyId": "LOS-GUAR-002",
+    "exception": "Limited guaranty with 25% cash collateral; Loan Documentation approval.",
+    "escalateWhen": "A limited or absent guaranty is proposed without cash collateral, or any 20%-plus owner is omitted."
+  }
+}

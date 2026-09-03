@@ -1,0 +1,11 @@
+# Build inputs live inside the UI bundle directory but are not deployable metadata.
+# Without these entries the UIBundle component packages the whole bundle folder
+# (node_modules alone is ~357 MB) and the deploy fails the 50 MB request limit.
+**/uiBundles/**/node_modules/**
+**/uiBundles/**/src/**
+**/uiBundles/**/e2e/**
+**/uiBundles/**/playwright-report/**
+**/uiBundles/**/test-results/**
+**/uiBundles/**/coverage/**
+**/jsconfig.json
+**/.eslintrc.json

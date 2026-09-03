@@ -1,0 +1,119 @@
+# Box Dispatch BCL config artifact. BCL is the only supported import format.
+locals {
+  "bcl" = {
+    "context" = "loans"
+    "generatedAt" = "2026-07-23T11:55:20Z"
+    "metadata" = {
+    }
+    "provider" = "generic"
+    "resources" = [
+      {
+        "config" = {
+          "artifact_name" = "docgen-template-data"
+          "artifact_type" = "config"
+          "closingSummary" = {
+            "closing" = {
+              "approvalNote" = "Credit Committee approval and the funded interest reserve are required before the closing package is released."
+              "exceptionSummary" = "Loan-to-value closes at 80% under LOS-LTV-002 with a 12-month interest reserve and an additional guaranty; debt service coverage closes at 1.15x under LOS-DSCR-002 with a six-month cash reserve."
+            }
+            "loan" = {
+              "borrower" = "Harborview Logistics"
+              "borrowerEntity" = "Harborview Logistics Holdings LLC"
+              "id" = "LN-2026-0042"
+            }
+            "terms" = {
+              "amortizationMonths" = 300
+              "closingDate" = "2026-11-30"
+              "collateral" = "First-priority mortgage on 1200 Harbor Way; appraised value $5,650,000; personal property excluded"
+              "covenants" = "LTV not to exceed 80%; DSCR not less than 1.15x tested quarterly on trailing-twelve-month NOI"
+              "currency" = "$"
+              "guaranty" = "Unlimited personal guaranties from Jordan Pike and Renata Voss; additional guaranty from Harborview Logistics"
+              "interestRate" = "6.85% fixed"
+              "loanAmount" = 4520000
+              "maturityDate" = "2036-11-30"
+              "termMonths" = 120
+            }
+          }
+          "created_at" = "2026-07-23T11:55:20Z"
+          "creditMemo" = {
+            "approval" = {
+              "approver" = "Chief Credit Officer"
+              "decision" = "Conditional approval"
+              "decisionDate" = "2026-09-15"
+            }
+            "loan" = {
+              "amount" = 4800000
+              "collateralType" = "Real Estate"
+              "currency" = "$"
+              "id" = "LN-2026-0042"
+              "loanOfficer" = "Alex Bennett"
+              "borrower" = "Harborview Logistics"
+              "region" = "Northeast"
+              "targetClosingDate" = "2026-11-30"
+              "type" = "Commercial Real Estate"
+            }
+            "memo" = {
+              "executiveSummary" = "Approve after resolving the loan-to-value and debt service coverage exceptions documented in the underwriting review; the borrower's term sheet markup regresses covenants it accepted in 2023 and 2025."
+              "recommendation" = "Approve with conditions: restore the 70% LTV and 1.30x DSCR positions from Schedule 1 of the prior agreements, or price the LOS-LTV-002 and LOS-DSCR-002 exceptions with their reserves."
+              "riskRating" = "High"
+            }
+            "reviews" = {
+              "collateralStatus" = "Pending"
+              "collateralSummary" = "Appraisal at $5,650,000 supports 85% LTV on $4,800,000; FF&E must stay out of the collateral value."
+              "complianceStatus" = "Pending"
+              "complianceSummary" = "Confirm flood coverage for Zone AE and the Phase I ESA close-out."
+              "creditStatus" = "Pending"
+              "creditSummary" = "Resolve the 9.3 reporting change and the Schedule A collateral widening before commitment."
+            }
+          }
+          "enterprise_id" = ""
+          "maturityNotice" = {
+            "loan" = {
+              "id" = "LN-2023-0311"
+              "name" = "Revolving Line of Credit Agreement (2023)"
+            }
+            "maturity" = {
+              "maturityDate" = "2026-09-30"
+              "noticeDeadline" = "2026-08-31"
+              "noticeText" = "Crestline Bank provides notice that the revolving line of credit identified above matures on the date shown. All outstanding principal and accrued interest is due at maturity unless the facility is renewed."
+              "requestedAction" = "Please confirm whether Harborview Logistics intends to renew, refinance, or repay the facility before the response date."
+            }
+            "notice" = {
+              "date" = "2026-08-01"
+            }
+            "recipient" = {
+              "company" = "Harborview Logistics"
+              "email" = "jordan.pike@harborviewlogistics.example"
+              "name" = "Jordan Pike"
+              "title" = "Chief Financial Officer"
+            }
+            "sender" = {
+              "company" = "Crestline Bank"
+              "email" = "lending@crestlinebank.example"
+              "name" = "Alex Bennett"
+              "title" = "Commercial Loan Officer"
+            }
+          }
+          "provider" = "generic"
+          "provider_object_id" = "box/docgen-template-data"
+        }
+        "metadata" = {
+          "artifactName" = "docgen-template-data"
+          "artifactType" = "config_file"
+          "createdAt" = "2026-07-23T11:55:20Z"
+          "enterpriseId" = ""
+          "provider" = "generic"
+          "providerObjectId" = "box/docgen-template-data"
+          "scenario" = "box-claudeforce-loans"
+        }
+        "name" = "config_box_docgen-template-data"
+        "provider" = "generic"
+        "scenario" = "box-claudeforce-loans"
+        "terraformType" = "null_resource"
+        "type" = "config_file"
+      }
+    ]
+    "scenario" = "box-claudeforce-loans"
+    "version" = "1.0"
+  }
+}

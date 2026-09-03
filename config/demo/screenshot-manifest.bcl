@@ -1,0 +1,43 @@
+# Box Dispatch BCL config artifact. BCL is the only supported import format.
+locals {
+  "bcl" = {
+    "context" = "loans"
+    "generatedAt" = "2026-07-23T11:55:20Z"
+    "metadata" = {
+    }
+    "provider" = "generic"
+    "resources" = [
+      {
+        "config" = {
+          "artifact_name" = "screenshot-manifest"
+          "artifact_type" = "config"
+          "captureStatus" = "No loan-demo screens have been captured yet (MT-072). The inventory is deliberately empty: the predecessor's CLM screenshots were removed rather than relabelled, because a picture of a different demo is not evidence of this one. Presenter builders render a 'Screen capture pending' placeholder until real captures land under output/screenshots/box-salesforce-los/ and output/screenshots/box-automate-loan-orchestration/ and are listed here."
+          "created_at" = "2026-07-23T11:55:20Z"
+          "cropRule" = "Capture the real page viewport only; exclude browser tabs, address bars, documentation pages, and unrelated desktop content."
+          "enterprise_id" = ""
+          "freshnessDays" = 90
+          "manifestVersion" = "1.0.0"
+          "provider" = "generic"
+          "provider_object_id" = "demo/screenshot-manifest"
+          "screenshots" = []
+        }
+        "metadata" = {
+          "artifactName" = "screenshot-manifest"
+          "artifactType" = "config_file"
+          "createdAt" = "2026-07-23T11:55:20Z"
+          "enterpriseId" = ""
+          "provider" = "generic"
+          "providerObjectId" = "demo/screenshot-manifest"
+          "scenario" = "box-claudeforce-loans"
+        }
+        "name" = "config_demo_screenshot-manifest"
+        "provider" = "generic"
+        "scenario" = "box-claudeforce-loans"
+        "terraformType" = "null_resource"
+        "type" = "config_file"
+      }
+    ]
+    "scenario" = "box-claudeforce-loans"
+    "version" = "1.0"
+  }
+}

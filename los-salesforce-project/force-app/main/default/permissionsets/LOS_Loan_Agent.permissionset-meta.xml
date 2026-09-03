@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>What the Loan Copilot agent user needs: execute the four agent classes, read the loan and its Box folder association, and edit only the allow-listed term fields LosApplyLoanTerms writes after a human accepts them.</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>LOS Loan Agent</label>
+    <classAccesses>
+        <apexClass>LosBoxAskDocument</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>LosLoanPackage</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>LosExtractLoanTerms</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>LosApplyLoanTerms</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>LOS_Loan__c.Box_Workspace_Folder_ID__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>LOS_Loan__c.Loan_ID__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>LOS_Loan__c.Borrower__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>LOS_Loan__c.Risk_Rating__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>LOS_Loan__c.Status__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <!--
+      The allow-listed write fields. LosExtractLoanTerms reads them to say where the
+      document and the record disagree; LosApplyLoanTerms writes them, and nothing else,
+      once a person has accepted the values. Every other field stays read only or unseen.
+    -->
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>LOS_Loan__c.Loan_Amount__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>LOS_Loan__c.Interest_Rate__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>LOS_Loan__c.Term_Months__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>LOS_Loan__c.Collateral_Value__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>LOS_Loan__c.LTV__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>LOS_Loan__c.DSCR__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>LOS_Loan__c.Maturity_Date__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>box__FRUP__c.box__Folder_ID__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>box__FRUP__c.box__Record_ID__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <objectPermissions>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>true</allowEdit>
+        <allowRead>true</allowRead>
+        <!--
+          Modify All on this one object, for this one user, and it is the price of the one
+          governed write. The agent owns no loans and is shared none, and LOS_Loan__c is
+          Private/Private, so a with-sharing update from LosApplyLoanTerms fails with
+          INSUFFICIENT_ACCESS_OR_READONLY on every record. The write itself is bounded by
+          the class: seven allow-listed fields, a confirmed flag a human must set, and a
+          refusal once the loan is Closed or Servicing. Create and delete stay off.
+        -->
+        <modifyAllRecords>true</modifyAllRecords>
+        <object>LOS_Loan__c</object>
+        <!--
+          View All for the read side. Without it a record-scoped read returns nothing and
+          the conversation reports "I could not find that loan", which reads as a bad
+          reference rather than as a permission boundary. Answering about loans it is
+          asked about is the agent's whole purpose.
+        -->
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>box__FRUP__c</object>
+        <!--
+          The Box for Salesforce record-to-folder association. Without read here the agent
+          user cannot even name the object: Apex raises "sObject type box__FRUP__c is not
+          supported", the action fails, and the conversation reports a system error.
+        -->
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>UserExternalCredential</object>
+        <viewAllRecords>false</viewAllRecords>
+    </objectPermissions>
+    <externalCredentialPrincipalAccesses>
+        <enabled>true</enabled>
+        <externalCredentialPrincipal>LOS_Box-LOS_Box_Principal</externalCredentialPrincipal>
+    </externalCredentialPrincipalAccesses>
+</PermissionSet>

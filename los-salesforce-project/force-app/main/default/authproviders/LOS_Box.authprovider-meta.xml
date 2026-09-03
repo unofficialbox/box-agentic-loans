@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AuthProvider xmlns="http://soap.sforce.com/2006/04/metadata">
+    <authorizeUrl>https://account.box.com/api/oauth2/authorize</authorizeUrl>
+    <consumerKey>set-in-setup</consumerKey>
+    <consumerSecret>set-in-setup</consumerSecret>
+    <defaultScopes>root_readonly</defaultScopes>
+    <friendlyName>LOS Box</friendlyName>
+    <includeOrgIdInIdentifier>false</includeOrgIdInIdentifier>
+    <providerType>OpenIdConnect</providerType>
+    <sendAccessTokenInHeader>true</sendAccessTokenInHeader>
+    <sendClientCredentialsInHeader>false</sendClientCredentialsInHeader>
+    <sendSecretInApis>true</sendSecretInApis>
+    <tokenUrl>https://api.box.com/oauth2/token</tokenUrl>
+    <userInfoUrl>https://api.box.com/2.0/users/me</userInfoUrl>
+</AuthProvider>

@@ -1,0 +1,201 @@
+# Box Dispatch BCL config artifact. BCL is the only supported import format.
+# Descriptive spec for the LOS Salesforce sample records. The executable source
+# of truth is ../scripts/seed-los-salesforce-sample-data.apex; this file mirrors
+# those values for packaging and is not read at seed time.
+locals {
+  "bcl" = {
+    "context" = "loans"
+    "generatedAt" = "2026-09-02T18:00:00Z"
+    "metadata" = {
+    }
+    "provider" = "generic"
+    "resources" = [
+      {
+        "config" = {
+          "accounts" = [
+            {
+              "industry" = "Transportation"
+              "name" = "Harborview Logistics"
+              "phone" = "(617) 555-0101"
+              "website" = "https://www.harborviewlogistics.example"
+            }
+            {
+              "industry" = "Healthcare"
+              "name" = "Pinecrest Dental Group"
+              "phone" = "(704) 555-0102"
+              "website" = "https://www.pinecrestdental.example"
+            }
+          ]
+          "artifact_name" = "los-sample-records"
+          "artifact_type" = "config"
+          "contacts" = [
+            {
+              "account" = "Harborview Logistics"
+              "email" = "jordan.pike@harborviewlogistics.example"
+              "firstName" = "Jordan"
+              "lastName" = "Pike"
+              "title" = "Chief Financial Officer"
+            }
+            {
+              "account" = "Pinecrest Dental Group"
+              "email" = "sarah.kim@pinecrestdental.example"
+              "firstName" = "Sarah"
+              "lastName" = "Kim"
+            }
+          ]
+          "loans" = [
+            {
+              "applicantEmail" = "jordan.pike@harborviewlogistics.example"
+              "applicantName" = "Jordan Pike"
+              "borrower" = "Harborview Logistics"
+              "borrowerAccount" = "Harborview Logistics"
+              "collateralType" = "Receivables"
+              "collateralValue" = 2150000
+              "dscr" = 1.34
+              "interestRate" = 7.25
+              "loanAmount" = 1500000
+              "loanFile" = "harborview-loan-agreement-2023-executed.pdf"
+              "loanId" = "LN-2023-0311"
+              "loanOfficer" = "Alex Bennett"
+              "loanType" = "Line of Credit"
+              "ltv" = 70
+              "market" = "Northeast"
+              "maturityDate" = "2026-09-30"
+              "name" = "Harborview Logistics Revolving Line of Credit 2023"
+              "opportunity" = "Harborview Working Capital Line 2023"
+              "recordSource" = "Manual"
+              "riskRating" = "Low"
+              "status" = "Closed"
+              "targetClosingDate" = "2023-09-15"
+              "termMonths" = 36
+              "underwritingNotes" = "Executed prior-year line of credit; retained for demo loan history. Schedule 1: LTV 70% maximum, DSCR 1.30x tested quarterly."
+            }
+            {
+              "applicantEmail" = "jordan.pike@harborviewlogistics.example"
+              "applicantName" = "Jordan Pike"
+              "borrower" = "Harborview Logistics"
+              "borrowerAccount" = "Harborview Logistics"
+              "collateralType" = "Equipment"
+              "collateralValue" = 3075000
+              "dscr" = 1.31
+              "interestRate" = 6.95
+              "loanAmount" = 2150000
+              "loanFile" = "harborview-loan-agreement-2025-executed.pdf"
+              "loanId" = "LN-2025-0148"
+              "loanOfficer" = "Alex Bennett"
+              "loanType" = "Equipment Finance"
+              "ltv" = 70
+              "market" = "Northeast"
+              "maturityDate" = "2030-05-31"
+              "name" = "Harborview Logistics Equipment Term Loan 2025"
+              "opportunity" = "Harborview Fleet Expansion 2025"
+              "recordSource" = "Manual"
+              "riskRating" = "Low"
+              "status" = "Closed"
+              "targetClosingDate" = "2025-05-20"
+              "termMonths" = 60
+              "underwritingNotes" = "Executed prior-year equipment term loan; retained for demo loan history. Schedule 1 carried forward: LTV 70% maximum, DSCR 1.30x tested quarterly."
+            }
+            {
+              "applicantEmail" = "jordan.pike@harborviewlogistics.example"
+              "applicantName" = "Jordan Pike"
+              "borrower" = "Harborview Logistics"
+              "borrowerAccount" = "Harborview Logistics"
+              "borrowerEntity" = "Harborview Logistics Holdings LLC"
+              "collateralType" = "Real Estate"
+              "collateralValue" = 5650000
+              "dscr" = 1.12
+              "interestRate" = 6.85
+              "loanAmount" = 4800000
+              "loanFile" = "harborview-term-sheet-2026-markup.docx"
+              "loanId" = "LN-2026-0042"
+              "loanOfficer" = "Alex Bennett"
+              "loanType" = "Commercial Real Estate"
+              "ltv" = 85
+              "market" = "Northeast"
+              "name" = "Harborview Logistics Distribution Facility Loan 2026"
+              "opportunity" = "Harborview Logistics - Distribution Facility Acquisition"
+              "recordSource" = "Manual"
+              "riskRating" = "High"
+              "status" = "Underwriting"
+              "targetClosingDateOffsetMonths" = 4
+              "termMonths" = 120
+              "underwritingNotes" = "Appraisal came in at $5,650,000 against a stated $6,000,000: LTV 85% and DSCR 1.12x, outside LOS-LTV-002 and LOS-DSCR-002. Borrower markup weakens the DSCR test in Section 9.3 and adds FF&E to Schedule A. Owned by Credit Risk."
+            }
+            {
+              "applicantEmail" = "sarah.kim@pinecrestdental.example"
+              "applicantName" = "Sarah Kim"
+              "borrower" = "Pinecrest Dental Group"
+              "borrowerAccount" = "Pinecrest Dental Group"
+              "collateralType" = "None"
+              "interestRate" = 8.10
+              "loanAmount" = 650000
+              "loanId" = "LN-2026-0088"
+              "loanOfficer" = "Alex Bennett"
+              "loanType" = "SBA 7(a)"
+              "market" = "Southeast"
+              "name" = "Pinecrest Dental Group Practice Expansion 2026"
+              "opportunity" = "Pinecrest Dental Practice Expansion 2026"
+              "recordSource" = "Manual"
+              "riskRating" = "Medium"
+              "status" = "Application"
+              "targetClosingDateOffsetMonths" = 6
+              "termMonths" = 120
+              "underwritingNotes" = "Sample loan record for demo use only. Application received; financial statements pending."
+            }
+          ]
+          "created_at" = "2026-09-02T18:00:00Z"
+          "enterprise_id" = ""
+          "opportunities" = [
+            {
+              "account" = "Harborview Logistics"
+              "amount" = 1500000
+              "closeDate" = "2023-09-15"
+              "name" = "Harborview Working Capital Line 2023"
+              "stage" = "Closed Won"
+            }
+            {
+              "account" = "Harborview Logistics"
+              "amount" = 2150000
+              "closeDate" = "2025-05-20"
+              "name" = "Harborview Fleet Expansion 2025"
+              "stage" = "Closed Won"
+            }
+            {
+              "account" = "Harborview Logistics"
+              "amount" = 4800000
+              "closeDateOffsetMonths" = 4
+              "name" = "Harborview Logistics - Distribution Facility Acquisition"
+              "stage" = "Proposal/Price Quote"
+            }
+            {
+              "account" = "Pinecrest Dental Group"
+              "amount" = 650000
+              "closeDateOffsetMonths" = 6
+              "name" = "Pinecrest Dental Practice Expansion 2026"
+              "stage" = "Qualification"
+            }
+          ]
+          "provider" = "generic"
+          "provider_object_id" = "salesforce/los-sample-records"
+        }
+        "metadata" = {
+          "artifactName" = "los-sample-records"
+          "artifactType" = "config_file"
+          "createdAt" = "2026-09-02T18:00:00Z"
+          "enterpriseId" = ""
+          "provider" = "generic"
+          "providerObjectId" = "salesforce/los-sample-records"
+          "scenario" = "box-claudeforce-loans"
+        }
+        "name" = "config_salesforce_los-sample-records"
+        "provider" = "generic"
+        "scenario" = "box-claudeforce-loans"
+        "terraformType" = "null_resource"
+        "type" = "config_file"
+      }
+    ]
+    "scenario" = "box-claudeforce-loans"
+    "version" = "1.0"
+  }
+}

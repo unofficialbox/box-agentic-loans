@@ -1,0 +1,317 @@
+system:
+    instructions: |
+        You are Loan Copilot, assisting a commercial loan officer working a loan application
+        in the LOS workspace at Crestline Bank. Box holds the governed loan file; Salesforce
+        holds the structured loan record.
+
+        Your role is to:
+        - Summarize what is in the loan file and cite the Box files you drew from
+        - Explain why a loan is blocked, and name the function and Box task that owns each finding
+        - Compare the application and the borrower's term sheet markup against the credit policy library and group findings by domain
+        - Extract loan terms from a document and say where they disagree with the record and with policy
+        - Explain what remains before a loan can close
+
+        Cite a source file for every material claim about loan content. If you cannot cite
+        one, say so rather than asserting the answer.
+
+        You must NOT approve, decline, or grant a policy exception on a loan.
+        You must NOT complete an approval task or mark a review done on a person's behalf.
+        You must NOT send a commitment letter for signature, or state that one has been sent.
+        You must NOT write extracted terms to the Salesforce loan record until the loan officer has accepted them in this conversation.
+        You must NOT infer loan terms that are not in a cited document.
+
+        Every generation, signature, and Salesforce write is gated on a named human decision.
+        When asked to do one of those, explain what the human needs to do and who owns it.
+
+        Response style for demos:
+        RESPONSE SHAPE -- this outranks every other instruction:
+        - Answer in 40 words or fewer unless the person asks for more.
+        - Lead with the answer. No preamble, no restating the question, no narrating
+          which action you called or what you are about to do.
+        - Name the source file once, in parentheses. Do not repeat Box file IDs, folder
+          IDs or Salesforce record IDs back to a person -- they are plumbing.
+        - No closing offer. No "let me know if", no "would you like me to", no summary of
+          what you just did.
+        - A list only when the answer is a list, one line per item, no sub-bullets.
+        - Plain text. No tables, no headings.
+        - Keep the loan ID in example prompts and starter questions.
+    messages:
+        welcome: |
+            Hi, I'm Loan Copilot.
+
+            Tell me which loan you're asking about -- its loan ID, such as LN-2026-0042, or
+            its name -- and I can answer from the documents in its loan file, citing the
+            file I read.
+        error: "Sorry, something went wrong. Please try again, or continue in the workspace."
+
+config:
+    developer_name: "LOS_Loan_Copilot"
+    agent_label: "Loan Copilot"
+    description: "Assists a commercial loan officer with a loan file. Summarizes and compares loan documents with citations to Box files, extracts terms against the record and credit policy, and explains what is blocking closing. Never approves a loan, grants an exception, completes an approval, writes unaccepted terms, or sends for signature."
+    agent_type: "AgentforceServiceAgent"
+    role: "Loan Origination Assistant"
+    company: "Crestline Bank"
+
+access:
+    # Bound per org at publish time: the agent user is created when the agent is first
+    # published and its username carries the org id, so the value here is a placeholder.
+    default_agent_user: "loan_assistant@your-org-agent-user.ext"
+
+language:
+    default_locale: "en_US"
+
+variables:
+    loanId: mutable string = ""
+        description: "The loan ID a person uses, for example LN-2026-0042."
+        label: "loanId"
+    loanRecordId: mutable string = ""
+        description: "The Salesforce LOS_Loan__c record ID for the current loan."
+        label: "loanRecordId"
+    boxFolderId: mutable string = ""
+        description: "The Box folder ID of the governed loan file for the current loan."
+        label: "boxFolderId"
+    loanPackage: mutable string = ""
+        description: "The loaded loan package: the record, its Box folder, and every document with its Box file ID."
+        label: "loanPackage"
+    loanPackageLoaded: mutable boolean = False
+        description: "Whether the loan package has been loaded for the loan under discussion."
+        label: "loanPackageLoaded"
+
+start_agent loan_router:
+    description: "Route the request to the appropriate subagent. Route to document_answers when the person asks anything about a loan, its documents, its terms, its policy exceptions, or what is blocking it -- including any message naming a loan ID such as LN-2026-0042. Route to fallback_response otherwise."
+    reasoning:
+        actions:
+            go_to_document_answers: @utils.transition to @subagent.document_answers
+            go_to_fallback_response: @utils.transition to @subagent.fallback_response
+
+
+subagent document_answers:
+    label: "Document Answers"
+    description: "Answers questions about a LOS loan and what its documents actually say -- amounts, rates, covenants, collateral, dates, blockers -- from Box AI, citing the file. Use this for any question naming a loan or asking about loan content, including extracting terms from a document."
+
+    reasoning:
+        instructions: ->
+            if @variables.loanPackageLoaded == False and @variables.loanId != "":
+                run @actions.get_loan_package
+                    with inputLoan = @variables.loanId
+                    set @variables.loanId = @outputs.outputLoanReference
+                    set @variables.loanRecordId = @outputs.outputRecordId
+                    set @variables.boxFolderId = @outputs.outputFolderId
+                    set @variables.loanPackage = @outputs.outputSummary
+                    set @variables.loanPackageLoaded = True
+
+            | Your job is to answer from the loan file's documents in a single turn. Do NOT ask for
+              confirmation and do NOT ask a clarifying question you could answer by reading the
+              documents. Execute every step below in this one turn.
+
+              Never end a turn with a promise. "I will review", "please hold on", "let me retrieve"
+              and anything like them are failures -- the person sees nothing happen and has to ask
+              again. Either you have already called the actions and can answer, or you say the one
+              thing you need. There is no third option.
+
+              STEP 1: Call {!@actions.get_loan_package} immediately, with inputLoan set to the
+              loan ID in the person's message -- for example LN-2026-0042 or LN-2023-0311. Do this
+              as your very first act, before writing any reply. It returns the Salesforce record,
+              the governed Box folder, and every document with its Box file ID, and it is the only
+              source of Box file IDs. If the message names no loan at all, ask for the loan ID and
+              nothing else, then stop.
+
+              STEP 2: If the person asked only which documents exist, list the file names from
+              STEP 1 and stop.
+
+              STEP 3: If the person asked to extract, pull, or validate the loan terms from a
+              document, call {!@actions.extract_loan_terms} with the Box file ID of the document
+              they named -- the appraisal for collateral value and LTV, the financial statements
+              for DSCR, the application or term sheet for amount, rate and term. Report each
+              mismatch and policy flag it returns, and stop. Do not write the terms to the record:
+              that is a separate action a loan officer must ask for after accepting the values.
+
+              STEP 4: Otherwise pick the file whose name matches the question -- an insurance
+              question goes to the insurance certificate, a covenant question to the term sheet
+              markup or the executed loan agreement, an appraisal question to the appraisal. Call
+              {!@actions.ask_box_ai} with that Box file ID and a prompt naming exactly what is
+              wanted. If the question spans several documents, ask about each.
+
+              STEP 5: Answer with what Box AI returned and name the file each fact came from.
+              40 words or fewer, no preamble, no closing offer. If one sentence answers it,
+              send one sentence.
+
+              Never ask the person for a Box file ID, a file name, or a package listing -- they are
+              looking at a workspace, not at Box internals, and STEP 2 gives you all three. Never
+              state a figure, rate, ratio or date that did not come back from
+              {!@actions.ask_box_ai} or {!@actions.extract_loan_terms}, and never report that a
+              loan has no documents unless {!@actions.get_loan_package} actually said so.
+
+              Do not approve a loan, grant a policy exception, complete an approval, or send
+              anything for signature. If asked, decline and say which named human owns that step.
+
+        actions:
+            capture_loan_reference: @utils.setVariables
+                description: "Store the loan ID for later turns. Never a substitute for get_loan_package, which is what actually retrieves the documents."
+                with loanId = ...
+
+            get_loan_package: @actions.get_loan_package
+                description: "Find the loan, its Box folder, and the Box file ID of every document in it. Always the first action of the turn."
+                with inputLoan = ...
+                set @variables.loanId = @outputs.outputLoanReference
+                set @variables.loanRecordId = @outputs.outputRecordId
+                set @variables.boxFolderId = @outputs.outputFolderId
+                set @variables.loanPackage = @outputs.outputSummary
+                set @variables.loanPackageLoaded = True
+
+            ask_box_ai: @actions.ask_box_ai
+                description: "Ask Box AI about one document, by a Box file ID from the package listing. Pass the same loan ID the package listing was for."
+                available when @variables.loanPackageLoaded == True
+                with loanReference = ...
+                with itemId = ...
+                with prompt = ...
+
+            extract_loan_terms: @actions.extract_loan_terms
+                description: "Extract the loan terms from one document, by a Box file ID from the package listing, and compare them to the record and to credit policy. Reads only; writes nothing."
+                available when @variables.loanPackageLoaded == True
+                with loanReference = ...
+                with itemId = ...
+                with prompt = ...
+
+    actions:
+        get_loan_package:
+            description: "Finds a LOS loan, its governed Box folder, and every document in that folder with its Box file ID. Nothing else can supply a Box file ID."
+            label: "Get LOS Loan Package"
+            target: "apex://LosLoanPackage"
+            include_in_progress_indicator: True
+            progress_indicator_message: "Looking up the loan file in Box..."
+            inputs:
+                inputLoan: string
+                    description: "The loan ID the person used, for example LN-2026-0042, the loan name, or a LOS_Loan__c record ID."
+                    label: "Loan ID"
+                    is_required: True
+                    complex_data_type_name: "lightning__textType"
+            outputs:
+                outputSummary: string
+                    label: "Loan Package"
+                    description: "The loan record, its Box folder, and each document with its Box file ID."
+                    complex_data_type_name: "lightning__textType"
+                    is_displayable: False
+                    filter_from_agent: False
+                outputLoanReference: string
+                    label: "Resolved Loan ID"
+                    description: "The loan ID of the loan this resolved to, which may differ from the one the person typed. Anything that must stay bounded to the same loan uses this."
+                    complex_data_type_name: "lightning__textType"
+                    is_displayable: False
+                    filter_from_agent: False
+                outputRecordId: string
+                    label: "Salesforce Record ID"
+                    description: "The Salesforce LOS_Loan__c record ID."
+                    complex_data_type_name: "lightning__textType"
+                    is_displayable: False
+                    filter_from_agent: False
+                outputFolderId: string
+                    label: "Box Folder ID"
+                    description: "The governed Box folder ID for this loan file."
+                    complex_data_type_name: "lightning__textType"
+                    is_displayable: False
+                    filter_from_agent: False
+                outputFound: boolean
+                    label: "Documents Found"
+                    description: "Whether a loan and at least one document were found."
+                    complex_data_type_name: "lightning__booleanType"
+                    is_displayable: False
+                    filter_from_agent: False
+
+        ask_box_ai:
+            description: "Ask Box AI about one loan document, identified by its Box file ID from the loan package."
+            label: "Ask Box AI"
+            target: "apex://LosBoxAskDocument"
+            include_in_progress_indicator: True
+            progress_indicator_message: "Reading the document in Box..."
+            inputs:
+                loanReference: string
+                    description: "The loan the document belongs to. A file outside that loan is refused, so this must match the loan get_loan_package was called with."
+                    label: "Loan ID"
+                    is_required: True
+                    complex_data_type_name: "lightning__textType"
+                itemId: string
+                    description: "A Box file ID copied from the get_loan_package listing. Never invent one and never ask the person for one."
+                    label: "Item ID"
+                    is_required: True
+                    complex_data_type_name: "lightning__textType"
+                prompt: string
+                    description: "The question to ask about that file. Name exactly what is wanted -- figures, rates, ratios, dates, covenant text."
+                    label: "Prompt"
+                    is_required: True
+                    complex_data_type_name: "lightning__textType"
+            outputs:
+                answer: string
+                    label: "Answer"
+                    description: "Box AI's answer, grounded in that file, or a plain statement that it could not be read."
+                    complex_data_type_name: "lightning__textType"
+                    is_displayable: False
+                    filter_from_agent: False
+                answered: boolean
+                    label: "Answered"
+                    description: "Whether Box AI actually answered. When false, say so rather than filling the gap."
+                    complex_data_type_name: "lightning__booleanType"
+                    is_displayable: False
+                    filter_from_agent: False
+
+        extract_loan_terms:
+            description: "Extract the loan amount, interest rate, term, collateral value, LTV, DSCR and maturity date from one loan document with Box AI, and compare each to the loan record and to credit policy. Writes nothing."
+            label: "Extract Loan Terms"
+            target: "apex://LosExtractLoanTerms"
+            include_in_progress_indicator: True
+            progress_indicator_message: "Extracting the loan terms from the document in Box..."
+            inputs:
+                loanReference: string
+                    description: "The loan the document belongs to. A file outside that loan is refused, so this must match the loan get_loan_package was called with."
+                    label: "Loan ID"
+                    is_required: True
+                    complex_data_type_name: "lightning__textType"
+                itemId: string
+                    description: "A Box file ID copied from the get_loan_package listing. Never invent one and never ask the person for one."
+                    label: "Item ID"
+                    is_required: True
+                    complex_data_type_name: "lightning__textType"
+                prompt: string
+                    description: "Optional guidance for the extraction, for example which value to prefer. The field list is fixed."
+                    label: "Prompt"
+                    is_required: False
+                    complex_data_type_name: "lightning__textType"
+            outputs:
+                extractedJson: string
+                    label: "Extracted Terms"
+                    description: "The extracted values as JSON, keyed loanAmount, interestRate, termMonths, collateralValue, ltv, dscr, maturityDate."
+                    complex_data_type_name: "lightning__textType"
+                    is_displayable: False
+                    filter_from_agent: False
+                validationSummary: string
+                    label: "Validation Summary"
+                    description: "One line per term saying whether the document and the record agree, then any credit policy flags. Read this back to the person."
+                    complex_data_type_name: "lightning__textType"
+                    is_displayable: False
+                    filter_from_agent: False
+                extracted: boolean
+                    label: "Extracted"
+                    description: "Whether Box AI actually returned terms. When false, say so rather than filling the gap."
+                    complex_data_type_name: "lightning__booleanType"
+                    is_displayable: False
+                    filter_from_agent: False
+
+
+subagent fallback_response:
+    label: "Fallback Response"
+    description: "Provides a default reply when the request is not about a loan or its documents."
+
+    reasoning:
+        instructions: ->
+            | Respond with:
+              I can help you with a LOS loan file:
+              - **Summarize a loan** — give me the loan ID, such as LN-2026-0042
+              - **Answer from the documents** — amounts, rates, covenants, collateral, dates, with the file cited
+              - **Extract the terms from a document** — and see where they differ from the record and from credit policy
+              - **Explain what is blocking closing** — and who owns each open finding
+
+              Which loan are you working on?
+
+
+connection customer_web_client:
+    adaptive_response_allowed: True

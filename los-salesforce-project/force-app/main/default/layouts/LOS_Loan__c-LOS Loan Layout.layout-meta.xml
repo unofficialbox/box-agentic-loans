@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Layout xmlns="http://soap.sforce.com/2006/04/metadata">
+    <layoutSections>
+        <customLabel>true</customLabel>
+        <detailHeading>true</detailHeading>
+        <editHeading>true</editHeading>
+        <label>Loan Overview</label>
+        <layoutColumns>
+            <layoutItems><behavior>Required</behavior><field>Name</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Loan_ID__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Borrower__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Borrower_Account__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Borrower_Entity__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Opportunity__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Loan_Type__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Status__c</field></layoutItems>
+        </layoutColumns>
+        <layoutColumns>
+            <layoutItems><behavior>Required</behavior><field>Loan_Amount__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Interest_Rate__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Term_Months__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>LTV__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>DSCR__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Collateral_Value__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Collateral_Type__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Region__c</field></layoutItems>
+            <layoutItems><behavior>Required</behavior><field>Target_Closing_Date__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Maturity_Date__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Record_Source__c</field></layoutItems>
+        </layoutColumns>
+        <style>TwoColumnsTopToBottom</style>
+    </layoutSections>
+    <layoutSections>
+        <customLabel>true</customLabel>
+        <detailHeading>true</detailHeading>
+        <editHeading>true</editHeading>
+        <label>Applicant and Ownership</label>
+        <layoutColumns>
+            <layoutItems><behavior>Edit</behavior><field>Applicant_Name__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Applicant_Email__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Loan_Officer_Name__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Loan_Officer__c</field></layoutItems>
+        </layoutColumns>
+        <layoutColumns>
+        </layoutColumns>
+        <style>TwoColumnsTopToBottom</style>
+    </layoutSections>
+    <layoutSections>
+        <customLabel>true</customLabel>
+        <detailHeading>true</detailHeading>
+        <editHeading>true</editHeading>
+        <label>Risk and Underwriting</label>
+        <layoutColumns>
+            <layoutItems><behavior>Edit</behavior><field>Risk_Rating__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Underwriting_Notes__c</field></layoutItems>
+        </layoutColumns>
+        <style>OneColumn</style>
+    </layoutSections>
+    <layoutSections>
+        <customLabel>false</customLabel>
+        <detailHeading>false</detailHeading>
+        <editHeading>false</editHeading>
+        <label>System Information</label>
+        <layoutColumns>
+            <layoutItems><behavior>Readonly</behavior><field>CreatedById</field></layoutItems>
+            <layoutItems><behavior>Readonly</behavior><field>LastModifiedById</field></layoutItems>
+        </layoutColumns>
+        <layoutColumns>
+            <layoutItems><behavior>Readonly</behavior><field>OwnerId</field></layoutItems>
+            <layoutItems><behavior>Readonly</behavior><field>Box_Workspace_Folder_ID__c</field></layoutItems>
+        </layoutColumns>
+        <style>TwoColumnsTopToBottom</style>
+    </layoutSections>
+    <showHighlightsPanel>true</showHighlightsPanel>
+    <showInteractionLogPanel>false</showInteractionLogPanel>
+</Layout>

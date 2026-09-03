@@ -1,0 +1,13 @@
+flowchart LR
+    A["Configure tenant and org identities"] --> B["Run live preflight"]
+    B --> C["Generate synthetic assets"]
+    C --> D["Create or reuse Box foundation"]
+    C --> E["Deploy portable Salesforce metadata"]
+    D --> F["Seed deterministic Box metadata"]
+    E --> G["Resolve draft environment specs"]
+    F --> G
+    G --> H["Build Box App, Hub, Automate, and OAuth"]
+    H --> I["Record published URLs and live bindings"]
+    I --> J["Resolve final specs and run live validation"]
+    J --> K["Run idempotency and integrated smoke tests"]
+    K --> L["Rehearse tell / show / tell script"]

@@ -1,0 +1,205 @@
+# Box Dispatch BCL config artifact. BCL is the only supported import format.
+locals {
+  "bcl" = {
+    "context" = "loans"
+    "generatedAt" = "2026-07-23T11:55:20Z"
+    "metadata" = {
+    }
+    "provider" = "generic"
+    "resources" = [
+      {
+        "config" = {
+          "actions" = {
+            "compare_application_to_credit_policy" = {
+              "input" = [
+                "applicationFileId"
+                "baselineItemId"
+                "policyLibraryFolderId"
+              ]
+              "mutates" = false
+              "output" = [
+                "underwritingFindings"
+                "exceptionOptions"
+                "precedentSummary"
+                "sourceCitations"
+              ]
+              "outputSchema" = "config/los/underwriting-finding.schema.bcl"
+            }
+            "draft_box_docgen_credit_memo" = {
+              "confirmationRequired" = true
+              "input" = [
+                "loanId"
+                "templateFileId"
+              ]
+              "mutates" = true
+              "output" = [
+                "draftFileId"
+                "sourceCitations"
+              ]
+              "templateFileId" = "${box.files.docgenCreditMemo}"
+            }
+            "draft_box_docgen_maturity_notice" = {
+              "confirmationRequired" = true
+              "input" = [
+                "loanId"
+                "templateFileId"
+              ]
+              "mutates" = true
+              "output" = [
+                "draftFileId"
+              ]
+              "templateFileId" = "${box.files.docgenMaturityNotice}"
+            }
+            "explain_closing_blockers" = {
+              "input" = [
+                "loanId"
+              ]
+              "mutates" = false
+              "output" = [
+                "blocked"
+                "reasons"
+                "requiredHumanDecisions"
+              ]
+            }
+            "extract_candidate_covenants" = {
+              "input" = [
+                "executedLoanFileId"
+              ]
+              "mutates" = false
+              "output" = [
+                "candidateCovenants"
+                "sourceCitations"
+              ]
+            }
+            "get_box_review_tasks" = {
+              "input" = [
+                "loanId"
+              ]
+              "mutates" = false
+              "output" = [
+                "creditRiskTask"
+                "collateralTask"
+                "complianceTask"
+              ]
+            }
+            "get_underwriting_review_queue" = {
+              "input" = [
+                "loanId"
+              ]
+              "mutates" = false
+              "output" = [
+                "findingsByDomain"
+                "expertAssignments"
+                "unclassifiedFindings"
+                "boxTasks"
+              ]
+            }
+            "list_box_loan_files" = {
+              "input" = [
+                "boxFolderId"
+              ]
+              "mutates" = false
+              "output" = [
+                "files"
+                "metadata"
+                "versions"
+              ]
+            }
+            "resolve_loan_context" = {
+              "input" = [
+                "salesforceRecordId"
+                "loanId"
+                "boxFolderId"
+              ]
+              "mutates" = false
+              "output" = [
+                "loan"
+                "workspace"
+                "status"
+              ]
+            }
+            "summarize_box_loan_package" = {
+              "input" = [
+                "boxFolderId"
+              ]
+              "mutates" = false
+              "output" = [
+                "summary"
+                "risks"
+                "sourceCitations"
+              ]
+            }
+          }
+          "artifact_name" = "los-react-agentforce-spec"
+          "artifact_type" = "config"
+          "context" = {
+            "boxWorkspaceFolderId" = "${box.folders.workspace}"
+            "boxWorkspaceUrl" = "https://${box.hostname}/folder/${box.folders.workspace}"
+            "loanId" = "LN-2026-0042"
+            "salesforceObjectApiName" = "LOS_Loan__c"
+          }
+          "created_at" = "2026-07-23T11:55:20Z"
+          "enterprise_id" = ""
+          "guardrails" = [
+            "Use Box as the source of truth for loan documents and cite source files."
+            "Never copy loan document bytes into Salesforce."
+            "Never approve a loan, price an exception, or complete a human review task."
+            "Compute loan-to-value from the bank-ordered appraisal, never from a borrower-stated value."
+            "Resolve experts only from the maintained directory."
+            "Route unclassified or low-confidence findings to Credit Administration triage."
+            "Never create a Box Sign request until all required human approvals are complete and the loan is Approved or Commitment."
+            "Require confirmation before Doc Gen creates a file."
+            "Write extracted loan terms to the record only through the human-accepted apply action."
+          ]
+          "name" = "Loan Copilot"
+          "provider" = "generic"
+          "provider_object_id" = "agentforce/los-react-agentforce-spec"
+          "schemaVersion" = "2.0"
+          "topics" = [
+            {
+              "actions" = [
+                "resolve_loan_context"
+                "list_box_loan_files"
+                "summarize_box_loan_package"
+                "compare_application_to_credit_policy"
+                "get_underwriting_review_queue"
+              ]
+              "name" = "Loan package review"
+            }
+            {
+              "actions" = [
+                "get_box_review_tasks"
+                "explain_closing_blockers"
+                "draft_box_docgen_credit_memo"
+              ]
+              "name" = "Credit approval readiness"
+            }
+            {
+              "actions" = [
+                "extract_candidate_covenants"
+                "draft_box_docgen_maturity_notice"
+              ]
+              "name" = "Covenants and servicing"
+            }
+          ]
+        }
+        "metadata" = {
+          "artifactName" = "los-react-agentforce-spec"
+          "artifactType" = "config_file"
+          "createdAt" = "2026-07-23T11:55:20Z"
+          "enterpriseId" = ""
+          "provider" = "generic"
+          "providerObjectId" = "agentforce/los-react-agentforce-spec"
+          "scenario" = "box-claudeforce-loans"
+        }
+        "name" = "config_agentforce_los-react-agentforce-spec"
+        "provider" = "generic"
+        "scenario" = "box-claudeforce-loans"
+        "terraformType" = "null_resource"
+        "type" = "config_file"
+      }
+    ]
+    "scenario" = "box-claudeforce-loans"
+    "version" = "1.0"
+  }
+}

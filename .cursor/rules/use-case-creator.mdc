@@ -1,0 +1,7 @@
+---
+description: Understand or tailor the LOS loan origination domain and value story
+globs:
+alwaysApply: false
+---
+
+Read `docs/use-case-creator/README.md`. Tailor this existing vertical in place. Preserve Box loan-file content authority, Salesforce `LOS_Loan__c` structured credit authority, citations, human credit decision owners, the distinct internal-agent and borrower-portal surfaces, and the exact readiness vocabulary in `docs/conventions.md`.

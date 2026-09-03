@@ -1,0 +1,188 @@
+# Box Dispatch BCL config artifact. BCL is the only supported import format.
+locals {
+  "bcl" = {
+    "context" = "loans"
+    "generatedAt" = "2026-07-23T11:55:20Z"
+    "metadata" = {
+    }
+    "provider" = "generic"
+    "resources" = [
+      {
+        "config" = {
+          "$id" = "https://crestlinebank.example/schemas/los/underwriting-finding.schema.json"
+          "$schema" = "https://json-schema.org/draft/2020-12/schema"
+          "additionalProperties" = false
+          "artifact_name" = "underwriting-finding.schema"
+          "artifact_type" = "config"
+          "created_at" = "2026-07-23T11:55:20Z"
+          "enterprise_id" = ""
+          "properties" = {
+            "applicationFileId" = {
+              "pattern" = "^[0-9]+$"
+              "type" = "string"
+            }
+            "approvedPosition" = {
+              "type" = "string"
+            }
+            "baselineItemId" = {
+              "minLength" = 1
+              "type" = "string"
+            }
+            "boxTaskId" = {
+              "pattern" = "^[0-9]+$"
+              "type" = [
+                "string"
+                "null"
+              ]
+            }
+            "changeType" = {
+              "enum" = [
+                "Added"
+                "Deleted"
+                "Replaced"
+                "Moved"
+              ]
+            }
+            "classificationConfidence" = {
+              "maximum" = 1
+              "minimum" = 0
+              "type" = "number"
+            }
+            "domain" = {
+              "enum" = [
+                "Credit Risk"
+                "Collateral"
+                "Compliance"
+                "Loan Documentation"
+                "Pricing"
+                "Insurance"
+                "Servicing"
+                "Unclassified"
+              ]
+            }
+            "exceptionPolicyId" = {
+              "type" = [
+                "string"
+                "null"
+              ]
+            }
+            "expertDirectoryKey" = {
+              "type" = [
+                "string"
+                "null"
+              ]
+            }
+            "findingId" = {
+              "pattern" = "^UWF-[0-9]{3,}$"
+              "type" = "string"
+            }
+            "loanId" = {
+              "minLength" = 1
+              "type" = "string"
+            }
+            "policyId" = {
+              "type" = [
+                "string"
+                "null"
+              ]
+            }
+            "proposedText" = {
+              "type" = "string"
+            }
+            "reviewStatus" = {
+              "enum" = [
+                "Pending"
+                "Approved"
+                "Rejected"
+                "Resolved"
+              ]
+            }
+            "riskLevel" = {
+              "enum" = [
+                "Low"
+                "Medium"
+                "High"
+                "Critical"
+              ]
+            }
+            "routingStatus" = {
+              "enum" = [
+                "Ready"
+                "Needs Triage"
+                "Assigned"
+                "Failed"
+              ]
+            }
+            "section" = {
+              "minLength" = 1
+              "type" = "string"
+            }
+            "sourceCitations" = {
+              "items" = {
+                "additionalProperties" = false
+                "properties" = {
+                  "boxItemId" = {
+                    "pattern" = "^[0-9]+$"
+                    "type" = "string"
+                  }
+                  "location" = {
+                    "minLength" = 1
+                    "type" = "string"
+                  }
+                }
+                "required" = [
+                  "boxItemId"
+                  "location"
+                ]
+                "type" = "object"
+              }
+              "minItems" = 1
+              "type" = "array"
+            }
+            "summary" = {
+              "minLength" = 1
+              "type" = "string"
+            }
+          }
+          "provider" = "generic"
+          "provider_object_id" = "los/underwriting-finding.schema"
+          "required" = [
+            "findingId"
+            "loanId"
+            "applicationFileId"
+            "baselineItemId"
+            "section"
+            "changeType"
+            "domain"
+            "riskLevel"
+            "summary"
+            "proposedText"
+            "approvedPosition"
+            "sourceCitations"
+            "classificationConfidence"
+            "routingStatus"
+            "reviewStatus"
+          ]
+          "title" = "LOS Underwriting Finding"
+          "type" = "object"
+        }
+        "metadata" = {
+          "artifactName" = "underwriting-finding.schema"
+          "artifactType" = "config_file"
+          "createdAt" = "2026-07-23T11:55:20Z"
+          "enterpriseId" = ""
+          "provider" = "generic"
+          "providerObjectId" = "los/underwriting-finding.schema"
+          "scenario" = "box-claudeforce-loans"
+        }
+        "name" = "config_los_underwriting-finding_schema"
+        "provider" = "generic"
+        "scenario" = "box-claudeforce-loans"
+        "terraformType" = "null_resource"
+        "type" = "config_file"
+      }
+    ]
+    "scenario" = "box-claudeforce-loans"
+    "version" = "1.0"
+  }
+}

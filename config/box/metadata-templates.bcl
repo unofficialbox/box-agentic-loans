@@ -1,0 +1,383 @@
+# Box Dispatch BCL config artifact. BCL is the only supported import format.
+locals {
+  "bcl" = {
+    "context" = "loans"
+    "generatedAt" = "2026-07-23T11:55:20Z"
+    "metadata" = {
+    }
+    "provider" = "generic"
+    "resources" = [
+      {
+        "config" = {
+          "artifact_name" = "metadata-templates"
+          "artifact_type" = "config"
+          "created_at" = "2026-07-23T11:55:20Z"
+          "enterprise_id" = ""
+          "provider" = "generic"
+          "provider_object_id" = "box/metadata-templates"
+          "templates" = [
+            {
+              "displayName" = "Loan"
+              "fields" = [
+                {
+                  "key" = "loanId"
+                  "type" = "string"
+                }
+                {
+                  "key" = "borrower"
+                  "type" = "string"
+                }
+                {
+                  "key" = "applicantEmail"
+                  "type" = "string"
+                }
+                {
+                  "key" = "loanType"
+                  "options" = [
+                    "Term Loan"
+                    "Line of Credit"
+                    "Equipment Finance"
+                    "Commercial Real Estate"
+                    "SBA 7(a)"
+                  ]
+                  "type" = "enum"
+                }
+                {
+                  "key" = "status"
+                  "options" = [
+                    "Application"
+                    "Underwriting"
+                    "Credit Review"
+                    "Approved"
+                    "Commitment"
+                    "Closed"
+                    "Servicing"
+                  ]
+                  "type" = "enum"
+                }
+                {
+                  "key" = "loanAmount"
+                  "type" = "float"
+                }
+                {
+                  "key" = "termMonths"
+                  "type" = "float"
+                }
+                {
+                  "key" = "interestRate"
+                  "type" = "float"
+                }
+                {
+                  "key" = "ltv"
+                  "type" = "float"
+                }
+                {
+                  "key" = "dscr"
+                  "type" = "float"
+                }
+                {
+                  "key" = "region"
+                  "options" = [
+                    "Northeast"
+                    "Southeast"
+                    "Midwest"
+                    "West"
+                    "National"
+                  ]
+                  "type" = "enum"
+                }
+                {
+                  "key" = "collateralType"
+                  "options" = [
+                    "None"
+                    "Real Estate"
+                    "Equipment"
+                    "Receivables"
+                    "Cash and Securities"
+                  ]
+                  "type" = "enum"
+                }
+                {
+                  "key" = "owner"
+                  "type" = "string"
+                }
+                {
+                  "key" = "underwriter"
+                  "type" = "string"
+                }
+                {
+                  "key" = "riskRating"
+                  "options" = [
+                    "Low"
+                    "Medium"
+                    "High"
+                    "Critical"
+                  ]
+                  "type" = "enum"
+                }
+                {
+                  "key" = "targetClosingDate"
+                  "type" = "date"
+                }
+                {
+                  "key" = "maturityDate"
+                  "type" = "date"
+                }
+                {
+                  "key" = "covenantReviewDate"
+                  "type" = "date"
+                }
+              ]
+              "templateKey" = "losLoan"
+            }
+            {
+              "displayName" = "Loan Document"
+              "fields" = [
+                {
+                  "key" = "documentType"
+                  "options" = [
+                    "Application"
+                    "Financial Statement"
+                    "Tax Return"
+                    "Bank Statement"
+                    "Appraisal"
+                    "Term Sheet"
+                    "Commitment Letter"
+                    "Loan Agreement"
+                    "Insurance"
+                    "Credit Memo"
+                    "Environmental Report"
+                  ]
+                  "type" = "enum"
+                }
+                {
+                  "key" = "versionStatus"
+                  "note" = "Internal is withheld from the borrower portal: credit memos and the bank's markup analysis never reach the borrower."
+                  "options" = [
+                    "Draft"
+                    "Internal"
+                    "Approved"
+                    "Executed"
+                  ]
+                  "type" = "enum"
+                }
+                {
+                  "key" = "policyRisk"
+                  "options" = [
+                    "Low"
+                    "Medium"
+                    "High"
+                    "Critical"
+                  ]
+                  "type" = "enum"
+                }
+                {
+                  "key" = "aiSummaryStatus"
+                  "options" = [
+                    "Not Started"
+                    "Complete"
+                    "Needs Review"
+                  ]
+                  "type" = "enum"
+                }
+                {
+                  "key" = "approvalStatus"
+                  "options" = [
+                    "Not Required"
+                    "Pending"
+                    "Approved"
+                    "Rejected"
+                  ]
+                  "type" = "enum"
+                }
+                {
+                  "key" = "signatureStatus"
+                  "options" = [
+                    "Not Required"
+                    "Pending"
+                    "Signed"
+                  ]
+                  "type" = "enum"
+                }
+              ]
+              "templateKey" = "losDocument"
+            }
+            {
+              "displayName" = "Loan Covenant"
+              "fields" = [
+                {
+                  "key" = "covenantType"
+                  "options" = [
+                    "Financial Reporting"
+                    "DSCR Test"
+                    "Insurance Renewal"
+                    "Collateral Inspection"
+                    "Tax Escrow"
+                    "Maturity Notice"
+                  ]
+                  "type" = "enum"
+                }
+                {
+                  "key" = "owner"
+                  "type" = "string"
+                }
+                {
+                  "key" = "dueDate"
+                  "type" = "date"
+                }
+                {
+                  "key" = "sourceSection"
+                  "type" = "string"
+                }
+                {
+                  "key" = "status"
+                  "options" = [
+                    "Open"
+                    "In Progress"
+                    "Complete"
+                    "Escalated"
+                  ]
+                  "type" = "enum"
+                }
+                {
+                  "key" = "reminderWindowDays"
+                  "type" = "float"
+                }
+              ]
+              "templateKey" = "losCovenant"
+            }
+            {
+              "displayName" = "Credit Policy"
+              "fields" = [
+                {
+                  "key" = "policyId"
+                  "type" = "string"
+                }
+                {
+                  "key" = "policyFamily"
+                  "options" = [
+                    "Loan-to-Value"
+                    "Debt Service Coverage"
+                    "Pricing"
+                    "Guaranty"
+                  ]
+                  "type" = "enum"
+                }
+                {
+                  "key" = "position"
+                  "options" = [
+                    "Standard"
+                    "Approved Exception"
+                  ]
+                  "type" = "enum"
+                }
+                {
+                  "key" = "approvalStatus"
+                  "options" = [
+                    "Approved"
+                    "Under Review"
+                    "Retired"
+                  ]
+                  "type" = "enum"
+                }
+                {
+                  "key" = "owner"
+                  "type" = "string"
+                }
+                {
+                  "key" = "marketScope"
+                  "options" = [
+                    "National"
+                    "Northeast"
+                    "Southeast"
+                    "Midwest"
+                    "West"
+                  ]
+                  "type" = "enum"
+                }
+                {
+                  "key" = "lastReviewed"
+                  "type" = "date"
+                }
+                {
+                  "key" = "nextReview"
+                  "type" = "date"
+                }
+                {
+                  "key" = "usageCount"
+                  "type" = "float"
+                }
+              ]
+              "templateKey" = "losPolicy"
+            }
+            {
+              "displayName" = "LOS Underwriting Review"
+              "fields" = [
+                {
+                  "key" = "baselineItemId"
+                  "type" = "string"
+                }
+                {
+                  "key" = "comparisonStatus"
+                  "options" = [
+                    "Not Started"
+                    "Processing"
+                    "Needs Triage"
+                    "Routed"
+                    "Complete"
+                    "Failed"
+                  ]
+                  "type" = "enum"
+                }
+                {
+                  "key" = "findingCount"
+                  "type" = "float"
+                }
+                {
+                  "key" = "highestRisk"
+                  "options" = [
+                    "Low"
+                    "Medium"
+                    "High"
+                    "Critical"
+                  ]
+                  "type" = "enum"
+                }
+                {
+                  "key" = "reviewDomains"
+                  "type" = "string"
+                }
+                {
+                  "key" = "openTaskCount"
+                  "type" = "float"
+                }
+                {
+                  "key" = "lastCompared"
+                  "type" = "date"
+                }
+              ]
+              "status" = "specified-not-live"
+              "templateKey" = "losUnderwritingReview"
+            }
+          ]
+        }
+        "metadata" = {
+          "artifactName" = "metadata-templates"
+          "artifactType" = "config_file"
+          "createdAt" = "2026-07-23T11:55:20Z"
+          "enterpriseId" = ""
+          "provider" = "generic"
+          "providerObjectId" = "box/metadata-templates"
+          "scenario" = "box-claudeforce-loans"
+        }
+        "name" = "config_box_metadata-templates"
+        "provider" = "generic"
+        "scenario" = "box-claudeforce-loans"
+        "terraformType" = "null_resource"
+        "type" = "config_file"
+      }
+    ]
+    "scenario" = "box-claudeforce-loans"
+    "version" = "1.0"
+  }
+}

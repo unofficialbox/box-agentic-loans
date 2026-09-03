@@ -1,0 +1,9 @@
+---
+description: Minimal repository-wide safety and persona routing
+globs:
+alwaysApply: true
+---
+
+Work from the Git root and use repository-relative paths in durable files. Read `README.md`, then apply exactly one persona rule: repository maintenance or release work selects `maintainer`; environment configuration, deployment, rehearsal, validation, or reset selects `operator`; loan origination domain, architecture, controls, or value-story changes select `use-case-creator`. Finish the primary workflow before applying another persona. Search before reading and open only files required by the selected workflow. Never load the full documentation tree by default.
+
+Keep secrets and environment IDs out of committed files. Configuration applies, deploy, publish, share, sign, activate, delete, reset, and any other external mutation require explicit approval and confirmed targets.

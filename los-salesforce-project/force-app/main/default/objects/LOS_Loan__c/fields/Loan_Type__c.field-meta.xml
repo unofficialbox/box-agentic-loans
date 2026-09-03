@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Loan_Type__c</fullName>
+    <description>Loan product. Determines which credit policies apply and which documents the loan file is expected to carry.</description>
+    <label>Loan Type</label>
+    <required>false</required>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value><fullName>Term Loan</fullName><default>true</default><label>Term Loan</label></value>
+            <value><fullName>Line of Credit</fullName><default>false</default><label>Line of Credit</label></value>
+            <value><fullName>Equipment Finance</fullName><default>false</default><label>Equipment Finance</label></value>
+            <value><fullName>Commercial Real Estate</fullName><default>false</default><label>Commercial Real Estate</label></value>
+            <value><fullName>SBA 7(a)</fullName><default>false</default><label>SBA 7(a)</label></value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtlClntAppOauthConfigurablePolicies xmlns="http://soap.sforce.com/2006/04/metadata">
+    <externalClientApplication>LOS_Claude_MCP</externalClientApplication>
+    <label>LOS_Claude_MCP_policy</label>
+    <!--
+      Without this any user in the org could authenticate through the app. The permission
+      set is the gate and grants nothing itself.
+    -->
+    <permittedUsersPolicyType>AdminApprovedPreAuthorized</permittedUsersPolicyType>
+    <commaSeparatedPermissionSet>LOS_MCP_Client</commaSeparatedPermissionSet>
+    <refreshTokenPolicyType>SpecificLifetime</refreshTokenPolicyType>
+    <refreshTokenValidityPeriod>30</refreshTokenValidityPeriod>
+    <refreshTokenValidityUnit>Days</refreshTokenValidityUnit>
+    <ipRelaxationPolicyType>Enforce</ipRelaxationPolicyType>
+    <requiredSessionLevel>STANDARD</requiredSessionLevel>
+</ExtlClntAppOauthConfigurablePolicies>

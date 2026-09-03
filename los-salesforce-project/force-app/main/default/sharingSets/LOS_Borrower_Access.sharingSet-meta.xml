@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<SharingSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <name>LOS_Borrower_Access</name>
+    <description>Read access to the loans on a borrower's own account, matching the loan's Borrower account against the account behind the signed-in user's Contact. Makes the borrower portal work without granting View All.</description>
+    <profiles>Customer Community User</profiles>
+    <accessMappings>
+        <accessLevel>Read</accessLevel>
+        <object>LOS_Loan__c</object>
+        <objectField>Borrower_Account__c</objectField>
+        <userField>Contact.Account</userField>
+    </accessMappings>
+</SharingSet>

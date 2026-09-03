@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExternalClientApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <contactEmail>admin@example.com</contactEmail>
+    <description>Connects Claude Desktop to this org&apos;s Salesforce Hosted MCP Servers, so the internal Crestline loan officer persona reaches the same governed loan actions the Experience Cloud borrower workspace uses.</description>
+    <distributionState>Local</distributionState>
+    <isProtected>false</isProtected>
+    <label>LOS Claude MCP</label>
+</ExternalClientApplication>

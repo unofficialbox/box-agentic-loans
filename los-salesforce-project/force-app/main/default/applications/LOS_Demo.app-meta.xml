@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Loan Origination demo workspace for loan intake, underwriting, credit approval, and Box-backed loan files.</description>
+    <formFactors>Large</formFactors>
+    <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
+    <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
+    <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
+    <isOmniPinnedViewEnabled>false</isOmniPinnedViewEnabled>
+    <label>Loan Origination</label>
+    <navType>Standard</navType>
+    <profileActionOverrides>
+        <actionName>View</actionName>
+        <content>LOS_Loan_Record_Page</content>
+        <formFactor>Large</formFactor>
+        <pageOrSobjectType>LOS_Loan__c</pageOrSobjectType>
+        <type>Flexipage</type>
+        <profile>Admin</profile>
+    </profileActionOverrides>
+    <profileActionOverrides>
+        <actionName>View</actionName>
+        <content>LOS_Loan_Record_Page</content>
+        <formFactor>Large</formFactor>
+        <pageOrSobjectType>LOS_Loan__c</pageOrSobjectType>
+        <type>Flexipage</type>
+        <profile>Standard</profile>
+    </profileActionOverrides>
+    <tabs>standard-home</tabs>
+    <tabs>LOS_Loan__c</tabs>
+    <uiType>Lightning</uiType>
+</CustomApplication>

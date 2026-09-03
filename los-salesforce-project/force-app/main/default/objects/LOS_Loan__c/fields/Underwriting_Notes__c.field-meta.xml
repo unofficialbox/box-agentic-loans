@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Underwriting_Notes__c</fullName>
+    <description>The underwriter's notes: policy exceptions, conditions of approval, covenant observations. Internal, and withheld from the borrower portal.</description>
+    <label>Underwriting Notes</label>
+    <length>32768</length>
+    <type>LongTextArea</type>
+    <visibleLines>5</visibleLines>
+</CustomField>

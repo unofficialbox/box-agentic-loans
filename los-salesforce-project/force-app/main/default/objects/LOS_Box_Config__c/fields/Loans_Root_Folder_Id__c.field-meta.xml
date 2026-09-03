@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Loans_Root_Folder_Id__c</fullName>
+    <description>Box folder ID that contains every governed loan folder. Configuration rather than a caller argument: a portfolio search has to be bounded, and Box metadata search is enterprise-wide, so unscoped it also returns files from earlier demo environments.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Box folder ID of the loans root. Set per environment; not stored in source.</inlineHelpText>
+    <label>Loans Root Folder ID</label>
+    <length>32</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

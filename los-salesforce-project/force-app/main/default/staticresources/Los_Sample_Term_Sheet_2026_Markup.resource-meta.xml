@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<StaticResource xmlns="http://soap.sforce.com/2006/04/metadata">
+    <cacheControl>Private</cacheControl>
+    <contentType>application/vnd.openxmlformats-officedocument.wordprocessingml.document</contentType>
+    <description>Borrower-marked 2026 Harborview term sheet in Word (still negotiating), used by seed-los-loan-files.apex to populate the 2026 loan's Box folder.</description>
+</StaticResource>

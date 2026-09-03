@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Loan_ID__c</fullName>
+    <description>Stable loan identifier, for example LN-2026-0042, supplied by validated Box intake and used for idempotent upsert. It is the reference a person uses in conversation and the key every governed action resolves a loan by.</description>
+    <externalId>true</externalId>
+    <label>Loan ID</label>
+    <length>80</length>
+    <required>false</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>
