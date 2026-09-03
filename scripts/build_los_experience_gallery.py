@@ -86,6 +86,12 @@ BOX_EXPERIENCES = [
         "title": "Draft commitment letter",
         "description": "The commitment letter Box Doc Gen rendered from the governed action: policy at issue, requested and approved positions, approved exceptions, proposed terms. A draft pending Credit Committee approval.",
     },
+    {
+        "file": "box-term-sheet-metadata.png",
+        "eyebrow": "Box metadata",
+        "title": "Term sheet markup, withheld from the borrower",
+        "description": "The borrower's red-line markup carrying losDocument metadata: Term Sheet, versionStatus Internal, policyRisk Critical. Internal is the status the borrower portal withholds and portfolio search flags.",
+    },
 ]
 SALESFORCE_EXPERIENCES = [
     {
