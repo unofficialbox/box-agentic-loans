@@ -96,7 +96,7 @@
     </fieldPermissions>
     <objectPermissions>
         <allowCreate>false</allowCreate>
-        <allowDelete>false</allowDelete>
+        <allowDelete>true</allowDelete>
         <allowEdit>true</allowEdit>
         <allowRead>true</allowRead>
         <!--
@@ -105,7 +105,9 @@
           Private/Private, so a with-sharing update from LosApplyLoanTerms fails with
           INSUFFICIENT_ACCESS_OR_READONLY on every record. The write itself is bounded by
           the class: seven allow-listed fields, a confirmed flag a human must set, and a
-          refusal once the loan is Closed or Servicing. Create and delete stay off.
+          refusal once the loan is Closed or Servicing. Create stays off. Delete is on only
+          because the platform refuses Modify All without it (deploy error "Modify All
+          depends on Delete"); no LOS class or MCP tool deletes a loan.
         -->
         <modifyAllRecords>true</modifyAllRecords>
         <object>LOS_Loan__c</object>
