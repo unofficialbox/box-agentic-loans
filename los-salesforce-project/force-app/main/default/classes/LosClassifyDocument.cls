@@ -29,7 +29,6 @@ global with sharing class LosClassifyDocument {
     private static final String TEMPLATE_SCOPE = 'enterprise';
     private static final String TEMPLATE_KEY = 'losDocument';
     /** Pinned so a Box AI schema change is a deliberate edit here, not a surprise in production. */
-    private static final String BOX_API_VERSION = '2025.0';
 
     /**
      * The template's own options, in the template's own spelling. `config/box/metadata-
@@ -255,7 +254,6 @@ global with sharing class LosClassifyDocument {
         req.setMethod('POST');
         req.setHeader('Authorization', 'Bearer ' + token);
         req.setHeader('Content-Type', 'application/json');
-        req.setHeader('box-version', BOX_API_VERSION);
         // Box AI reads the whole document before answering, which is slower than a metadata call.
         req.setTimeout(120000);
         req.setBody(JSON.serialize(new Map<String, Object>{

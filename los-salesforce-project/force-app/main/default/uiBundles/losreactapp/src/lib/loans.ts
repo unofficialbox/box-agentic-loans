@@ -12,6 +12,13 @@ import { describeError, failed, firstLine, type Loaded } from "./loaded";
 
 /** Recognisable by the view, so it can offer a way in rather than a reason. */
 export const NOT_AUTHENTICATED = "not-authenticated";
+/**
+ * The platform's own refusal, before the class ran. The site's guest profile holds no
+ * access to the loan classes, so a signed-out visitor is answered with a bare 403 by the
+ * class gate rather than the 401 the class itself would have sent. To the visitor both
+ * mean the same thing -- sign in -- and the view treats them alike.
+ */
+export const FORBIDDEN = "forbidden";
 
 export interface LosLoanSummary {
   recordId: string;
@@ -49,6 +56,9 @@ export async function fetchLosLoans(): Promise<Loaded<LosLoanSummary[]>> {
       // loans. Surface it as its own state, not as a status code.
       if (response.status === 401 || detail.includes("not_authenticated")) {
         return { ok: false, error: NOT_AUTHENTICATED };
+      }
+      if (response.status === 403) {
+        return { ok: false, error: FORBIDDEN };
       }
       return failed(
         `Salesforce returned ${response.status} for the loan list.${detail ? ` ${detail}` : ""}`,

@@ -1,5 +1,12 @@
-import { afterEach, describe, expect, test } from "vitest";
-import { apexRestUrl } from "./apexRest";
+import { afterEach, describe, expect, test, vi } from "vitest";
+
+const sdkFetch = vi.fn(async () => new Response("{}", { status: 201 }));
+vi.mock("@salesforce/platform-sdk", () => ({
+  createDataSDK: vi.fn(async () => ({ fetch: sdkFetch })),
+  gql: (strings: TemplateStringsArray) => strings.join(""),
+}));
+
+import { apexFetch, apexRestUrl } from "./apexRest";
 
 /**
  * Pinned because two plausible-looking URLs are both wrong against a signed-in session,
@@ -31,5 +38,35 @@ describe("Apex REST URLs", () => {
 
   test("leaves the path alone off-platform, where the local harness serves it", () => {
     expect(apexRestUrl("/services/apexrest/los/loans")).toBe("/services/apexrest/los/loans");
+  });
+});
+
+/**
+ * Pinned because the gateway answers every write with an empty 401 unless the request
+ * carries the surface's CSRF token, which only the Platform SDK's fetch knows how to get.
+ */
+describe("Apex REST writes", () => {
+  afterEach(() => {
+    delete (globalThis as { SFDC_ENV?: unknown }).SFDC_ENV;
+    sdkFetch.mockClear();
+    vi.unstubAllGlobals();
+  });
+
+  test("go through the Platform SDK on the bundle surface, with the bare path", async () => {
+    (globalThis as { SFDC_ENV?: unknown }).SFDC_ENV = { apiPath: "/loans/sf/api", basePath: "/loans" };
+    const plain = vi.fn();
+    vi.stubGlobal("fetch", plain);
+    const response = await apexFetch("/services/apexrest/los/applications", { method: "POST", body: "{}" });
+    expect(response.status).toBe(201);
+    expect(sdkFetch).toHaveBeenCalledWith("/services/apexrest/los/applications", { method: "POST", body: "{}" });
+    expect(plain).not.toHaveBeenCalled();
+  });
+
+  test("use the plain fetch off-platform, where there is no gateway", async () => {
+    const plain = vi.fn(async () => new Response("[]", { status: 200 }));
+    vi.stubGlobal("fetch", plain);
+    await apexFetch("/services/apexrest/los/applications", { method: "POST" });
+    expect(plain).toHaveBeenCalledWith("/services/apexrest/los/applications", { method: "POST" });
+    expect(sdkFetch).not.toHaveBeenCalled();
   });
 });

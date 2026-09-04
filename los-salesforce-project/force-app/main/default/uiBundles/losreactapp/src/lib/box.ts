@@ -1,5 +1,5 @@
 import { LOS_CONFIG } from "../config";
-import { apexRestUrl } from "./apexRest";
+import { apexFetch, apexRestUrl } from "./apexRest";
 import { describeError, failed, firstLine, type Loaded } from "./loaded";
 
 declare global {
@@ -183,7 +183,7 @@ export async function fetchDownscopedBoxToken(
     // the folder and mint a token in one request -- hence provision, then retry.
     if (!granted.accessToken && granted.needsFolder && recordId) {
       const provisioned = await provisionBoxFolder(recordId);
-      if (provisioned) {
+      if (provisioned.ok) {
         granted = await requestToken(query, context.folderId);
       }
     }
@@ -230,26 +230,40 @@ async function requestToken(query: string, requestedFolderId: string): Promise<T
 }
 
 /**
- * Ask the Box for Salesforce package to create this record's workspace folder. Returns
- * false rather than throwing; the caller retries the token request either way, and the
- * refusal that follows is what the reader is shown.
+ * Ask the Box for Salesforce package to create this record's workspace folder.
+ *
+ * Its own request, deliberately. Creating a loan record is DML and provisioning its
+ * folder is a callout, and Apex forbids a callout after DML in one transaction -- so the
+ * browser creates, then provisions, in that order. The token path calls this when a
+ * record turns out to have no folder; the application form calls it straight after the
+ * record is created, so the borrower's first upload has somewhere to land.
+ *
+ * A failure is reported rather than thrown; the caller decides whether to retry the token
+ * or show the reason, and the refusal is what the reader sees either way.
  */
-async function provisionBoxFolder(recordId: string): Promise<boolean> {
+export async function provisionBoxFolder(
+  recordId: string,
+): Promise<Loaded<{ recordId: string; folderId?: string }>> {
   try {
-    const response = await fetch(
-      apexRestUrl(`/services/apexrest/los/box-folder?recordId=${encodeURIComponent(recordId)}`),
+    const response = await apexFetch(
+      `/services/apexrest/los/box-folder?recordId=${encodeURIComponent(recordId)}`,
       { method: "POST", headers: { Accept: "application/json" } },
     );
     if (!response.ok) {
-      console.warn(
-        `[LOS] Could not provision a Box folder (${response.status}).`,
-        await response.text().catch(() => ""),
+      const detail = firstLine(await response.text().catch(() => ""));
+      return failed(
+        `Salesforce returned ${response.status} creating the loan's Box folder.${detail ? ` ${detail}` : ""}`,
       );
-      return false;
     }
-    return true;
+    const result = (await response.json().catch(() => ({}))) as { recordId?: string; folderId?: string };
+    return {
+      ok: true,
+      value: {
+        recordId: result.recordId || recordId,
+        ...(result.folderId ? { folderId: result.folderId } : {}),
+      },
+    };
   } catch (error) {
-    console.warn("[LOS] Folder provisioning unreachable.", error);
-    return false;
+    return failed(`Folder provisioning could not be reached. ${describeError(error)}`);
   }
 }

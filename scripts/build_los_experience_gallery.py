@@ -116,10 +116,22 @@ SALESFORCE_EXPERIENCES = [
 
 REACT_EXPERIENCES = [
     {
+        "file": "los-borrower-apply.png",
+        "eyebrow": "Borrower portal",
+        "title": "Start an application",
+        "description": "The intake beat begins here: loan type, amount, term, purpose, borrowing entity and collateral, with the documents the bank will ask for listed before the borrower submits.",
+    },
+    {
+        "file": "los-borrower-workspace-checklist.png",
+        "eyebrow": "Borrower portal",
+        "title": "Uploads classified by Box AI",
+        "description": "The new application's workspace after two uploads: Box AI named each document against the losDocument template, the checklist ticked itself, and the loan application is still outstanding.",
+    },
+    {
         "file": "los-borrower-loans.png",
         "eyebrow": "Borrower portal",
         "title": "Dana Whitfield's loans",
-        "description": "The Crestline Borrower Portal signed in as the Harborview CFO: loans by status, value by loan, upcoming maturities, and only Harborview's three loans. The Pinecrest loan in the same org is not visible.",
+        "description": "The Crestline Borrower Portal signed in as the Harborview CFO: loans by status, value by loan, upcoming maturities, the new application in progress, and only Harborview's loans. The Pinecrest loan in the same org is not visible.",
     },
     {
         "file": "los-react-workspace.png",

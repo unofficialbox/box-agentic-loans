@@ -61,3 +61,65 @@ describe("styles.css", () => {
     }
   });
 });
+
+/**
+ * The palette is the identity. Every hue the page uses is a token on :root, so the whole
+ * look can be read in one block -- and so the navy-and-blue CLM portal this app was
+ * forked from cannot creep back one hex code at a time.
+ */
+describe("Crestline Bank identity", () => {
+  const css = stripComments(readFileSync(join(__dirname, "styles.css"), "utf8"));
+  const root = css.slice(css.indexOf(":root {"), css.indexOf("}", css.indexOf(":root {")));
+
+  test("declares the palette as custom properties on :root", () => {
+    const expected: Record<string, string> = {
+      "--cb-ink": "#1B2A2F",
+      "--cb-bg": "#F6F3EC",
+      "--cb-surface": "#FFFFFF",
+      "--cb-line": "#E4DED2",
+      "--cb-green": "#0F4C45",
+      "--cb-green-deep": "#0A332E",
+      "--cb-amber": "#C9871A",
+      "--cb-success": "#2E7D5B",
+      "--cb-warning": "#B8641B",
+      "--cb-danger": "#A93A3A",
+      "--cb-muted": "#6B7470",
+    };
+    for (const [token, value] of Object.entries(expected)) {
+      expect(root).toMatch(new RegExp(`${token}:\\s*${value};`, "i"));
+    }
+  });
+
+  test("uses a serif stack for headings and keeps Lato for the body", () => {
+    expect(root).toMatch(/--cb-serif:\s*"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;/);
+    expect(root).toMatch(/--cb-sans:\s*Lato,/);
+    expect(css).toMatch(/h1, h2, h3 \{ font-family: var\(--cb-serif\);/);
+  });
+
+  test("carries none of the CLM portal's colours", () => {
+    // Navy top bar, blue square mark, blue focus rings. If any of these is back, so is
+    // the resemblance.
+    for (const old of ["#071b33", "#1166e8", "#4d9aff", "#2f6fd0", "#2a78d6"]) {
+      expect(css.toLowerCase()).not.toContain(old);
+    }
+  });
+
+  test("no source file mentions Headless 360", () => {
+    const srcDir = __dirname;
+    const offenders: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const path = join(dir, entry.name);
+        if (entry.isDirectory()) walk(path);
+        // Tests may name the phrase in order to assert its absence; sources may not.
+        else if (/\.(tsx?|css|html)$/.test(entry.name) && !/\.(test|spec)\.tsx?$/.test(entry.name)) {
+          if (readFileSync(path, "utf8").includes("Headless 360")) offenders.push(path);
+        }
+      }
+    };
+    walk(srcDir);
+    walk(join(srcDir, "..", "e2e"));
+    expect(offenders).toEqual([]);
+    expect(readFileSync(join(srcDir, "..", "index.html"), "utf8")).not.toContain("Headless 360");
+  });
+});

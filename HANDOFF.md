@@ -334,6 +334,30 @@ back the consumer secret.
   50 MB Metadata API limit.
 - **Salesforce Multi-Framework must be enabled per org** before `UIBundle` exists (MT-041).
 
+### 6.10a What the live intake run taught (2026-09-04)
+
+- **Writes from the bundle need the Platform SDK.** A plain `fetch` through `SFDC_ENV.apiPath`
+  reads fine, but the gateway answers every POST, PUT and PATCH with an empty 401 unless the
+  request carries the surface's CSRF token, which only `createDataSDK().fetch` obtains (from
+  `.../ui-api/session/csrf`, sent as `X-CSRF-Token`, retried once on rejection). `apexFetch`
+  in `src/lib/apexRest.ts` routes every write through it and falls back to plain `fetch`
+  off-platform. GETs stay on plain `fetch`.
+- **No `box-version` header on Box AI.** `/2.0/ai/extract_structured` rejects
+  `box-version: 2025.0` with `invalid_api_version`; only Doc Gen wants that header.
+  `LosClassifyDocument` sends none, like `LosExtractLoanTerms`.
+- **The loan lookup states its access level.** `LosLoanPackage.LoanLookup` runs its dynamic
+  SOQL with `AccessLevel.SYSTEM_MODE` explicitly. Defaulted, a borrower's classify call died
+  with "No such column 'Risk_Rating__c'" before the folder was resolved, because the borrower
+  has no FLS on the bank-only fields. Each caller still decides what it returns; the
+  borrower-facing ones return none of those fields.
+- **`LOS_Borrower_Portal` grants `LosBoxFolderService`.** Creating an application is one
+  request and provisioning its folder is the next, from the browser, so the borrower must be
+  allowed to call the provisioning endpoint or every new loan opens on a 404.
+- **Borrower uploads are attributed to the CCG subject.** The downscoped token acts as the
+  configured Box user, so a document Dana uploads shows "Updated by" that user in Box and in
+  the workspace history. Per-user Box OAuth (MT-040) is the fix; until then the storyboard
+  should not draw attention to the uploader name.
+
 ### 6.11 The borrower portal's entry flow and identity
 
 - **Where a borrower lands is decided by the loan count.** After `LosWhoAmI` resolves,

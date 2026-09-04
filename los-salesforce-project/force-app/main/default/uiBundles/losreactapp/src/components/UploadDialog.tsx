@@ -27,14 +27,26 @@ const ContentUploader = lazy(() =>
  * open and returns to whatever opened it on close, so the keyboard is not stranded at the
  * top of the document afterwards.
  */
+export interface UploadedFile {
+  id: string;
+  name: string;
+}
+
 export function UploadDialog({
   folderId,
   tokenProvider,
   onClose,
+  onUploaded,
 }: {
   folderId: string;
   tokenProvider: () => string;
   onClose: () => void;
+  /**
+   * The Box files a batch of uploads produced, once every one of them has finished.
+   * Only the ids and names: the caller uses them to ask Salesforce to classify each file,
+   * and everything else about the file is re-read from the folder listing.
+   */
+  onUploaded?: (files: UploadedFile[]) => void;
 }) {
   const dialog = useRef<HTMLDivElement>(null);
   const opener = useRef<Element | null>(null);
@@ -100,6 +112,7 @@ export function UploadDialog({
                 /* The token is downscoped to this one folder, so an upload cannot land
                    anywhere else even if the element were asked to. */
                 onClose={onClose}
+                onComplete={(files) => onUploaded?.(uploadedFiles(files))}
               />
             </Suspense>
           </IntlProvider>
@@ -108,4 +121,17 @@ export function UploadDialog({
     </div>,
     document.body,
   );
+}
+
+/**
+ * The element reports each item's Box file object; one that failed to upload has none.
+ * Only files Box actually created are passed on -- classifying an id that does not exist
+ * would fail at the endpoint and the failure would name a file the borrower never saw.
+ */
+function uploadedFiles(items: unknown[]): UploadedFile[] {
+  return items.flatMap((item) => {
+    const file = item as { id?: unknown; name?: unknown } | null | undefined;
+    if (!file || typeof file.id !== "string" || !file.id) return [];
+    return [{ id: file.id, name: typeof file.name === "string" ? file.name : file.id }];
+  });
 }

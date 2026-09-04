@@ -7,6 +7,16 @@
         <apexClass>LosBoxTokenService</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <!--
+      Provisioning is the borrower's first request after creating an application: the
+      workspace asks the package for the loan's folder and, when there is none yet, asks
+      this class to create one. Without the grant the new loan opens on a 404 it can never
+      leave. The class binds the folder to the record and grants nothing else.
+    -->
+    <classAccesses>
+        <apexClass>LosBoxFolderService</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
     <classAccesses>
         <apexClass>LosBorrowerLoans</apexClass>
         <enabled>true</enabled>

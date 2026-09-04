@@ -288,19 +288,24 @@ public with sharing class LosLoanPackage {
      * LosLoanListService, which reads the same object the same way.
      *
      * Dynamic SOQL only so the projection is written once; every bind stays a bind.
+     * The access level is stated rather than defaulted: a borrower classifying a document
+     * reaches this lookup, and under user mode the projection fails on the bank-only fields
+     * (Risk_Rating__c and the pricing ratios) with "No such column" before the folder is
+     * ever resolved. System mode here reads the record; what each caller returns to its
+     * user is still that caller's decision, and the borrower-facing ones return none of it.
      */
     private without sharing class LoanLookup {
         private LOS_Loan__c byReference(String reference) {
             List<LOS_Loan__c> found = Database.query(
                 'SELECT ' + LOAN_FIELDS + ' FROM LOS_Loan__c WHERE Loan_ID__c = :reference LIMIT 1'
-            );
+            , AccessLevel.SYSTEM_MODE);
             if (!found.isEmpty()) {
                 return found[0];
             }
             if (reference instanceof Id) {
                 found = Database.query(
                     'SELECT ' + LOAN_FIELDS + ' FROM LOS_Loan__c WHERE Id = :reference LIMIT 1'
-                );
+                , AccessLevel.SYSTEM_MODE);
                 if (!found.isEmpty()) {
                     return found[0];
                 }
@@ -310,7 +315,7 @@ public with sharing class LosLoanPackage {
                 'SELECT ' + LOAN_FIELDS + ' FROM LOS_Loan__c'
                 + ' WHERE Name LIKE :pattern OR Loan_ID__c LIKE :pattern'
                 + ' ORDER BY LastModifiedDate DESC LIMIT 1'
-            );
+            , AccessLevel.SYSTEM_MODE);
             return found.isEmpty() ? null : found[0];
         }
     }

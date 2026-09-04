@@ -11,7 +11,7 @@ locals {
         "config" = {
           "artifact_name" = "screenshot-manifest"
           "artifact_type" = "config"
-          "captureStatus" = "11 loan-demo screens captured on 2026-09-04 from the live Salesforce org and Box enterprise (MT-072). Surfaces that are still browser-built specifications (Box App dashboard and views, Box Automate intake, approval and connector stages, the signed-in borrower workspace) have no capture and render as 'Screen capture pending' placeholders."
+          "captureStatus" = "13 loan-demo screens captured on 2026-09-04 from the live Salesforce org and Box enterprise (MT-072). Surfaces that are still browser-built specifications (Box App dashboard and views, Box Automate intake, approval and connector stages, the signed-in borrower workspace) have no capture and render as 'Screen capture pending' placeholders."
           "created_at" = "2026-07-23T11:55:20Z"
           "cropRule" = "Capture the real page viewport only; exclude browser tabs, address bars, documentation pages, and unrelated desktop content."
           "enterprise_id" = ""
@@ -71,10 +71,24 @@ locals {
             }
             {
               "capturedOn" = "2026-09-04"
+              "path" = "output/screenshots/box-salesforce-los/los-borrower-apply.png"
+              "readiness" = "real-demo"
+              "scenario" = "box-salesforce-los"
+              "sourceSurface" = "Crestline Borrower Portal: Start an application form, filled"
+            }
+            {
+              "capturedOn" = "2026-09-04"
               "path" = "output/screenshots/box-salesforce-los/los-borrower-loans.png"
               "readiness" = "real-demo"
               "scenario" = "box-salesforce-los"
-              "sourceSurface" = "Crestline Borrower Portal: signed-in borrower loan list (Experience Cloud React UI Bundle)"
+              "sourceSurface" = "Crestline Borrower Portal: signed-in borrower loan list with the new-application action (Experience Cloud React UI Bundle)"
+            }
+            {
+              "capturedOn" = "2026-09-04"
+              "path" = "output/screenshots/box-salesforce-los/los-borrower-workspace-checklist.png"
+              "readiness" = "real-demo"
+              "scenario" = "box-salesforce-los"
+              "sourceSurface" = "Crestline Borrower Portal: new application workspace with two uploads classified by Box AI and the required-documents checklist"
             }
             {
               "capturedOn" = "2026-09-03"

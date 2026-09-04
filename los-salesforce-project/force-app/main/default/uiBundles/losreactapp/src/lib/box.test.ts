@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { fetchBoxFolderName, fetchDownscopedBoxToken, getLosPageContext, listBoxFolderItems } from "./box";
+import { fetchBoxFolderName, fetchDownscopedBoxToken, getLosPageContext, listBoxFolderItems, provisionBoxFolder } from "./box";
 
 describe("LOS page context", () => {
   test("defaults to a workspace id the token endpoint will reject rather than serve", () => {
@@ -249,5 +249,28 @@ describe("fetchBoxFolderName", () => {
     expect(result.ok).toBe(false);
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
     expect((await fetchBoxFolderName("42", "scoped-token")).ok).toBe(false);
+  });
+});
+
+describe("provisionBoxFolder", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  test("posts by record and hands back the folder the package created", async () => {
+    // Its own request, because the application form has just created the record in a
+    // separate one: Apex forbids a callout after DML in a single transaction.
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ recordId: "a01", folderId: "555" }) }));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await provisionBoxFolder("a01")).toEqual({ ok: true, value: { recordId: "a01", folderId: "555" } });
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/services/apexrest/los/box-folder?recordId=a01");
+    expect(init.method).toBe("POST");
+  });
+
+  test("reports the refusal with its reason rather than throwing", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 502, text: async () => '{"error":"box_unavailable"}' })));
+    const result = await provisionBoxFolder("a01");
+    expect(result.ok).toBe(false);
+    expect(result.ok === false && result.error).toContain("502");
+    expect(result.ok === false && result.error).toContain("box_unavailable");
   });
 });
