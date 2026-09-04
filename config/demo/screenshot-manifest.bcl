@@ -11,7 +11,7 @@ locals {
         "config" = {
           "artifact_name" = "screenshot-manifest"
           "artifact_type" = "config"
-          "captureStatus" = "9 loan-demo screens captured on 2026-09-03 from the live Salesforce org and Box enterprise (MT-072). Surfaces that are still browser-built specifications (Box App dashboard and views, Box Automate intake, approval and connector stages, the signed-in borrower workspace) have no capture and render as 'Screen capture pending' placeholders."
+          "captureStatus" = "11 loan-demo screens captured on 2026-09-04 from the live Salesforce org and Box enterprise (MT-072). Surfaces that are still browser-built specifications (Box App dashboard and views, Box Automate intake, approval and connector stages, the signed-in borrower workspace) have no capture and render as 'Screen capture pending' placeholders."
           "created_at" = "2026-07-23T11:55:20Z"
           "cropRule" = "Capture the real page viewport only; exclude browser tabs, address bars, documentation pages, and unrelated desktop content."
           "enterprise_id" = ""
@@ -70,6 +70,13 @@ locals {
               "sourceSurface" = "Salesforce Setup: Agentforce Agents list with Loan Copilot active"
             }
             {
+              "capturedOn" = "2026-09-04"
+              "path" = "output/screenshots/box-salesforce-los/los-borrower-loans.png"
+              "readiness" = "real-demo"
+              "scenario" = "box-salesforce-los"
+              "sourceSurface" = "Crestline Borrower Portal: signed-in borrower loan list (Experience Cloud React UI Bundle)"
+            }
+            {
               "capturedOn" = "2026-09-03"
               "path" = "output/screenshots/box-salesforce-los/los-loan-copilot-builder.png"
               "readiness" = "real-demo"
@@ -82,6 +89,13 @@ locals {
               "readiness" = "real-demo"
               "scenario" = "box-salesforce-los"
               "sourceSurface" = "Salesforce LOS Loan record page (Loan Origination app)"
+            }
+            {
+              "capturedOn" = "2026-09-04"
+              "path" = "output/screenshots/box-salesforce-los/los-react-workspace.png"
+              "readiness" = "real-demo"
+              "scenario" = "box-salesforce-los"
+              "sourceSurface" = "Crestline Borrower Portal: LN-2026-0042 workspace over the governed Box folder, Internal documents withheld"
             }
           ]
         }

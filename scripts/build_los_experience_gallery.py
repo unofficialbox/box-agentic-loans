@@ -116,10 +116,16 @@ SALESFORCE_EXPERIENCES = [
 
 REACT_EXPERIENCES = [
     {
+        "file": "los-borrower-loans.png",
+        "eyebrow": "Borrower portal",
+        "title": "Dana Whitfield's loans",
+        "description": "The Crestline Borrower Portal signed in as the Harborview CFO: loans by status, value by loan, upcoming maturities, and only Harborview's three loans. The Pinecrest loan in the same org is not visible.",
+    },
+    {
         "file": "los-react-workspace.png",
         "eyebrow": "Borrower portal",
         "title": "Harborview Logistics loan workspace",
-        "description": "The Crestline Borrower Portal with the governed Box loan folder, loan context from Salesforce, and Internal documents withheld from the borrower.",
+        "description": "The LN-2026-0042 workspace over the governed Box loan folder: review progress, documents by type, the draft commitment letter, and the borrower's own uploads. The Internal term-sheet markup is withheld; eight of nine documents show.",
     },
 ]
 

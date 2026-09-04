@@ -344,11 +344,12 @@ back the consumer secret.
 1. **Nothing has run live.** Every "Deployed integration" claim from the CLM predecessor is
    downgraded to **Portable specification** or **Local deterministic fixture** here until a
    confirmed Box enterprise and Salesforce org prove it and `validation-receipts.json` says so.
-2. **MT-072 — screenshot inventory captured where a screen exists.** Nine screens from the
-   live org and enterprise: the Salesforce record page, Agentforce agents list and Agent
-   Builder topology; the Box loan folder, workspace, Doc Gen templates, credit policy Hub,
-   generated commitment letter and the term-sheet metadata. Box App, Box Automate and the
-   signed-in borrower workspace have no screen yet and render "Screen capture pending".
+2. **MT-072 — screenshot inventory captured where a screen exists.** Eleven screens from
+   the live org and enterprise: the Salesforce record page, Agentforce agents list and Agent
+   Builder topology, the signed-in borrower loan list and workspace; the Box loan folder,
+   workspace, Doc Gen templates, credit policy Hub, generated commitment letter and the
+   term-sheet metadata. Box App and Box Automate have no screen yet and render "Screen
+   capture pending".
 3. **MT-045 — guest sharing decision.** `LOS_Loan__c` is Private/Private and the
    Experience Cloud guest has no record access. Granting a guest sharing rule would make loan
    records readable by anyone who can open the site: a deliberate exposure, not a bug to fix.
