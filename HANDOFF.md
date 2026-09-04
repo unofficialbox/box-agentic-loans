@@ -6,7 +6,7 @@ Snapshot of `box-claudeforce-loans` for an agent picking up this repo cold. Writ
 
 A commercial **loan origination** (LOS) demo built on **Box + Salesforce**, ported from the mature Box + Salesforce contract lifecycle (CLM) demo in the sibling `box-bedrock-for-clm` repository. It ships deterministic local fixtures, portable configuration, and self-contained presenter HTML. Nothing here requires a live org to validate — "repository mode" is meant to be fully green offline; live presenter-readiness is a separate opt-in gate.
 
-**One scenario:** **Box + Salesforce Loan Origination**. Primary surface is the Salesforce Multi-Framework React app (the borrower portal); governed Apex actions are the only path between Box and Salesforce, and humans keep credit authority. Box intake stays as the entry point — the metadata-triggered Automate workflow is how a loan application reaches the record — so `config/box/*.bcl`, the 04 entry-point module, and the `LOS_Box_Automate_Integration` permission set are all retained.
+**One scenario:** **Box + Salesforce Loan Origination**. Primary surface is the Salesforce Multi-Framework React app (the borrower portal); governed Apex actions are the only path between Box and Salesforce, and humans keep credit authority. The borrower portal is the main entry point: a borrower signs in, starts an application (`LosCreateApplication`), and uploads the documents `config/los/required-documents.bcl` asks for, each classified by Box AI (`LosClassifyDocument`) against `losDocument`. The metadata-triggered Automate workflow is the alternate path — email or Box intake still reaches the record — so `config/box/*.bcl`, the 04 entry-point module, and the `LOS_Box_Automate_Integration` permission set are all retained.
 
 **The story** (see `DEMO-STORYBOARD.html`): Alex Bennett, Commercial Loan Officer at Crestline Bank, works the Harborview Logistics distribution-facility loan (`LN-2026-0042`, $4.8M, in Underwriting). The borrower's marked-up term sheet weakens the DSCR test in Section 9.3 and inflates the collateral pool in Schedule A; the appraisal came in at $5.65M, so LTV is 85% and DSCR 1.12x — outside even the approved policy exceptions. Harborview accepted 70% / 1.30x on both loans it already closed (`LN-2023-0311`, `LN-2025-0148`). A commitment letter is generated; signature is refused because the loan is not Approved; the borrower portal shows Dana Whitfield only Harborview's loans with Internal documents withheld.
 
@@ -25,6 +25,7 @@ A commercial **loan origination** (LOS) demo built on **Box + Salesforce**, port
 - **Ported, then deployed once.** Every mechanical identifier was renamed (CLM → LOS, `CLM_Contract__c` → `LOS_Loan__c`, `Clm*` → `Los*`, `/clm/` → `/los/`, `/clm` → `/loans`) and the prose, fixtures, field semantics and storyboard were rewritten for loans. On 2026-09-03 the repository was deployed to one Salesforce org and one Box enterprise (the same ones as the CLM demo, reusing its CCG app) and smoke-tested: token endpoint, loan package, Box AI ask and extract, refused unconfirmed write-back, signature guard on an Underwriting loan, bounded portfolio search, Doc Gen template registration, credit policy Hub. The Box App, Form, Automate intake and the borrower-portal login remain untested browser surfaces. IDs from that run live only in the gitignored `config/runtime/*.json`.
 - Validation expectation: `python3 scripts/validate_los.py` should report every repository-mode check passed with one skip (live receipts). Which checks run offline: secrets and runtime-ID scan, JSON/BCL parse, Markdown links, Mermaid/SVG drift, Python unit tests, React lint/test/build/Playwright, deterministic fixture drift, presenter HTML rebuild, screenshot manifest (allowed to be empty here — MT-072), reset and idempotency rules, and the SOQL-projection-versus-permission-set check. Four checks shell out to the UI bundle, so `npm ci` in `los-salesforce-project/force-app/main/default/uiBundles/losreactapp` has to run first.
 - Two Apex actions are **new in this port** and have no CLM ancestor: `LosExtractLoanTerms` (Box AI structured extract of `loanAmount, interestRate, termMonths, collateralValue, ltv, dscr, maturityDate` from one file of the named loan, compared to the record, read-only) and `LosApplyLoanTerms` (writes human-accepted values to an allow-list of `LOS_Loan__c` fields; refuses without `confirmed = true` and refuses on Closed/Servicing loans). Together they are the storyboard's Extract and write-back. Both ran live on 2026-09-03: Extract returned five values from the term-sheet markup and flagged the LTV and DSCR mismatches against the record; Apply with `confirmed = false` wrote nothing.
+- Two more Apex actions arrived with the borrower intake (2026-09-04) and have not run live: `LosCreateApplication` (`POST /los/applications`; creates one `LOS_Loan__c` in Application status for the signed-in borrower's own Account, `Record_Source__c = Borrower Portal`, `Purpose__c` from the form, `Loan_ID__c` numbered after the last one that year; user-mode DML) and `LosClassifyDocument` (`POST /los/classify?recordId=&fileId=`, also invocable; Box AI `extract_structured` against `losDocument`, writes `documentType` and `versionStatus = Draft` to the file, or writes nothing and says the document awaits the loan officer's classification). `LOS_Loan__c` gained `Purpose__c` and the `Borrower Portal` record source. MT-058 is the smoke test.
 - The Loan Copilot (`LOS_Loan_Copilot`) is an internal surface only. No version has been published from this repo.
 
 The CLM repo got live Box working through two waves of stacked failures, each masking the next; every constraint they discovered that still governs the code is in §6. The one habit worth carrying forward is why they were so slow to find — the workspace used to answer *any* Box failure with synthetic fixtures, so a CORS rejection, a dead endpoint and a crashed component all rendered the same plausible screen. That fallback is gone; every failure names itself on the page.
@@ -50,6 +51,7 @@ The CLM repo got live Box working through two waves of stacked failures, each ma
 | `config/box/automate-workflows.bcl` | Intake workflow (`LOS - Loan Application Intake Enrichment`) incl. the credit-memo and executed-covenants tails |
 | `config/box/metadata-templates.bcl` | `losLoan`, `losDocument`, `losCovenant`, `losPolicy`, `losUnderwritingReview` |
 | `config/los/expert-routing.bcl` | Underwriting domains and named owners (Credit Risk, Collateral, Compliance, Loan Documentation, Pricing, Insurance, Servicing) |
+| `config/los/required-documents.bcl` | The borrower checklist per `Loan_Type__c` (`documentType`, `label`, `why`); `src/lib/requiredDocuments.ts` mirrors it and `tests/test_required_documents.py` fails when they drift |
 | `sample-data/policies/` | The credit policy library: `LOS-LTV-*`, `LOS-DSCR-*`, `LOS-RATE-*`, `LOS-GUAR-*` |
 | `los-salesforce-project/.forceignore` | Keeps `node_modules` out of the UI bundle deploy — do not delete |
 | `.../classes/LosBoxTokenService.cls` | Downscoped Box token endpoint (`/services/apexrest/los/box-token`); reads the `LOS_Box` external credential |
@@ -57,6 +59,7 @@ The CLM repo got live Box working through two waves of stacked failures, each ma
 | `.../classes/LosExtractLoanTerms.cls`, `LosApplyLoanTerms.cls` | **New.** The storyboard's Extract (read-only, with validation against the record) and the human-confirmed write-back — the only governed write in the demo |
 | `.../classes/LosGenerateCommitmentLetter.cls`, `LosSendForSignature.cls` | Doc Gen commitment letter into the loan's folder; Box Sign preparation gated on `SIGNABLE = {'Approved','Commitment'}` |
 | `.../classes/LosLoanListService.cls`, `LosBorrowerLoans.cls` | `/los/loans` projection for the borrower portal (`LoanSummary`); "Get my loans" for the signed-in borrower via Contact → Account |
+| `.../classes/LosCreateApplication.cls`, `LosClassifyDocument.cls` | **New.** The borrower's own intake: create the application record (then the browser provisions the folder, §6.10), and classify each upload with Box AI against `losDocument` |
 | `.../externalCredentials/LOS_Box.externalCredential-meta.xml` | Where the Box client id/secret live (encrypted in the org, never in source) |
 | `.../objects/LOS_Box_Config__c/` | `Box_User_Id__c` / `Enterprise_Id__c`, `Allowed_Folder_Ids__c`, `Credit_Policy_Hub_Id__c`, `Loans_Root_Folder_Id__c`, `Commitment_Letter_Template_ID__c` |
 | `.../permissionsets/` | `LOS_Demo_Operator`, `LOS_Box_Preview_Guest` (MT-042), `LOS_Borrower_Portal`, `LOS_Loan_Agent`, `LOS_MCP_Client`, `LOS_Box_Automate_Integration` |
@@ -67,6 +70,7 @@ The CLM repo got live Box working through two waves of stacked failures, each ma
 | `.../losreactapp/src/components/BoxWorkspace.tsx` | Token, then folder listing; either failure renders `DataError` with the reason, and no fixture stands in |
 | `.../losreactapp/src/components/BoxElements.tsx` | Folder table + lazy Content Preview; needs `react-intl` and `MemoryRouter` providers |
 | `.../losreactapp/src/components/LoanList.tsx`, `PortfolioCharts.tsx` | The borrower's loans (Loan, Borrowing entity, Amount, Matures, Status); loans by status and maturities in 90 days |
+| `.../losreactapp/src/components/ApplicationForm.tsx`, `RequiredDocuments.tsx` | The application form (`?view=apply`) and the checklist card shown on Application and Underwriting loans; `src/lib/applications.ts`, `classify.ts`, `requiredDocuments.ts` behind them |
 | `.../losreactapp/src/lib/box.ts` | `WITHHELD_VERSION_STATUS = "Internal"` — internal underwriting documents never reach the borrower; default `loanId` `LN-2026-0042` |
 | `.../cspTrustedSites/LOS_Box_App.cspTrustedSite-meta.xml` | frame-src grant for `*.app.box.com`, without which the preview frame is blank (MT-043) |
 | `.../losreactapp/vite.live-box.ts` | Dev-only plugin serving a real downscoped token locally (`npm run preview:live`; env `LOS_BOX_FOLDER_ID`, `LOS_ORG_ALIAS`) |
@@ -77,8 +81,8 @@ The CLM repo got live Box working through two waves of stacked failures, each ma
 | `los-salesforce-project/scripts/seed-los-*.apex` / `.sh` | Anonymous-apex seeders (records; per-loan Box file uploads from the `Los_Sample_*` static resources) |
 | `docs/operator/box-preview-setup.md` | Box app, credential, CORS, folder-id gotcha, error→cause table |
 | `docs/maintainers/README.md` | The local live-Box harness: `preview:live` vs `dev:live`, and why |
-| `docs/operator/manual-task-register.md` | MT register; MT-036–MT-048 are the live-Box and site tasks |
-| `tests/` | `test_bcl.py`, `test_demo_operator.py`, `test_validate_los.py`, presenter/branding/navigation checks |
+| `docs/operator/manual-task-register.md` | MT register; MT-036–MT-048 are the live-Box and site tasks; MT-058 is the borrower intake smoke test |
+| `tests/` | `test_bcl.py`, `test_required_documents.py` (BCL ↔ React checklist), `test_demo_operator.py`, `test_validate_los.py`, presenter/branding/navigation checks |
 | `docs/conventions.md` | Readiness vocabulary (4 states) + safety rules |
 
 ## 6. Constraints that will bite you
@@ -311,6 +315,13 @@ back the consumer secret.
 
 - **Callouts are forbidden after DML.** Any provision-then-call sequence makes the callout
   first or splits into two requests (`BoxEmailAttachmentUploader` chains a second job).
+  The borrower intake is the visible case: `LosCreateApplication` inserts the record and
+  returns `boxFolderId = null`; the browser then calls `POST /los/box-folder?recordId=`
+  (`LosBoxFolderService`, whose folder creation is a callout) as a second request. Do not
+  fold them into one endpoint — it will compile and fail at runtime with
+  `CalloutException: You have uncommitted work pending`. If the second request fails, the
+  record exists without a folder and the workspace names that; retry the folder call, never
+  the form, which would create a second application.
 - **Apex REST discards the body of some status codes**, so an upstream 502 reaches the
   caller as `INTERNAL_SERVER_ERROR`; catch upstream failures and return your own 500.
 - **Apex reserves `when` and `list`.** `HttpRequest list = ...` fails with `Missing ';'`.
@@ -323,7 +334,32 @@ back the consumer secret.
   50 MB Metadata API limit.
 - **Salesforce Multi-Framework must be enabled per org** before `UIBundle` exists (MT-041).
 
-### 6.11 Dependency pins that are load-bearing
+### 6.11 The borrower portal's entry flow and identity
+
+- **Where a borrower lands is decided by the loan count.** After `LosWhoAmI` resolves,
+  a borrower with zero loans opens on **Start an application** (`?view=apply`); one with
+  loans opens on **Your loans** (`?view=loans`) with a **Start a new application** button.
+  A guest gets the sign-in prompt, whether the list call answered 401 or the Apex class
+  gate answered 403 — an error card here is a bug, not a state.
+- **The form submits, provisions, then opens the workspace** with `loanId`, `recordId` and
+  `folderId` in the URL exactly as `openLoan` does. One inline sentence on failure; the
+  page never invents a loan id.
+- **Uploads classify themselves, off the UI thread.** After the upload dialog closes the
+  page calls `/los/classify` per new file id, bumps `reloadKey`, and shows "Classified as
+  Appraisal by Box AI" or the awaiting-classification sentence. The checklist ticks on
+  `metadata.enterprise.losDocument.documentType`; untagged files are listed beneath it,
+  never ticked and never hidden. `Internal` is still withheld.
+- **It is not the CLM portal, and should not look like it.** Left rail (232px, icons under
+  980px) with the "CB" monogram, **Crestline Bank**, and the line *Borrower Portal*; a slim
+  top bar with the page title and `ProfileMenu`; no top-bar tabs and no "Headless 360".
+  Tokens live on `:root` in `styles.css` (`--cb-ink`, `--cb-bg` warm cream, `--cb-green`
+  evergreen primary, `--cb-amber` accent, `--cb-line`, `--cb-muted`, and the
+  success/warning/danger trio). Serif headings, Lato body (box-ui-elements needs it),
+  tabular numbers, 6px card radius with a 1px line and no shadow, pill primary buttons,
+  outlined secondary, small-caps status chips; charts in evergreen, amber and sand, not
+  blue. `styles.test.ts` asserts on the tokens — update it with them, not around them.
+
+### 6.12 Dependency pins that are load-bearing
 
 - **`.npmrc` sets `legacy-peer-deps=true`.** Without it `npm ci` fails ERESOLVE and four
   validation checks go red. It changes no resolved version.
@@ -366,6 +402,9 @@ back the consumer secret.
 8. **`default_agent_user` in `LOS_Loan_Copilot` must be bound per org** before publish.
 9. **No live-org state in commits.** Any org mutation needs explicit approval and a
    confirmed target, and is the user's call to fire.
+10. **MT-058 — the borrower intake has not run live.** `LosCreateApplication` and
+    `LosClassifyDocument` have unit tests with mocked callouts only. The first live run
+    creates a real record and folder; remove them only under MT-074.
 
 ## 8. How to verify you're in a good state
 

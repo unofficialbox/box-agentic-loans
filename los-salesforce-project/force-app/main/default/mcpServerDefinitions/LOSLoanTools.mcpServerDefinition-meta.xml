@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <McpServerDefinition xmlns="http://soap.sforce.com/2006/04/metadata">
-    <description>Governed Apex over the LOS loan book: list loans, resolve one and its Box documents, ask Box AI, extract and apply loan terms, draft a commitment letter, prepare a signature request. Box credentials stay in Apex, so a client never holds a Box token.</description>
+    <description>Governed Apex over the LOS loan book: list loans, resolve one and its Box documents, ask Box AI, classify a document, extract and apply terms, draft a commitment letter, prepare a signature request. Box credentials stay in Apex; clients hold none.</description>
     <masterLabel>LOS Loan Tools</masterLabel>
     <tools>
         <apiDefinition>
@@ -81,5 +81,15 @@
         <descriptionOverride>Prepares a Box Sign request for one document of a loan and returns a URL for a human to review and send. It sends nothing. Always call it rather than judging eligibility yourself; the refusal names the blocking status and is the answer.</descriptionOverride>
         <toolName>prepareSignatureRequest</toolName>
         <toolTitle>Prepare a Box Sign Request</toolTitle>
+    </tools>
+    <tools>
+        <apiDefinition>
+            <apiIdentifier>aa:apex-LosClassifyDocument</apiIdentifier>
+            <apiSource>API_CATALOG</apiSource>
+            <operation>LosClassifyDocument</operation>
+        </apiDefinition>
+        <descriptionOverride>Classifies one document of a named loan with Box AI against the losDocument template and writes documentType (and policyRisk when found) to the file. A file outside that loan is refused; a document Box AI cannot name is left for a loan officer.</descriptionOverride>
+        <toolName>classifyDocument</toolName>
+        <toolTitle>Classify a Loan Document</toolTitle>
     </tools>
 </McpServerDefinition>

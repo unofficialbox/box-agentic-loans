@@ -1,0 +1,170 @@
+# Box Dispatch BCL config artifact. BCL is the only supported import format.
+# The borrower portal's required-documents checklist, keyed by LOS_Loan__c.Loan_Type__c.
+# The React constant REQUIRED_DOCUMENTS (src/lib/requiredDocuments.ts) mirrors this file
+# exactly; tests/test_required_documents.py fails when the two drift.
+locals {
+  "bcl" = {
+    "context" = "loans"
+    "generatedAt" = "2026-09-04T00:00:00Z"
+    "metadata" = {
+    }
+    "provider" = "generic"
+    "resources" = [
+      {
+        "config" = {
+          "artifact_name" = "required-documents"
+          "artifact_type" = "config"
+          "created_at" = "2026-09-04T00:00:00Z"
+          "enterprise_id" = ""
+          "metadataTemplate" = "losDocument"
+          "provider" = "generic"
+          "provider_object_id" = "los/required-documents"
+          "requirements" = {
+            "Term Loan" = [
+              {
+                "documentType" = "Application"
+                "label" = "Loan application"
+                "why" = "The signed application that says who is borrowing and what for."
+              }
+              {
+                "documentType" = "Financial Statement"
+                "label" = "Financial statements"
+                "why" = "Your latest balance sheet and income statement, so we can see how the business is performing."
+              }
+              {
+                "documentType" = "Tax Return"
+                "label" = "Business tax returns"
+                "why" = "Filed returns that confirm the income your financial statements report."
+              }
+              {
+                "documentType" = "Bank Statement"
+                "label" = "Bank statements"
+                "why" = "Recent statements showing the cash flow that will service the loan."
+              }
+            ]
+            "Line of Credit" = [
+              {
+                "documentType" = "Application"
+                "label" = "Loan application"
+                "why" = "The signed application that says who is borrowing and what for."
+              }
+              {
+                "documentType" = "Financial Statement"
+                "label" = "Financial statements"
+                "why" = "Your latest balance sheet and income statement, so we can see how the business is performing."
+              }
+              {
+                "documentType" = "Bank Statement"
+                "label" = "Bank statements"
+                "why" = "Recent statements showing the cash flow that will service the loan."
+              }
+            ]
+            "Equipment Finance" = [
+              {
+                "documentType" = "Application"
+                "label" = "Loan application"
+                "why" = "The signed application that says who is borrowing and what for."
+              }
+              {
+                "documentType" = "Financial Statement"
+                "label" = "Financial statements"
+                "why" = "Your latest balance sheet and income statement, so we can see how the business is performing."
+              }
+              {
+                "documentType" = "Tax Return"
+                "label" = "Business tax returns"
+                "why" = "Filed returns that confirm the income your financial statements report."
+              }
+            ]
+            "Commercial Real Estate" = [
+              {
+                "documentType" = "Application"
+                "label" = "Loan application"
+                "why" = "The signed application that says who is borrowing and what for."
+              }
+              {
+                "documentType" = "Financial Statement"
+                "label" = "Financial statements"
+                "why" = "Your latest balance sheet and income statement, so we can see how the business is performing."
+              }
+              {
+                "documentType" = "Tax Return"
+                "label" = "Business tax returns"
+                "why" = "Filed returns that confirm the income your financial statements report."
+              }
+              {
+                "documentType" = "Bank Statement"
+                "label" = "Bank statements"
+                "why" = "Recent statements showing the cash flow that will service the loan."
+              }
+              {
+                "documentType" = "Appraisal"
+                "label" = "Property appraisal"
+                "why" = "An independent value for the property the loan secures."
+              }
+              {
+                "documentType" = "Insurance"
+                "label" = "Proof of insurance"
+                "why" = "Evidence the property is insured, with the bank named on the policy."
+              }
+              {
+                "documentType" = "Environmental Report"
+                "label" = "Environmental report"
+                "why" = "An assessment confirming the property carries no environmental liability."
+              }
+            ]
+            "SBA 7(a)" = [
+              {
+                "documentType" = "Application"
+                "label" = "Loan application"
+                "why" = "The signed application that says who is borrowing and what for."
+              }
+              {
+                "documentType" = "Financial Statement"
+                "label" = "Financial statements"
+                "why" = "Your latest balance sheet and income statement, so we can see how the business is performing."
+              }
+              {
+                "documentType" = "Tax Return"
+                "label" = "Business tax returns"
+                "why" = "Filed returns that confirm the income your financial statements report."
+              }
+              {
+                "documentType" = "Bank Statement"
+                "label" = "Bank statements"
+                "why" = "Recent statements showing the cash flow that will service the loan."
+              }
+              {
+                "documentType" = "Insurance"
+                "label" = "Proof of insurance"
+                "why" = "Evidence the collateral is insured, with the bank named on the policy."
+              }
+            ]
+          }
+          "rules" = [
+            "A row is received when any file in the loan's Box folder carries losDocument.documentType equal to the row's type."
+            "A file with no losDocument metadata is received and awaiting classification; it is listed under the checklist, not ticked."
+            "The checklist is shown while the loan is in Application or Underwriting and never blocks an upload."
+          ]
+          "schemaVersion" = "1.0"
+        }
+        "metadata" = {
+          "artifactName" = "required-documents"
+          "artifactType" = "config_file"
+          "createdAt" = "2026-09-04T00:00:00Z"
+          "enterpriseId" = ""
+          "provider" = "generic"
+          "providerObjectId" = "los/required-documents"
+          "scenario" = "box-claudeforce-loans"
+        }
+        "name" = "config_los_required-documents"
+        "provider" = "generic"
+        "scenario" = "box-claudeforce-loans"
+        "terraformType" = "null_resource"
+        "type" = "config_file"
+      }
+    ]
+    "scenario" = "box-claudeforce-loans"
+    "version" = "1.0"
+  }
+}

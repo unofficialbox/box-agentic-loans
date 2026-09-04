@@ -40,8 +40,8 @@ Salesforce stores validated structured context, the bank's own assessment, and o
 
 | Group | Fields |
 |---|---|
-| Identity | `Name`, `Loan_ID__c`, `Record_Source__c` |
-| Intake | `Applicant_Name__c`, `Applicant_Email__c`, `Borrower__c`, `Borrower_Account__c`, `Borrower_Entity__c`, `Opportunity__c`, `Loan_Type__c`, `Loan_Amount__c`, `Term_Months__c`, `Region__c`, `Collateral_Type__c`, `Target_Closing_Date__c` |
+| Identity | `Name`, `Loan_ID__c`, `Record_Source__c` (`Box Automate`, `Manual`, `API`, `Borrower Portal`) |
+| Intake | `Applicant_Name__c`, `Applicant_Email__c`, `Borrower__c`, `Borrower_Account__c`, `Borrower_Entity__c`, `Opportunity__c`, `Loan_Type__c`, `Loan_Amount__c`, `Term_Months__c`, `Purpose__c` (long text, 2000; the borrower's own words, shown on the layout under the loan overview), `Region__c`, `Collateral_Type__c`, `Target_Closing_Date__c` |
 | Credit terms | `Interest_Rate__c`, `LTV__c`, `DSCR__c`, `Collateral_Value__c`, `Maturity_Date__c` — the allow-list `LosApplyLoanTerms` may write, with `Loan_Amount__c` and `Term_Months__c` |
 | Assessment | `Risk_Rating__c`, `Underwriting_Notes__c` — never projected to the borrower |
 | Ownership | `OwnerId`, `Loan_Officer__c`, `Loan_Officer_Name__c` |
@@ -54,11 +54,21 @@ Deployable metadata: `los-salesforce-project/force-app/main/default/objects/LOS_
 
 ## Borrower projection
 
-`LosLoanListService.LoanSummary` serves the borrower portal exactly `recordId, loanId, name, borrower, borrowerEntity, loanType, status, loanAmount, termMonths, maturityDate, boxFolderId`. `Risk_Rating__c`, `LTV__c`, `DSCR__c`, and `Underwriting_Notes__c` are deliberately absent from the projection, not merely from the permission set, because Apex does not enforce field-level security in SOQL for authenticated users. `LOS_Box_Preview_Guest` and `LOS_Borrower_Portal` grant exactly the projected fields; `validate_los.py` checks this offline.
+`LosLoanListService.LoanSummary` serves the borrower portal exactly `recordId, loanId, name, borrower, borrowerEntity, loanType, status, loanAmount, termMonths, maturityDate, boxFolderId`; the create response adds `purpose`. `Risk_Rating__c`, `LTV__c`, `DSCR__c`, and `Underwriting_Notes__c` are deliberately absent from the projection, not merely from the permission set, because Apex does not enforce field-level security in SOQL for authenticated users. `LOS_Box_Preview_Guest` and `LOS_Borrower_Portal` grant read on exactly the projected fields; `LOS_Borrower_Portal` also holds create on `LOS_Loan__c` and edit on the intake fields the application form writes, and nothing on the assessment fields. `validate_los.py` checks the projection offline.
 
-## Intake integration
+## Borrower portal intake
 
-> **Inbound email is the realistic first hop.** Before an application reaches the Box intake, it usually arrives by email. The `EmailIntakeHandler` inbound email service (see [Inbound Email Intake Service](../operator/email-intake-service.md)) captures a borrower's email onto the matching Opportunity's activity timeline and uploads the attachment **straight into that Opportunity's Box folder** via the Box for Salesforce managed package — the file is stored once, in Box, not duplicated as a Salesforce File. That handler does **not** create `LOS_Loan__c` — record creation stays in the governed path described here.
+The main intake is the borrower's own: a Customer Community User signs in to the Crestline Borrower Portal, fills in the application form, and uploads the documents the checklist for that loan type asks for (`config/los/required-documents.bcl`). Two governed actions serve it.
+
+**`LosCreateApplication`** — `POST /services/apexrest/los/applications` with `{ loanType, loanAmount, termMonths, purpose, borrowerEntity?, collateralType? }`. It creates one `LOS_Loan__c` in `Application` status with `Record_Source__c = Borrower Portal`, `Borrower_Account__c` set from the signed-in user's Contact, `Borrower__c` and `Borrower_Entity__c` from that Account, `Applicant_Name__c` and `Applicant_Email__c` from the user, `Purpose__c` as typed, and `Loan_ID__c = LN-<yyyy>-<NNNN>` numbered after the highest already used that year. It never sets rate, LTV, DSCR, collateral value, risk rating or loan officer; those stay the bank's. The body carries no account id and none is accepted, so a borrower can only create for their own Account. It answers `201` with the `LoanSummary` projection plus `purpose`, refuses guests with `401 not_authenticated`, a user with no Contact or Account with `403 no_borrower_account`, and bad input with `400 invalid_application` (loan type must be a `Loan_Type__c` value; amount over 0 and at most 50,000,000; term 6 to 360 months; purpose 10 to 2000 characters). DML runs in user mode, so the borrower's field-level security is what gates it.
+
+**Create, then provision — two requests.** `boxFolderId` is null in the create response. The browser then calls `POST /services/apexrest/los/box-folder?recordId=<Id>` (`LosBoxFolderService`) to provision the loan's Box folder. They cannot be one request: Apex forbids a callout after DML in the same transaction, and the folder step is a callout. If the second request fails the record exists without a folder and the workspace says so; retrying the folder step is safe, resubmitting the form is not.
+
+**`LosClassifyDocument`** — after each upload the browser calls `POST /services/apexrest/los/classify?recordId=<Id>&fileId=<Box file id>` (also an invocable action, "Classify a loan document with Box AI"). It refuses a file that is not in that loan's folder and a loan the caller cannot read, asks Box AI `extract_structured` against the `losDocument` template, and writes the file's metadata only when the answer names a `documentType` in the template's enum: `versionStatus = Draft`, `aiSummaryStatus = Complete`, `approvalStatus = Pending`, `signatureStatus = Not Required`, plus `policyRisk` when Box AI returns a valid one. When Box AI cannot name a type it writes nothing and answers `classified = false` with a summary saying the document was received and is awaiting the loan officer's classification — a legitimate answer, not an error. The checklist counts a row received when any file in the folder carries that `documentType`; untagged files are listed as awaiting classification, not ticked.
+
+## Alternate intake: email and Box Automate
+
+> **Inbound email is the realistic first hop for a borrower who does not use the portal.** Before an application reaches the Box intake, it usually arrives by email. The `EmailIntakeHandler` inbound email service (see [Inbound Email Intake Service](../operator/email-intake-service.md)) captures a borrower's email onto the matching Opportunity's activity timeline and uploads the attachment **straight into that Opportunity's Box folder** via the Box for Salesforce managed package — the file is stored once, in Box, not duplicated as a Salesforce File. That handler does **not** create `LOS_Loan__c` — record creation stays in the governed path described here.
 
 > **Designed path vs. duplicate-safe target.** The workflow uses a plain **POST** create to the sobject collection (`services/data/{apiVersion}/sobjects/LOS_Loan__c`), captured in `config/box/https-connectors.bcl` as `salesforceLoanCreate`. The CLM predecessor proved that POST end to end; the loans variant has not been run live. The POST is **not idempotent**: a resubmission creates a second record. The external-ID **PATCH upsert** described below is the duplicate-safe *design target*; it is not the live path. Restore it — and verify against a live run — only if duplicate safety is required. The connector marks this (`salesforceLoanCreate`, `idempotency.safe = false`).
 
@@ -68,7 +78,7 @@ The duplicate-safe design is an upsert by external ID:
 PATCH /services/data/{apiVersion}/sobjects/LOS_Loan__c/Loan_ID__c/{urlEncodedLoanId}
 ```
 
-No custom Apex REST service is required for intake. The approved Box Automate branch maps validated values directly to Salesforce field API names and sends the request over an OAuth 2.0 HTTPS connection.
+No custom Apex REST service is required on this alternate path. The approved Box Automate branch maps validated values directly to Salesforce field API names and sends the request over an OAuth 2.0 HTTPS connection.
 
 An insert returns a record ID; a successful update returns `204 No Content`. So the next step retrieves the record through the same external-ID resource:
 

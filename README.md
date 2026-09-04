@@ -27,6 +27,8 @@ The complete persona index is in [docs/README.md](docs/README.md). AI assistants
 
 The scenario uses the Harborview Logistics loan file and governance model. Box remains authoritative for loan-file content; Salesforce `LOS_Loan__c` remains authoritative for structured credit truth. Loan-file bytes never flow into Salesforce, and every generation, signature and record write is human-gated.
 
+The borrower path: a borrower signs in to the Crestline Borrower Portal, starts an application, and uploads the documents the bank asks for (`config/los/required-documents.bcl`); Box AI classifies each upload against the `losDocument` template, so the lender's Copilot, the portfolio search and the borrower's own checklist read one classification, and the lender's record appears in Application status with its Box folder. Email and Box Automate intake remain an alternate path.
+
 ## Get started
 
 Before running anything, complete operator prerequisites:

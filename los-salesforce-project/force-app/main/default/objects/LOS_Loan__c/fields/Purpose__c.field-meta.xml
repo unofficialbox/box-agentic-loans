@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Purpose__c</fullName>
+    <description>What the borrower says the loan is for, in their own words, captured when they start the application in the borrower portal. The loan officer reads it; nothing derives from it.</description>
+    <inlineHelpText>The purpose of the loan as the borrower stated it on their application.</inlineHelpText>
+    <label>Purpose</label>
+    <length>2000</length>
+    <type>LongTextArea</type>
+    <visibleLines>4</visibleLines>
+</CustomField>

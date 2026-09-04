@@ -60,7 +60,7 @@ Box token and a borrower's browser holds a token scoped to a single folder.
 
 ![Box + Salesforce Loan Origination flow](../../../diagrams/box-salesforce-los-flow.svg)
 
-1. An application package arrives with the borrower's marked-up term sheet and lands in a governed Box folder.
+1. The borrower signs in to the Crestline Borrower Portal, starts an application, and uploads the documents the checklist asks for; Box AI classifies each one against `losDocument`, and the record appears in Application status with its Box folder. (Email and Box Automate intake remain an alternate path.)
 2. Extract pulls the requested terms onto the record with a citation per field; validation flags LTV and DSCR against the appraisal and the financials.
 3. The internal reader asks how the markup compares to the credit policy library; findings cite Box files, and the library is the reference, not the model.
 4. Precedent comes from what this borrower actually agreed on the loans it already closed.
@@ -79,7 +79,7 @@ Box token and a borrower's browser holds a token scoped to a single folder.
 
 | Step | Tell | Show | Tell |
 |---|---|---|---|
-| 1. Their paper | "The term sheet came back marked up by the borrower, on their numbers." | The governed loan file for `LN-2026-0042` and the borrower's marked-up term sheet in preview. | "The section titled Financial Covenants is untouched. The risk is elsewhere." |
+| 1. Their paper | "The borrower starts the application, and the bank tells them what it needs." | Dana Whitfield in the Crestline Borrower Portal: a Commercial Real Estate application, the seven-row required-documents checklist, an appraisal and financials uploaded and classified by Box AI, then the lender's record in Application status with its Box folder. | "Nobody picked a document type from a menu. One classification, read by the Copilot, the portfolio search and her own checklist." |
 | 2. Risk | "The portfolio already knows what is risky." | A metadata search returning critical-policy-risk documents across loans. | "One query, not a folder walk." |
 | 3. Policy | "Read it against the credit policy library." | Extract's validation flags LTV 85% and DSCR 1.12x; the cited answer names Section 9.3, Schedule A, `LOS-LTV-001/002`, `LOS-DSCR-001/002` and Credit Risk. | "A keyword search for loan-to-value finds nothing — the markup never uses the phrase." |
 | 4. Precedent | "What did they agree the last two times?" | The 2023 and 2025 executed loan agreements: 70% LTV and 1.30x DSCR in Schedule 1 of each. | "Course of dealing is what moves a credit conversation." |
@@ -151,6 +151,8 @@ For the complete narrative, use the [portable guide](../../../../output/html/01-
 7. Confirm Extract writes nothing, and Apply refuses without confirmation.
 8. Sign in to the site as the borrower user and confirm they see only their own
    loans, with Internal documents withheld.
+9. Submit a labeled application from the portal (MT-058) and confirm the record, its
+   Box folder, and the Box AI classification of one uploaded document.
 
 ### Guardrail checks
 

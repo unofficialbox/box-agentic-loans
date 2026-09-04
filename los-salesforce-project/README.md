@@ -1,6 +1,6 @@
 # LOS Salesforce Project
 
-This Salesforce DX project contains the portable `LOS_Loan__c` data model, layout, permission sets, tab, Lightning record page, the governed Apex actions (loan package, Box AI ask and extract, term write-back, commitment letter, Box Sign preparation), the `LOSLoanTools` MCP server definition, the `LOS_Loan_Copilot` agent script, and an authenticated external Experience Cloud site powered by a Salesforce Multi-Framework React UI Bundle (the Crestline Borrower Portal).
+This Salesforce DX project contains the portable `LOS_Loan__c` data model, layout, permission sets, tab, Lightning record page, the governed Apex actions (borrower application create, Box AI document classification, loan package, Box AI ask and extract, term write-back, commitment letter, Box Sign preparation), the `LOSLoanTools` MCP server definition, the `LOS_Loan_Copilot` agent script, and an authenticated external Experience Cloud site powered by a Salesforce Multi-Framework React UI Bundle (the Crestline Borrower Portal).
 
 Start with [LOS Demo Operator Start Here](../docs/operator/start-here.md). The root automation deploys the portable components and deliberately excludes tenant-specific OAuth metadata.
 
@@ -66,6 +66,8 @@ The Box tab uses the `box:recordBoxFolder` component from the Box for Salesforce
 | `LosGenerateCommitmentLetter` | MCP | Box Doc Gen draft commitment letter into the loan's folder | No configured template; the draft approves nothing |
 | `LosSendForSignature` | MCP | Prepares a Box Sign request and returns the prepare URL | Any status other than Approved or Commitment; it never sends |
 | `LosBorrowerLoans` | Borrower site agent | The signed-in borrower's own loans, from their Contact's Account | Any reference to another borrower's loan |
+| `LosCreateApplication` | Borrower portal (`POST /los/applications`) | Creates one `LOS_Loan__c` in Application status for the signed-in borrower's own Account, numbered `LN-<yyyy>-<NNNN>` after the last one that year; the browser then provisions the Box folder in a second request | Guests (401); a user with no Contact or Account (403); an invalid loan type, amount, term or purpose (400); any account id in the body; rate, LTV, DSCR, risk or officer, ever |
+| `LosClassifyDocument` | Borrower portal (`POST /los/classify`), agent | Box AI structured extraction of `losDocument.documentType` for one uploaded file, written to the file's metadata with `versionStatus = Draft` | A file outside the named loan's folder; a loan the caller cannot read; a type outside the template's enum — then it writes nothing and says the document awaits the loan officer's classification |
 
 Configuration for these lives on the `LOS_Box_Config__c` custom setting: the CCG subject, the folder allowlist, the credit policy Hub, the loans root folder and the commitment-letter template. See `scripts/configure-los-box-settings.sh`.
 
@@ -112,6 +114,6 @@ Use client credentials, `api` scope only, administrator preauthorization, and th
 2. Configure the same-origin, authorized, downscoped Box-token endpoint (`LosBoxTokenService` at `/services/apexrest/los/box-token`) before claiming live embedded Box content.
 3. Open the authenticated Experience Cloud site at its generated `/loans` URL. The packaged site metadata mounts `c__losreactapp` as the application space.
 4. Pass this environment's `recordId`, `loanId`, and `folderId`.
-5. Use Salesforce standard REST external-ID upsert and lookup (`Loan_ID__c`) for intake record creation; no custom Apex intake service is required.
+5. Borrower intake is `LosCreateApplication` (create) followed by `LosBoxFolderService` (provision the folder) — two requests from the browser, in that order, because Apex cannot make a callout after DML in one transaction. The alternate email/Box Automate intake uses Salesforce standard REST external-ID upsert and lookup (`Loan_ID__c`) and needs no custom Apex.
 
 The repository does not include Apex for underwriting-finding routing or lifecycle-event ingestion; those stay in the Box Automate designs. The loans variant has not been run against a live org at all, so treat every endpoint here as implemented-and-tested-offline until a live receipt says otherwise.

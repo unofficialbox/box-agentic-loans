@@ -292,19 +292,19 @@
   <header class="masthead">
     <p class="eyebrow">Presenter storyboard</p>
     <h1>Harborview Demo Storyboard</h1>
-    <p class="standfirst">A term sheet marked up on the borrower's numbers, read against the credit policy library and the two loans Harborview already closed. Six beats, two windows, every prompt below is copy-paste.</p>
+    <p class="standfirst">A borrower starts the application in the Crestline Borrower Portal; a term sheet marked up on the borrower's numbers is read against the credit policy library and the two loans Harborview already closed. Six beats, two windows, every prompt below is copy-paste.</p>
     <p class="standfirst"><strong>Bind before use.</strong> The site URL and the borrower login below are placeholders; substitute the values for the environment you are presenting from. Everything else -- prompts, loan references, expected answers -- is portable. <strong>None of it has been run against a live org yet</strong>; expected answers come from the deterministic fixtures.</p>
     <div class="facts">
       <span><b>5–6 min</b> run time</span>
-      <span><b>Claude Desktop</b> beats 1–5</span>
-      <span><b>Private browser</b> beat 6</span>
+      <span><b>Private browser</b> beats 1 and 6</span>
+      <span><b>Claude Desktop</b> beats 2–5</span>
       <span><b>Loan Copilot</b> internal only</span>
     </div>
   </header>
 
   <section>
     <h2>Preflight</h2>
-    <p class="section-note">Six checks before anyone is watching. P5 and P6 are one-time setup — they stay here because a rebuilt org needs them again.</p>
+    <p class="section-note">Seven checks before anyone is watching. P5 to P7 are one-time setup — they stay here because a rebuilt org needs them again.</p>
 
     <div class="step">
       <div class="marker">P1</div>
@@ -342,8 +342,8 @@
       <div>
         <span class="where">Claude Desktop</span>
         <h3>Connect both connectors, and refresh the LOS one</h3>
-        <p><strong>The Box connector must be on as well as the LOS one.</strong> Beat 1 previews the marked-up term sheet and beat 2 searches Box metadata; neither is possible with only the LOS tools loaded. If the LOS connector was added before the Extract and Apply tools existed, open <strong>Settings → Connectors</strong>, find it, disconnect and reconnect it. Don't retype the endpoint — reuse the one already configured.</p>
-        <div class="expect"><strong>Expect both connectors listed under Context in the session</strong>, not merely enabled in Settings &mdash; a project with only LOS loaded cannot preview a document, and beat 1 falls back to reading file IDs aloud. Eight LOS tools: <code>listLoans</code>, <code>findDocumentsByRisk</code>, <code>getLoanPackage</code>, <code>askLoanDocument</code>, <code>extractLoanTerms</code>, <code>applyLoanTerms</code>, <code>generateCommitmentLetter</code>, <code>prepareSignatureRequest</code>. Beat 3 needs the two in the middle; beat 5 needs the last two.</div>
+        <p><strong>The Box connector must be on as well as the LOS one.</strong> Beat 2 searches Box metadata and beat 3 opens the marked-up term sheet; neither is possible with only the LOS tools loaded. If the LOS connector was added before the Extract and Apply tools existed, open <strong>Settings → Connectors</strong>, find it, disconnect and reconnect it. Don't retype the endpoint — reuse the one already configured.</p>
+        <div class="expect"><strong>Expect both connectors listed under Context in the session</strong>, not merely enabled in Settings &mdash; a project with only LOS loaded cannot preview a document, and beat 3 falls back to reading file IDs aloud. Eight LOS tools: <code>listLoans</code>, <code>findDocumentsByRisk</code>, <code>getLoanPackage</code>, <code>askLoanDocument</code>, <code>extractLoanTerms</code>, <code>applyLoanTerms</code>, <code>generateCommitmentLetter</code>, <code>prepareSignatureRequest</code>. Beat 3 needs the two in the middle; beat 5 needs the last two.</div>
       </div>
     </div>
 
@@ -366,7 +366,7 @@
       <div>
         <span class="where">Box</span>
         <h3>Check for stray duplicates</h3>
-        <p>In <strong>LOS-2026-Harborview / 02 - Borrower Documents</strong>, look for a <code>harborview-term-sheet-2026-borrower-markup (1).pdf</code> or any other <code>(1)</code> copy left by a re-run seed. A duplicate carries no metadata and shows up in the beat 1 folder listing; delete it, and confirm <code>Loans_Root_Folder_Id__c</code> in <code>LOS_Box_Config__c</code> points at the loans root so beat 2 is scoped.</p>
+        <p>In <strong>LOS-2026-Harborview / 02 - Borrower Documents</strong>, look for a <code>harborview-term-sheet-2026-borrower-markup (1).pdf</code> or any other <code>(1)</code> copy left by a re-run seed. A duplicate carries no metadata and shows up as "awaiting classification" in the beat 6 folder listing; delete it, and confirm <code>Loans_Root_Folder_Id__c</code> in <code>LOS_Box_Config__c</code> points at the loans root so beat 2 is scoped.</p>
       </div>
     </div>
 
@@ -379,23 +379,40 @@
         <div class="warn"><strong>Note</strong> the link goes to <code>&lt;borrower-user-email&gt;</code>, not your main inbox. Set the password, then confirm you can sign in to the site in a private window before the demo — not during it.</div>
       </div>
     </div>
+
+    <div class="step">
+      <div class="marker">P7</div>
+      <div>
+        <span class="where">Private browser window</span>
+        <h3>Sign in as Dana once, and check what she lands on</h3>
+        <p>Beat 1 opens on her screen, so the login has to work before the room is watching. Sign in at the <code>/loansvforcesite/login</code> path from beat 6, not under <code>/loans/</code>.</p>
+        <div class="expect"><strong>Expect</strong> the portal to open on <strong>Your loans</strong> with the three Harborview loans and a <strong>Start a new application</strong> button, under the Crestline Bank mark with <em>Borrower Portal</em> beneath it. A borrower with no loans lands on <strong>Start an application</strong> instead; a signed-out visitor gets the sign-in prompt, never an error card.</div>
+        <div class="warn"><strong>A rehearsal leaves a record behind.</strong> Every run of beat 1 creates a real <code>LOS_Loan__c</code> in Application status and a real Box folder, numbered after the last one for the year. Either present with the rehearsal application in view or have the demo owner remove it and its folder first (MT-074); do not delete it yourself during setup.</div>
+      </div>
+    </div>
   </section>
 
   <section>
     <h2>The six beats</h2>
-    <p class="section-note">Beats 1 through 5 run in Claude Desktop against <strong>both</strong> connectors &mdash; LOS for the loan data, Box for previews and metadata search. Beat 6 is a private browser window.</p>
+    <p class="section-note">Beat 1 is the borrower's browser. Beats 2 through 5 run in Claude Desktop against <strong>both</strong> connectors &mdash; LOS for the loan data, Box for previews and metadata search. Beat 6 returns to the browser.</p>
 
     <div class="step">
-      <div class="marker">1<span class="dur">45 sec</span></div>
+      <div class="marker">1<span class="dur">90 sec</span></div>
       <div>
-        <span class="where">Claude Desktop</span>
+        <span class="where">Private browser window</span>
         <h3>Their paper arrives</h3>
         <div class="block">
-          <div class="block-label"><span>prompt</span><button class="copy" type="button">Copy</button></div>
-          <pre>Show me Harborview Logistics' loan that is still in underwriting, then open a preview of their marked-up term sheet.</pre>
+          <div class="block-label"><span>url</span><button class="copy" type="button">Copy</button></div>
+          <pre>https://&lt;your-site&gt;.my.site.com/loansvforcesite/login?startURL=%2Floans%2F</pre>
         </div>
-        <p>Point at <code>harborview-term-sheet-2026-borrower-markup.pdf</code>. Say the line that sets up everything after it: Harborview's CFO sent our term sheet back on their numbers, so this is the document being underwritten — and <strong>the section titled Financial Covenants is untouched</strong>. The red is in 9.3 and in Schedule A.</p>
-        <p><strong>The preview is the beat.</strong> The package listing is only the means to it &mdash; Box file IDs are plumbing and mean nothing to a room, so let the document carry the point instead of reading a list aloud.</p>
+        <p>Sign in as Dana Whitfield, Harborview's CFO. Press <strong>Start a new application</strong>. Choose <strong>Commercial Real Estate</strong>, enter the amount and term, and one line of purpose &mdash; the distribution facility. The borrowing entity is already filled in from her account; she cannot apply for anyone else. Submit.</p>
+        <div class="expect"><strong>Expect</strong> the workspace to open on the new loan with a <strong>Required documents</strong> card listing the seven things the bank asks a real-estate borrower for: application, financial statements, tax returns, bank statements, appraisal, insurance, environmental report &mdash; each with one sentence saying why. Every row is missing and every row has an Upload button.</div>
+        <p>Upload two files from <code>output/pdf/</code>: <code>harborview-appraisal-2026.pdf</code>, then <code>harborview-financial-statements-fy2025.pdf</code>. Each one is sent to Box AI against the <code>losDocument</code> template as it lands.</p>
+        <div class="expect"><strong>Expect</strong> a line under the upload &mdash; <em>Classified as Appraisal by Box AI</em>, then <em>Classified as Financial Statement by Box AI</em> &mdash; and two ticks on the checklist. Nobody chose a document type from a menu; the type came from reading the document. A file Box AI cannot name is still received; it sits under the checklist as awaiting the loan officer's classification, and nothing is written to it.</div>
+        <p>Then the lender's side. Open the new record in Salesforce: <strong>Status</strong> Application, <strong>Record Source</strong> Borrower Portal, the purpose she typed, a loan ID numbered after the last one for the year, and a Box folder already holding her two classified files. The same metadata drives the Copilot, the portfolio search in beat 2 and her own checklist &mdash; one classification, three readers.</p>
+        <div class="warn"><strong>Two requests, in order.</strong> Creating the record and provisioning its Box folder are separate calls from the browser, because Apex cannot make a callout after a DML statement in one transaction. If the folder step fails, the record exists and the workspace says the folder was not provisioned; it does not invent one. Retry from the workspace rather than submitting the form again, which would create a second application.</div>
+        <p><strong>The alternate path is still there.</strong> A borrower who emails the package instead has it captured by the inbound email handler onto the Opportunity's Box folder, and applying <code>losLoan</code> metadata in <strong>01 - Application Intake</strong> starts the Automate enrichment workflow that creates the record. Mention it in one sentence if the room asks; do not show it.</p>
+        <p>Beats 2 to 5 pick up the Harborview loan that came in this way earlier in the year and is now in Underwriting, <code>LN-2026-0042</code>, with the term sheet the CFO sent back on her numbers.</p>
       </div>
     </div>
 
@@ -475,7 +492,7 @@
         </div>
         <p>Sign in as Dana Whitfield. The password is the one set in P6.</p>
         <div class="warn"><strong>Go to the login path, not the app path.</strong> <code>/loans/</code> serves the app for every URL beneath it — <code>/loans/login</code> and <code>/loans/s/login/</code> both render the workspace rather than a sign-in page, and a signed-out visitor is never redirected. The login page lives on the other path prefix, <code>/loansvforcesite/login</code>; <code>startURL</code> returns you to the workspace after.</div>
-        <div class="expect"><strong>Expect the header to name her</strong> — <code>Dana Whitfield · Harborview Logistics</code> — above three Harborview loans and no Pinecrest. One maturity inside 90 days (the 2023 line). Same code, different identity, different rows — enforced by a Salesforce sharing set on the borrower account, with the Box token downscoped to one folder.</div>
+        <div class="expect"><strong>Expect the header to name her</strong> — <code>Dana Whitfield · Harborview Logistics</code> — above the Harborview loans &mdash; the three seeded ones plus the application from beat 1 &mdash; and no Pinecrest. One maturity inside 90 days (the 2023 line). Same code, different identity, different rows — enforced by a Salesforce sharing set on the borrower account, with the Box token downscoped to one folder.</div>
         <p><strong>Point at the name.</strong> The page states who it is scoped to, so the scoping is shown rather than asserted — that is the whole beat. Open the 2026 loan afterwards and the workspace lists five documents where the internal package lists six: anything tagged <code>Internal</code> — the bank's marked-up analysis, credit memos — is withheld by metadata, not by a different folder. Her LTV, DSCR and risk rating are not on the page either; they are not in the projection at all.</p>
         <div class="warn"><strong>There is no Copilot on this page.</strong> A Service Agent runs as its own agent user rather than as Dana and takes the loan name from the conversation, so it could be asked about another borrower's loan — a scoped workspace around an unscoped agent. It was left off the borrower app rather than left for someone to find.</div>
       </div>
@@ -489,7 +506,7 @@
       <ul>
         <li><strong>The write-back is the one governed write, and it is not yet live-verified.</strong> <code>extractLoanTerms</code> reads and compares; <code>applyLoanTerms</code> writes seven allow-listed fields only when a person confirms, and refuses on a Closed or Servicing loan. Both have unit tests and no live run. Doc Gen writes the letter into the governed folder and Box Sign prepares a request; Extract on the <em>executed</em> letter to set maturity and covenant dates is specified, not built.</li>
         <li><strong>The Copilot is not on the borrower site, by decision.</strong> A Service Agent runs as its assigned agent user, so it could not inherit Dana's access. An Employee Agent inherits the signed-in user's permissions instead; that's the surface where "same agent, different access" holds, and it's where the internal Loan Copilot runs.</li>
-        <li><strong>The metadata tagging is manual.</strong> A metadata cascade policy on the loan folder is what would make it survive the next loan. Today it's applied by the seed script and by hand.</li>
+        <li><strong>The metadata tagging on seeded files is manual.</strong> Portal uploads are classified by Box AI as they land (beat 1); the seeded Harborview files were tagged by the seed script and by hand. A metadata cascade policy on the loan folder is what would make it survive the next loan.</li>
       </ul>
     </div>
   </section>

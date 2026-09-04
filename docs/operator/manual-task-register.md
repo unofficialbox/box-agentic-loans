@@ -62,11 +62,12 @@ Status values: **Required**, **Per run**, **Optional**, and **Confirmation requi
 | MT-050 | Select real domain experts or managed groups (Credit Risk, Collateral, Compliance, Loan Documentation, Pricing, Insurance, Servicing) | Credit Administration | Required | Every active domain has an owner and the Credit Administration Triage fallback is named |
 | MT-051 | Grant least-privilege Box access to reviewers | Content owner | Required | Each reviewer can access only required items |
 | MT-052 | Validate low-confidence and missing-owner triage | Credit Administration | Required | Exceptions route to the named triage owner |
-| MT-053 | Submit a labeled test intake | Demo operator | Per run | File, workflow run, and one Salesforce record are visible |
+| MT-053 | Submit a labeled test intake through the alternate email/Box Automate path | Demo operator | Per run | File, workflow run, and one Salesforce record are visible |
 | MT-054 | Validate duplicate-safe Salesforce behavior | Salesforce operator | Per run | Repeated loan ID updates the same record, or the duplicate is recorded and accepted |
 | MT-055 | Inspect citations and human task ownership | Human validator | Per run | Unsupported output is corrected; people retain credit approval authority |
 | MT-056 | Confirm signature is blocked | Credit Administration | Per run | A loan in Underwriting or Credit Review cannot be sent for signature |
 | MT-057 | Run Extract and the write-back on a labeled loan | Demo operator | Per run | `LosExtractLoanTerms` returns values with a validation summary and writes nothing; `LosApplyLoanTerms` refuses without `confirmed = true` and updates only allow-listed fields with it |
+| MT-058 | Submit a labeled application from the portal and confirm the record, folder and classification | Demo operator | Per run | Signed in as the borrower user (MT-048), **Start a new application** creates one `LOS_Loan__c` in Application status with `Record_Source__c = Borrower Portal`, `Purpose__c` as typed, and the next `LN-<yyyy>-<NNNN>`; the second request provisions its Box folder; an uploaded appraisal is written `losDocument.documentType = Appraisal` by `LosClassifyDocument` and the checklist ticks it. A guest gets the sign-in prompt, not an error, and a file Box AI cannot name is left untagged and reported as awaiting classification. Remove the test application and its folder afterwards only under MT-074 |
 
 ## Presenter and reset
 

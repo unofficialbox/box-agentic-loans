@@ -72,6 +72,11 @@
         <field>LOS_Loan__c.Box_Workspace_Folder_ID__c</field>
         <readable>true</readable>
     </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>LOS_Loan__c.Purpose__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
     <label>LOS Demo Operator</label>
     <objectPermissions>

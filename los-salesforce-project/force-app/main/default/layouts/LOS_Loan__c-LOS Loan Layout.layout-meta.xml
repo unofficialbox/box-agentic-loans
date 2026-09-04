@@ -14,6 +14,7 @@
             <layoutItems><behavior>Edit</behavior><field>Opportunity__c</field></layoutItems>
             <layoutItems><behavior>Edit</behavior><field>Loan_Type__c</field></layoutItems>
             <layoutItems><behavior>Edit</behavior><field>Status__c</field></layoutItems>
+            <layoutItems><behavior>Edit</behavior><field>Purpose__c</field></layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems><behavior>Required</behavior><field>Loan_Amount__c</field></layoutItems>
