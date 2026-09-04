@@ -3,7 +3,7 @@ import { TableSkeleton, WorkspaceSkeleton } from "./WorkspaceSkeleton";
 import { ExternalLink, Upload } from "lucide-react";
 import { LOS_CONFIG } from "../config";
 import { DataError } from "./DataError";
-import { fetchDownscopedBoxToken, listBoxFolderItems, type BoxFolderItem, type LosPageContext } from "../lib/box";
+import { fetchBoxFolderName, fetchDownscopedBoxToken, listBoxFolderItems, type BoxFolderItem, type LosPageContext } from "../lib/box";
 
 /**
  * Loaded lazily to keep box-ui-elements out of the initial bundle. It is several
@@ -45,6 +45,8 @@ export function BoxWorkspace({
 }) {
   const [token, setToken] = useState("");
   const [folderId, setFolderId] = useState("");
+  /** The folder's real name; empty until read, and the configured label stands in. */
+  const [folderName, setFolderName] = useState("");
   const [files, setFiles] = useState<BoxFolderItem[] | null>(null);
   const [loading, setLoading] = useState(true);
   /**
@@ -105,6 +107,10 @@ export function BoxWorkspace({
       setError("");
       setFiles(listing.value);
       notifyFiles.current?.(listing.value);
+      // Non-fatal: the heading falls back to the configured workspace name.
+      const named = await fetchBoxFolderName(granted.value.folderId, granted.value.accessToken);
+      if (!active) return;
+      setFolderName(named.ok ? named.value : "");
       // Withdraw an earlier failure as well as recording success. The workspace hides the
       // metrics and the history while this panel is failing, so a raised error that is
       // never lowered leaves them hidden over a workspace that has since loaded.
@@ -141,11 +147,16 @@ export function BoxWorkspace({
     <section className="box-live" data-testid="box-preview">
       <div className="panel-head">
         <div>
-          <h2>{LOS_CONFIG.workspace.name}</h2>
+          <h2>{folderName || LOS_CONFIG.workspace.name}</h2>
         </div>
         <div className="head-actions">
-          {LOS_CONFIG.workspace.boxUrl ? (
-            <a className="secondary-button" href={LOS_CONFIG.workspace.boxUrl} target="_blank" rel="noreferrer">
+          {folderId ? (
+            <a
+              className="secondary-button"
+              href={`https://${LOS_CONFIG.workspace.boxHostname || "app.box.com"}/folder/${encodeURIComponent(folderId)}`}
+              target="_blank"
+              rel="noreferrer"
+            >
               Open in Box <ExternalLink size={15} />
             </a>
           ) : null}

@@ -100,6 +100,34 @@ export async function listBoxFolderItems(
   }
 }
 
+/**
+ * The folder's own name, for the workspace heading. Read-only and non-fatal: a loan
+ * folder is named by the Box for Salesforce package after the record, and the heading
+ * should say that rather than a label from configuration. When it cannot be read the
+ * caller falls back to the configured workspace name.
+ */
+export async function fetchBoxFolderName(
+  folderId: string,
+  accessToken: string,
+): Promise<Loaded<string>> {
+  try {
+    const response = await fetch(
+      `https://api.box.com/2.0/folders/${encodeURIComponent(folderId)}?fields=name`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    if (!response.ok) {
+      return failed(`Box returned ${response.status} reading folder ${folderId}.`);
+    }
+    const result = (await response.json()) as { name?: string };
+    if (typeof result?.name !== "string" || !result.name) {
+      return failed(`Box returned no name for folder ${folderId}.`);
+    }
+    return { ok: true, value: result.name };
+  } catch (error) {
+    return failed(`Box could not be reached to read folder ${folderId}. ${describeError(error)}`);
+  }
+}
+
 export interface LosPageContext {
   loanId: string;
   folderId: string;

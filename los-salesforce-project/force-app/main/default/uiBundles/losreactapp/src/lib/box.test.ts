@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { fetchDownscopedBoxToken, getLosPageContext, listBoxFolderItems } from "./box";
+import { fetchBoxFolderName, fetchDownscopedBoxToken, getLosPageContext, listBoxFolderItems } from "./box";
 
 describe("LOS page context", () => {
   test("defaults to a workspace id the token endpoint will reject rather than serve", () => {
@@ -227,5 +227,27 @@ describe("listBoxFolderItems", () => {
     const items = await listBoxFolderItems("123", "token");
 
     expect(items.ok === true && items.value.map((i) => i.name)).toEqual(["just-uploaded.pdf"]);
+  });
+});
+
+describe("fetchBoxFolderName", () => {
+  test("reads the folder's own name with the scoped token", async () => {
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ id: "42", name: "Harborview Logistics Distribution Facility Loan 2026" }) }));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await fetchBoxFolderName("42", "scoped-token")).toEqual({
+      ok: true,
+      value: "Harborview Logistics Distribution Facility Loan 2026",
+    });
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("https://api.box.com/2.0/folders/42?fields=name");
+    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer scoped-token");
+  });
+
+  test("reports a failure instead of throwing so the heading can fall back", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 403, text: async () => "forbidden" })));
+    const result = await fetchBoxFolderName("42", "scoped-token");
+    expect(result.ok).toBe(false);
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
+    expect((await fetchBoxFolderName("42", "scoped-token")).ok).toBe(false);
   });
 });
