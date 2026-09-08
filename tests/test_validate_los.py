@@ -42,10 +42,10 @@ class LOSValidationTests(unittest.TestCase):
             with self.assertRaisesRegex(validation.ValidationError, "Secrets or environment-bound values"):
                 validation.check_secrets_and_runtime_ids(root)
 
-    def test_manifest_and_screenshot_inventory_is_current(self) -> None:
+    def test_screenshot_manifest_matches_disk(self) -> None:
         # The manifest must agree with the files on disk (MT-072); an empty inventory is
         # tolerated and reported as capture pending, a populated one is counted.
-        detail = validation.check_manifests_and_screenshots(ROOT, today=date(2026, 9, 4))
+        detail = validation.check_screenshot_manifest(ROOT, today=date(2026, 9, 4))
         self.assertRegex(detail, r"(\d+ current real screenshots|0 screenshots \(capture pending\))")
 
     def test_reset_and_idempotency_rules_are_present(self) -> None:
@@ -122,14 +122,6 @@ class LOSValidationTests(unittest.TestCase):
             )
             with self.assertRaisesRegex(validation.ValidationError, "Secrets found in live receipts"):
                 validation.check_live_receipts(root, required=True)
-
-    def test_portable_resource_parser_catches_html_and_css_network_dependencies(self) -> None:
-        parser = validation.PortableResourceParser()
-        parser.feed(
-            '<img src = https://example.com/a.png srcset="data:image/png;base64,x 1x, //example.com/b.png 2x">'
-            '<style>.hero{background:url(https://example.com/c.png)}</style>'
-        )
-        self.assertEqual(3, len(parser.external_references))
 
     def test_execute_records_failure_without_stopping_matrix(self) -> None:
         ran: list[str] = []

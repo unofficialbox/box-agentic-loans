@@ -1,10 +1,10 @@
 # LOS Demo — Agent Handoff
 
-Snapshot of `box-claudeforce-loans` for an agent picking up this repo cold. Written 2026-09-02, the day the loans port was cut. Verify anything time-sensitive against current `git log` / `validate_los.py` before relying on it.
+Snapshot of `box-claudeforce-loans` for an agent picking up this repo cold. Written 2026-09-02, the day the loans port was cut; the documentation tree was pruned to the demo happy path on 2026-09-08. Verify anything time-sensitive against current `git log` / `validate_los.py` before relying on it.
 
 ## 1. What this repo is
 
-A commercial **loan origination** (LOS) demo built on **Box + Salesforce**, ported from the mature Box + Salesforce contract lifecycle (CLM) demo in the sibling `box-bedrock-for-clm` repository. It ships deterministic local fixtures, portable configuration, and self-contained presenter HTML. Nothing here requires a live org to validate — "repository mode" is meant to be fully green offline; live presenter-readiness is a separate opt-in gate.
+A commercial **loan origination** (LOS) demo built on **Box + Salesforce**, ported from the mature Box + Salesforce contract lifecycle (CLM) demo in the sibling `box-bedrock-for-clm` repository. It ships deterministic local fixtures and portable configuration. Nothing here requires a live org to validate — "repository mode" is meant to be fully green offline; live presenter-readiness is a separate opt-in gate.
 
 **One scenario:** **Box + Salesforce Loan Origination**. Primary surface is the Salesforce Multi-Framework React app (the borrower portal); governed Apex actions are the only path between Box and Salesforce, and humans keep credit authority. The borrower portal is the main entry point: a borrower signs in, starts an application (`LosCreateApplication`), and uploads the documents `config/los/required-documents.bcl` asks for, each classified by Box AI (`LosClassifyDocument`) against `losDocument`. The metadata-triggered Automate workflow is the alternate path — email or Box intake still reaches the record — so `config/box/*.bcl`, the 04 entry-point module, and the `LOS_Box_Automate_Integration` permission set are all retained.
 
@@ -23,7 +23,7 @@ A commercial **loan origination** (LOS) demo built on **Box + Salesforce**, port
 ## 3. Current state
 
 - **Ported, then deployed once.** Every mechanical identifier was renamed (CLM → LOS, `CLM_Contract__c` → `LOS_Loan__c`, `Clm*` → `Los*`, `/clm/` → `/los/`, `/clm` → `/loans`) and the prose, fixtures, field semantics and storyboard were rewritten for loans. On 2026-09-03 the repository was deployed to one Salesforce org and one Box enterprise (the same ones as the CLM demo, reusing its CCG app) and smoke-tested: token endpoint, loan package, Box AI ask and extract, refused unconfirmed write-back, signature guard on an Underwriting loan, bounded portfolio search, Doc Gen template registration, credit policy Hub. The Box App, Form, Automate intake and the borrower-portal login remain untested browser surfaces. IDs from that run live only in the gitignored `config/runtime/*.json`.
-- Validation expectation: `python3 scripts/validate_los.py` should report every repository-mode check passed with one skip (live receipts). Which checks run offline: secrets and runtime-ID scan, JSON/BCL parse, Markdown links, Mermaid/SVG drift, Python unit tests, React lint/test/build/Playwright, deterministic fixture drift, presenter HTML rebuild, screenshot manifest (allowed to be empty here — MT-072), reset and idempotency rules, and the SOQL-projection-versus-permission-set check. Four checks shell out to the UI bundle, so `npm ci` in `los-salesforce-project/force-app/main/default/uiBundles/losreactapp` has to run first.
+- Validation expectation: `python3 scripts/validate_los.py` should report every repository-mode check passed with one skip (live receipts). Which checks run offline: secrets and runtime-ID scan, JSON/BCL parse, Markdown links, Mermaid/SVG drift, Python unit tests, React lint/test/build/Playwright, deterministic fixture drift, screenshot manifest (allowed to be empty — MT-072), reset and idempotency rules, and the SOQL-projection-versus-permission-set check. Four checks shell out to the UI bundle, so `npm ci` in `los-salesforce-project/force-app/main/default/uiBundles/losreactapp` has to run first.
 - Two Apex actions are **new in this port** and have no CLM ancestor: `LosExtractLoanTerms` (Box AI structured extract of `loanAmount, interestRate, termMonths, collateralValue, ltv, dscr, maturityDate` from one file of the named loan, compared to the record, read-only) and `LosApplyLoanTerms` (writes human-accepted values to an allow-list of `LOS_Loan__c` fields; refuses without `confirmed = true` and refuses on Closed/Servicing loans). Together they are the storyboard's Extract and write-back. Both ran live on 2026-09-03: Extract returned five values from the term-sheet markup and flagged the LTV and DSCR mismatches against the record; Apply with `confirmed = false` wrote nothing.
 - Two more Apex actions arrived with the borrower intake (2026-09-04) and have not run live: `LosCreateApplication` (`POST /los/applications`; creates one `LOS_Loan__c` in Application status for the signed-in borrower's own Account, `Record_Source__c = Borrower Portal`, `Purpose__c` from the form, `Loan_ID__c` numbered after the last one that year; user-mode DML) and `LosClassifyDocument` (`POST /los/classify?recordId=&fileId=`, also invocable; Box AI `extract_structured` against `losDocument`, writes `documentType` and `versionStatus = Draft` to the file, or writes nothing and says the document awaits the loan officer's classification). `LOS_Loan__c` gained `Purpose__c` and the `Borrower Portal` record source. MT-058 is the smoke test.
 - The Loan Copilot (`LOS_Loan_Copilot`) is an internal surface only. No version has been published from this repo.
@@ -43,7 +43,7 @@ The CLM repo got live Box working through two waves of stacked failures, each ma
 | Path | Purpose |
 |---|---|
 | `scripts/demo_operator.py` | Operator automation: bootstrap, provision, seed, resolve-config, validate, teardown. `FOLDER_BINDINGS` / `FILE_BINDINGS` name the Harborview workspace folders and files; 16 metadata seeds |
-| `scripts/validate_los.py` | The offline validation matrix (secrets, JSON/BCL, links, drift, tests, fixtures, presenters, manifests, idempotency, SOQL/FLS agreement) |
+| `scripts/validate_los.py` | The offline validation matrix (secrets, JSON/BCL, links, drift, tests, fixtures, screenshot manifest, idempotency, SOQL/FLS agreement) |
 | `scripts/bcl.py` | Dependency-free BCL reader |
 | `scripts/setup_los_dev.py` | One-command dev setup; writes runtime JSON |
 | `scripts/generate_sample_loan_assets.py` | reportlab PDFs: the Harborview application package, the borrower-marked-up term sheet, the two executed loan agreements, the Pinecrest application, plus `harborview-los-records.json` and `credit-policy-playbook.json` |
@@ -75,17 +75,15 @@ The CLM repo got live Box working through two waves of stacked failures, each ma
 | `.../losreactapp/src/components/ApplicationForm.tsx`, `RequiredDocuments.tsx` | The application form (`?view=apply`) and the checklist card shown on Application and Underwriting loans; `src/lib/applications.ts`, `classify.ts`, `requiredDocuments.ts` behind them |
 | `.../losreactapp/src/lib/box.ts` | `WITHHELD_VERSION_STATUS = "Internal"` — internal underwriting documents never reach the borrower; default `loanId` `LN-2026-0042` |
 | `.../cspTrustedSites/LOS_Box_App.cspTrustedSite-meta.xml` | frame-src grant for `*.app.box.com`, without which the preview frame is blank (MT-043) |
-| `.../losreactapp/vite.live-box.ts` | Dev-only plugin serving a real downscoped token locally (`npm run preview:live`; env `LOS_BOX_FOLDER_ID`, `LOS_ORG_ALIAS`) |
+| `.../losreactapp/vite.live-box.ts` | Dev-only plugin serving a real downscoped token locally (`npm run preview:live`; env `LOS_BOX_FOLDER_ID`, `LOS_ORG_ALIAS`). Use `preview:live`, not `dev:live`, for anything involving Box UI Elements: the Vite dev server's CJS interop throws `Dynamic require of "react" is not supported` and the elements never mount. The localhost origin must be in the Box app's CORS domains |
 | `.../losreactapp/src/lib/loaded.ts` | `Loaded<T>` — every remote read returns a value or the reason there is none |
 | `.../losreactapp/src/styles.test.ts` | Guards against sharing a CSS class name with box-ui-elements |
 | `.../losreactapp/.npmrc` | `legacy-peer-deps=true`, without which `npm ci` cannot reproduce the lockfile — do not delete |
 | `los-salesforce-project/sample-data/los-sample-records.bcl` | Sample Salesforce records (the three Harborview loans and the Pinecrest application) |
 | `los-salesforce-project/scripts/seed-los-*.apex` / `.sh` | Anonymous-apex seeders (records; per-loan Box file uploads from the `Los_Sample_*` static resources) |
 | `docs/operator/box-preview-setup.md` | Box app, credential, CORS, folder-id gotcha, error→cause table |
-| `docs/maintainers/README.md` | The local live-Box harness: `preview:live` vs `dev:live`, and why |
 | `docs/operator/manual-task-register.md` | MT register; MT-036–MT-048 are the live-Box and site tasks; MT-058 is the borrower intake smoke test |
-| `tests/` | `test_bcl.py`, `test_required_documents.py` (BCL ↔ React checklist), `test_demo_operator.py`, `test_validate_los.py`, presenter/branding/navigation checks |
-| `docs/conventions.md` | Readiness vocabulary (4 states) + safety rules |
+| `tests/` | `test_bcl.py`, `test_required_documents.py` (BCL ↔ React checklist), `test_demo_operator.py`, `test_validate_los.py`, `test_setup_los_dev.py`, navigation and persona-routing checks |
 
 ## 6. Constraints that will bite you
 
@@ -426,12 +424,10 @@ Testing ChatGPT or Slack is an hour with the accounts; the tools and answers are
 1. **Nothing has run live.** Every "Deployed integration" claim from the CLM predecessor is
    downgraded to **Portable specification** or **Local deterministic fixture** here until a
    confirmed Box enterprise and Salesforce org prove it and `validation-receipts.json` says so.
-2. **MT-072 — screenshot inventory captured where a screen exists.** Eleven screens from
-   the live org and enterprise: the Salesforce record page, Agentforce agents list and Agent
-   Builder topology, the signed-in borrower loan list and workspace; the Box loan folder,
-   workspace, Doc Gen templates, credit policy Hub, generated commitment letter and the
-   term-sheet metadata. Box App and Box Automate have no screen yet and render "Screen
-   capture pending".
+2. **MT-072 — screenshot inventory captured where a screen exists.** Thirteen screens from
+   the live org and enterprise under `output/screenshots/`, indexed by
+   `config/demo/screenshot-manifest.bcl`. Box App and Box Automate have no screen because
+   they were never built.
 3. **MT-045 — guest sharing decision.** `LOS_Loan__c` is Private/Private and the
    Experience Cloud guest has no record access. Granting a guest sharing rule would make loan
    records readable by anyone who can open the site: a deliberate exposure, not a bug to fix.
@@ -464,6 +460,6 @@ Requires Python 3.11+ (`validate_los.py` imports `datetime.UTC`). The `npm ci` i
 on a fresh clone: four checks are React lint/test/build/Playwright, and they fail closed
 without `node_modules`.
 
-If validation is red, the first suspects are: a BCL file that doesn't parse (`scripts/bcl.py`), a stale set-comparison rule in `validate_los.py` (`EXPECTED_SCENARIOS`, `EXPECTED_PRESENTERS`, `DETERMINISTIC_DATA_FIXTURES`, PDF/docx manifests), a runtime JSON drifted from its `.example`, or a new Markdown file with a relative link that doesn't resolve — `check_local_links` walks every non-excluded `.md` in the tree, tracked or not.
+If validation is red, the first suspects are: a BCL file that doesn't parse (`scripts/bcl.py`), a stale set-comparison rule in `validate_los.py` (`DETERMINISTIC_DATA_FIXTURES`, the PDF/docx sets, the screenshot manifest), a runtime JSON drifted from its `.example`, or a new Markdown file with a relative link that doesn't resolve — `check_local_links` walks every non-excluded `.md` in the tree, tracked or not.
 
 One failure mode is worth naming because it only appears on a **fresh** clone or worktree: `.gitattributes` normalizes text to LF, so anything a generator writes with CRLF reads back as `Deterministic fixture drift` even though the content is identical. A checkout that predates the generator keeps its CRLF copy on disk and passes, which is why this can be green locally and red everywhere else. Writers must pin LF explicitly — see `write_csv` in `scripts/generate_sample_loan_assets.py`.

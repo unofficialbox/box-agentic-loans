@@ -230,7 +230,7 @@ why it is not the demo default. Tracked as MT-040.
 
 ## Appendix: create the Lightning Out 2.0 app for Agentforce
 
-The borrower portal carries no agent (see the scenario guide), so this appendix only
+The borrower portal carries no agent (HANDOFF §6.5 explains why), so this appendix only
 applies if you embed an Agentforce panel on an internal site. The Agentforce conversation
 client loads through Lightning Out 2.0. Without an enabled
 `LightningOutApp` whose host domains include the site, the panel mounts and stays empty

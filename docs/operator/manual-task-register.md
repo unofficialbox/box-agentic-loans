@@ -1,6 +1,6 @@
 # LOS Demo Manual-Task Register
 
-This register lists only work that cannot be completed safely by `scripts/demo_operator.py`. Complete it for each new environment. No item below has yet been completed for the loans port.
+This register lists only work that cannot be completed safely by `scripts/demo_operator.py`. Complete it for each new environment; rows note when a task was last done.
 
 Status values: **Required**, **Per run**, **Optional**, and **Confirmation required**.
 
@@ -12,20 +12,16 @@ Status values: **Required**, **Per run**, **Optional**, and **Confirmation requi
 | MT-002 | Confirm required Box and Salesforce licenses/features | Administrators | Required | Every selected product surface opens for its operator |
 | MT-003 | Name workflow, credit, compliance, security, finance, publishing, and signing owners | Demo owner | Required | Owners and escalation path are recorded |
 | MT-004 | Store credentials outside source control | Administrators | Required | Secrets exist only in managed connections or protected secret stores |
-| MT-005 | Sign in to the intended Box web application before browser-agent configuration | Box operator | Required for Apps, Automate, and Hub composition | An authenticated tab is open on the exact configured hostname under the intended builder account; no browser credentials are exported |
 
 ## Box browser work
 
 | ID | Task | Owner | Status | Complete when |
 |---|---|---|---|---|
-| MT-010 | Review deterministic metadata applied by `seed-metadata` | Content owner | Required | Values are appropriate and App views/charts contain useful data |
+| MT-010 | Review deterministic metadata applied by `seed-metadata` | Content owner | Required | Values are appropriate for the portfolio search and the Copilot's answers |
 | MT-011 | Mark the four Word files as Doc Gen templates and record the commitment-letter template id in `LOS_Box_Config__c.Commitment_Letter_Template_ID__c` | Doc Gen admin | Required | Templates appear in the Doc Gen catalog; `LosGenerateCommitmentLetter` refuses until the id is set |
-| MT-012 | Verify the `losLoan` metadata trigger entry point for intake | Content owner | Required | The generated `01 - Application Intake` folder and the `losLoan` metadata template exist, and applying `losLoan` metadata to a test file uploaded there starts **LOS - Loan Application Intake Enrichment** |
-| MT-013 | Build **Loan Origination** | Apps builder | Required | Actions are first; status, policy risk, type, market, and policy-family charts are useful |
+| MT-012 | Verify the `losLoan` metadata template and the `01 - Application Intake` folder exist | Content owner | Required | Both are present in the workspace; the Automate intake that would trigger on them is the alternate path and stays specification-only |
 | MT-014 | Build **Crestline Credit Policy Library** and record its Hub id in `LOS_Box_Config__c.Credit_Policy_Hub_Id__c` | Hub owner | Required | Standard positions, approved exceptions, ownership, and review cadence are visible; the Copilot's policy check reads this Hub and no other |
-| MT-015 | Build and save the Automate workflows | Workflow builder | Required | Bindings use only this environment's generated IDs |
-| MT-016 | Publish or republish an App or Hub | Surface owner | Confirmation required | Owner approves immediately before the consequential action |
-| MT-017 | Activate an Automate workflow | Workflow owner | Confirmation required | Trigger, scope, destination, idempotency, rollback, and test plan are reviewed |
+| MT-016 | Publish or republish the Hub | Hub owner | Confirmation required | Owner approves immediately before the consequential action |
 | MT-018 | Generate a Doc Gen output | Authorized reviewer | Confirmation required | One intended file is created after approval |
 | MT-019 | Send a Box Sign request | Signatory coordinator | Confirmation required | The loan is Approved or Commitment and send is separately approved |
 | MT-020 | Share externally or change collaborators | Content owner | Confirmation required | Exact users, items, and access are approved |
@@ -62,7 +58,6 @@ Status values: **Required**, **Per run**, **Optional**, and **Confirmation requi
 | MT-050 | Select real domain experts or managed groups (Credit Risk, Collateral, Compliance, Loan Documentation, Pricing, Insurance, Servicing) | Credit Administration | Required | Every active domain has an owner and the Credit Administration Triage fallback is named |
 | MT-051 | Grant least-privilege Box access to reviewers | Content owner | Required | Each reviewer can access only required items |
 | MT-052 | Validate low-confidence and missing-owner triage | Credit Administration | Required | Exceptions route to the named triage owner |
-| MT-053 | Submit a labeled test intake through the alternate email/Box Automate path | Demo operator | Per run | File, workflow run, and one Salesforce record are visible |
 | MT-054 | Validate duplicate-safe Salesforce behavior | Salesforce operator | Per run | Repeated loan ID updates the same record, or the duplicate is recorded and accepted |
 | MT-055 | Inspect citations and human task ownership | Human validator | Per run | Unsupported output is corrected; people retain credit approval authority |
 | MT-056 | Confirm signature is blocked | Credit Administration | Per run | A loan in Underwriting or Credit Review cannot be sent for signature |
@@ -73,12 +68,12 @@ Status values: **Required**, **Per run**, **Optional**, and **Confirmation requi
 
 | ID | Task | Owner | Status | Complete when |
 |---|---|---|---|---|
-| MT-070 | Rehearse the selected tell/show/tell script | Presenter | Per run | Script completes inside its time box without hidden setup |
+| MT-070 | Rehearse the six-beat storyboard | Presenter | Per run | The storyboard completes inside its time box without hidden setup |
 | MT-071 | Pre-open only the selected scenario's surfaces | Presenter | Per run | Every page loads under the intended account |
-| MT-072 | Capture screenshots from the real page viewport and update `config/demo/screenshot-manifest.bcl` | Maintainer | After UI changes | Eleven screens captured 2026-09-03/04 from the live org and enterprise (Salesforce record page, agents list, Agent Builder, the signed-in borrower loan list and workspace; Box loan folder, workspace, Doc Gen templates, Hub, commitment letter, term-sheet metadata); Box App and Box Automate still render "Screen capture pending" placeholders. When captured: no browser chrome, documentation pages, or unrelated content appears; source, date, scenario, and readiness are current |
+| MT-072 | Capture screenshots from the real page viewport and update `config/demo/screenshot-manifest.bcl` | Maintainer | After UI changes | Thirteen screens captured 2026-09-03/04 from the live org and enterprise (Salesforce record page, agents list, Agent Builder, the borrower application, loan list and workspace checklist; Box loan folder, workspace, Doc Gen templates, Hub, commitment letter, term-sheet metadata). When captured: no browser chrome, documentation pages, or unrelated content appears; source, date, scenario, and readiness are current |
 | MT-073 | Record test artifacts and restore demo state | Operator | Per run | Workflows/tasks are ready for the next session |
 | MT-074 | Delete data or remove collaborators | System owner | Confirmation required | Impact is reviewed and exact objects are approved |
 
-Use the run log in [Integrated Smoke Test](smoke-test.md). Store environment-specific IDs and completion evidence only in the gitignored runtime files or the operator's external run log.
+Store environment-specific IDs and completion evidence only in the gitignored runtime files or the operator's external run log.
 
 For fail-closed readiness, copy `config/runtime/validation-receipts.example.json` to the gitignored `config/runtime/validation-receipts.json`, record only secret-free references to the current external run log, and run `python3 scripts/validate_los.py --presenter-ready`.

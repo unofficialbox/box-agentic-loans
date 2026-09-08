@@ -7,7 +7,7 @@ Use this guide to build the demo in a **new Box enterprise and Salesforce org**.
 | Automated | Administrator or browser work |
 |---|---|
 | Generate the synthetic Harborview loan file and Doc Gen templates | Confirm product licenses and administrator access |
-| Create the Box workspace folders | Build Box App, Hub, and Automate workflows |
+| Create the Box workspace folders | Build the credit policy Hub and register the Doc Gen templates |
 | Create Box metadata templates and apply deterministic dashboard seed data | Select real reviewers and verify seeded values |
 | Upload the borrower document package and Doc Gen templates | Configure protected OAuth credentials |
 | Deploy the Salesforce object, fields, layout, permissions, tab, and UI Bundle | Create/configure Agentforce and optional cloud services |
@@ -19,7 +19,7 @@ The generated IDs are stored only in `config/runtime/bootstrap-state.json`. The 
 
 - **Box + Salesforce Loan Origination:** Salesforce React borrower portal with an internal Loan Copilot / MCP surface over governed Box content.
 
-Box intake, metadata, and Automate enrichment are the entry-point path into this scenario. Build and rehearse the Box surfaces first; they are the foundation the React workspace opens on.
+The borrower portal is the intake the demo shows; Box metadata and the credit policy Hub are the foundation the React workspace and the Copilot read from, so bring them up first.
 
 ## 2. Confirm prerequisites
 
@@ -171,7 +171,7 @@ Before publishing the Loan Copilot, set `default_agent_user` in `los-salesforce-
 
 ## 5. Complete the administrator surfaces
 
-Follow [Browser and administrator configuration](browser-configuration.md) in order. It uses logical names and the IDs generated in `bootstrap-state.json`; never reuse another tenant's IDs.
+Work through the [manual-task register](manual-task-register.md) and [Box preview setup](box-preview-setup.md). They use logical names and the IDs generated in `bootstrap-state.json`; never reuse another tenant's IDs.
 
 Stop and obtain explicit owner approval immediately before any final **Publish**, **Share**, **Activate**, **Generate**, or **Send** action.
 
@@ -185,33 +185,22 @@ python3 scripts/demo_operator.py validate --scenario box-salesforce-los
 python3 scripts/validate_los.py
 ```
 
-Then run the [integrated smoke test](smoke-test.md). Do not present as ready until that smoke test passes.
+Then run the storyboard's preflight (`DEMO-STORYBOARD.html`, P1 to P7) and the [demo clickpath](demo-clickpath.md). Do not present as ready until every preflight check passes.
 
-After smoke test, capture receipts and complete [Finalization](final-phase.md):
+After that, record secret-free receipts for the run:
 
 ```bash
 cp config/runtime/validation-receipts.example.json config/runtime/validation-receipts.json
+python3 scripts/validate_los.py --presenter-ready
 ```
 
-Do not present the environment as ready until [Finalization](final-phase.md) documents passing `python3 scripts/validate_los.py --presenter-ready`.
+The receipt file is ignored by Git and must not contain credentials. Do not present the environment as ready until `--presenter-ready` passes.
 
-The receipt file is ignored by Git and must not contain credentials.
+## 7. Present
 
-## 7. Present with tell/show/tell
+Open `DEMO-STORYBOARD.html` and follow the six beats; `skills/los-demo/SKILL.md` carries the same prompts and answer rules for an AI harness. Each beat tells what matters, shows one proof, then explains the outcome. Avoid narrating every click.
 
-Use the presenter script inside the scenario guide:
+## References
 
-1. [Box + Salesforce Loan Origination](scenarios/box-salesforce-los/README.md#4-presenter-script)
-
-Each step tells what matters, shows one proof, then explains the outcome. Avoid narrating every click.
-
-## Setup flow
-
-![Fresh-environment setup flow](../diagrams/operator-setup-flow.svg)
-
-- [LOS configuration workflow (manual steps in red)](../diagrams/los-configuration-workflow.svg)
-- [Diagram source](../diagrams/operator-setup-flow.mmd)
-- [Configuration workflow source](../diagrams/los-configuration-workflow.mmd)
-- [Finalization checklist](final-phase.md)
 - [Manual-task register](manual-task-register.md)
 - [Machine-readable operator workflow](../../config/operator/operator-workflow.bcl)

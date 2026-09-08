@@ -1,6 +1,6 @@
 # Claude Persona: Repository Maintainer
 
-Read `docs/maintainers/README.md`.
+Read `HANDOFF.md`; open `box-salesforce-paved-path.md` when something breaks.
 
 - Confirm branch, remote, and worktree before editing.
 - Trace source specifications to tests and derived artifacts; do not preload unrelated docs.

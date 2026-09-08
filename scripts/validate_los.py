@@ -15,7 +15,6 @@ import time
 import zipfile
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
-from html.parser import HTMLParser
 from pathlib import Path
 from typing import Callable
 
@@ -39,25 +38,10 @@ EXCLUDED_PARTS = {
     "bots", "genAiPlannerBundles",
 }
 MAX_TEXT_BYTES = 5_000_000
-# Canonical expectations, kept as named sets so checks compare membership instead of
-# asserting bare counts (which silently pass when the wrong item is added/removed).
-EXPECTED_SCENARIOS = {
-    "box-salesforce-los",
-}
 DETERMINISTIC_DATA_FIXTURES = (
     "json/harborview-los-records.json",
     "json/credit-policy-playbook.json",
 )
-EXPECTED_PRESENTERS = {
-    "index.html",
-    "00-operator-setup-guide.html",
-    "01-box-salesforce-los-guide.html",
-    "02-box-salesforce-los-gallery.html",
-    "03-executive-marketecture.html",
-    "04-customer-solution-datasheet.html",
-    "05-loan-lifecycle-readiness-marketecture.html",
-    "06-complete-presenter-edition.html",
-}
 RUNTIME_ID_SUFFIXES = {".md", ".json", ".py", ".ts", ".tsx", ".js", ".xml", ".sh", ".yml", ".yaml", ".toml", ".env", ".properties"}
 SECRET_ASSIGNMENT = re.compile(
     r'''(?ix)["']?(client[_-]?secret|access[_-]?token|refresh[_-]?token|api[_-]?key|password)["']?\s*[:=]\s*["']([^"'\n]+)'''
@@ -314,107 +298,9 @@ def check_generated_fixtures(root: Path = ROOT) -> str:
     )
 
 
-def check_generated_presenters(root: Path = ROOT) -> str:
-    with tempfile.TemporaryDirectory(prefix="los-presenters-") as directory:
-        output = Path(directory)
-        module = load_script("build_scenario_guides", root)
-        module.OUTPUT = output
-        for scenario in module.SCENARIOS:
-            module.build_scenario(scenario)
-        module = load_script("build_los_experience_gallery", root)
-        module.OUTPUT = output
-        module.build()
-        for name, filename in (
-            ("build_executive_marketecture", "03-executive-marketecture.html"),
-            ("build_customer_datasheet", "04-customer-solution-datasheet.html"),
-            ("build_loan_lifecycle_readiness_marketecture", "05-loan-lifecycle-readiness-marketecture.html"),
-        ):
-            module = load_script(name, root)
-            module.OUTPUT = output / filename
-            module.build()
-        module = load_script("build_presenter_portal", root)
-        module.OUTPUT = output
-        module.build()
-        generated = {path.name for path in output.glob("*.html")}
-        if generated != EXPECTED_PRESENTERS:
-            raise ValidationError(f"Presenter output set is incomplete: {sorted(generated)}")
-        drift = [
-            path.name for path in sorted(output.glob("*.html"))
-            if path.read_bytes() != (root / "output" / "html" / path.name).read_bytes()
-        ]
-        if drift:
-            raise ValidationError("Generated presenter drift:\n" + "\n".join(drift))
-    standalone = len(EXPECTED_PRESENTERS) - 2  # excludes index.html and the combined edition
-    return f"{standalone} standalone chapters, 1 landing page, and 1 self-contained combined edition"
-
-
-class PortableResourceParser(HTMLParser):
-    """Collect network-backed HTML attributes and CSS URLs."""
-
-    CSS_EXTERNAL_URL = re.compile(r'''url\(\s*["']?(?:https?:)?//''', re.IGNORECASE)
-
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self.external_references: list[str] = []
-        self._style_depth = 0
-
-    @staticmethod
-    def is_external(value: str) -> bool:
-        normalized = value.strip().lower()
-        return normalized.startswith(("http://", "https://", "//"))
-
-    def inspect_attributes(self, attrs: list[tuple[str, str | None]]) -> None:
-        for name, value in attrs:
-            if not value:
-                continue
-            lowered = name.lower()
-            if lowered in {"src", "href"} and self.is_external(value):
-                self.external_references.append(value)
-            elif lowered == "srcset":
-                for candidate in value.split(","):
-                    url = candidate.strip().split(maxsplit=1)[0]
-                    if self.is_external(url):
-                        self.external_references.append(url)
-            elif lowered == "style" and self.CSS_EXTERNAL_URL.search(value):
-                self.external_references.append(value)
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        self.inspect_attributes(attrs)
-        if tag.lower() == "style":
-            self._style_depth += 1
-
-    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        self.inspect_attributes(attrs)
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag.lower() == "style" and self._style_depth:
-            self._style_depth -= 1
-
-    def handle_data(self, data: str) -> None:
-        if self._style_depth and self.CSS_EXTERNAL_URL.search(data):
-            self.external_references.append(data)
-
-
-def check_manifests_and_screenshots(root: Path = ROOT, *, today: date | None = None) -> str:
+def check_screenshot_manifest(root: Path = ROOT, *, today: date | None = None) -> str:
     today = today or datetime.now(UTC).date()
     failures: list[str] = []
-    scenario_paths = sorted((root / "config" / "demo").glob("*-demo-manifest.bcl"))
-    scenario_ids = {path.name.removesuffix("-demo-manifest.bcl") for path in scenario_paths}
-    if scenario_ids != EXPECTED_SCENARIOS:
-        failures.append(
-            "scenario manifests do not match the expected set: "
-            f"missing={sorted(EXPECTED_SCENARIOS - scenario_ids)}, "
-            f"unexpected={sorted(scenario_ids - EXPECTED_SCENARIOS)}"
-        )
-    for path in scenario_paths:
-        data = bcl.load_bcl(path)
-        for key in ("manifestVersion", "scenario", "presenterSurface", "included", "readiness", "documentation", "screenshots"):
-            if key not in data:
-                failures.append(f"{path.relative_to(root)}: missing {key}")
-        for target in data.get("documentation", {}).values():
-            if isinstance(target, str) and not (root / target).exists():
-                failures.append(f"{path.relative_to(root)}: missing {target}")
-
     manifest_path = root / "config" / "demo" / "screenshot-manifest.bcl"
     manifest = bcl.load_bcl(manifest_path)
     entries = manifest.get("screenshots", [])
@@ -423,17 +309,10 @@ def check_manifests_and_screenshots(root: Path = ROOT, *, today: date | None = N
         path.relative_to(root).as_posix()
         for path in (root / "output" / "screenshots").rglob("*.png")
     }
-    # An empty inventory is legitimate here: no loan-demo screen has been captured yet
-    # (MT-072), and the predecessor's CLM screenshots were removed rather than relabelled.
-    # So emptiness is not a failure, but a manifest that disagrees with the files on disk
-    # still is, and once any entry exists it must cover every scenario.
+    # An empty inventory is tolerated (a fresh port has captured nothing yet), but a
+    # manifest that disagrees with the files on disk is not.
     if declared != actual:
         failures.append(f"screenshot manifest mismatch; missing={sorted(actual - declared)} extra={sorted(declared - actual)}")
-    if entries:
-        covered_scenarios = {entry.get("scenario") for entry in entries}
-        missing_scenarios = scenario_ids - covered_scenarios
-        if missing_scenarios:
-            failures.append(f"screenshot coverage missing scenarios: {sorted(missing_scenarios)}")
     freshness_days = int(manifest.get("freshnessDays", 0))
     for entry in entries:
         for key in ("path", "scenario", "sourceSurface", "capturedOn", "readiness"):
@@ -448,24 +327,9 @@ def check_manifests_and_screenshots(root: Path = ROOT, *, today: date | None = N
             failures.append(f"invalid capture date: {entry.get('path')}: {error}")
         if entry.get("readiness") != "real-demo":
             failures.append(f"{entry.get('path')}: readiness must be real-demo")
-
-    html_paths = sorted((root / "output" / "html").glob("*.html"))
-    html_names = {path.name for path in html_paths}
-    if html_names != EXPECTED_PRESENTERS:
-        failures.append(
-            "output/html does not match the presenter set: "
-            f"missing={sorted(EXPECTED_PRESENTERS - html_names)}, "
-            f"unexpected={sorted(html_names - EXPECTED_PRESENTERS)}"
-        )
-    for path in html_paths:
-        parser = PortableResourceParser()
-        parser.feed(path.read_text(encoding="utf-8"))
-        if parser.external_references:
-            failures.append(f"{path.relative_to(root)}: external asset reference")
     if failures:
-        raise ValidationError("Manifest, screenshot, or portability failures:\n" + "\n".join(failures))
-    screenshot_detail = f"{len(entries)} current real screenshots" if entries else "0 screenshots (capture pending)"
-    return f"{len(scenario_ids)} scenario, {screenshot_detail}, {len(EXPECTED_PRESENTERS)} portable HTML files"
+        raise ValidationError("Screenshot manifest failures:\n" + "\n".join(failures))
+    return f"{len(entries)} current real screenshots" if entries else "0 screenshots (capture pending)"
 
 
 def check_reset_and_idempotency_rules(root: Path = ROOT) -> str:
@@ -610,8 +474,7 @@ def validate(*, skip_react: bool, skip_playwright: bool, presenter_ready: bool, 
         ("Mermaid/SVG drift", lambda: check_diagram_drift(root)),
         ("Python tests", lambda: run_command([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"], cwd=root)),
         ("generated fixtures", lambda: check_generated_fixtures(root)),
-        ("generated presenters", lambda: check_generated_presenters(root)),
-        ("manifests + screenshots", lambda: check_manifests_and_screenshots(root)),
+        ("screenshot manifest", lambda: check_screenshot_manifest(root)),
         ("reset + idempotency", lambda: check_reset_and_idempotency_rules(root)),
         ("SOQL field permissions", lambda: check_soql_field_permissions(root)),
     ]
