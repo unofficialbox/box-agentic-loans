@@ -1,4 +1,4 @@
-# Rehearsal Clickpath
+# Demo Clickpath
 
 Two exercises before a demo: rehearse the Loan Copilot in Agent Builder, and give the loan officer a place where new borrower applications appear. Each takes about ten minutes. Beats 2 to 5 of the stage demo run in Claude Desktop and are covered by the storyboard's preflight (P2, P3); this page does not repeat them.
 
