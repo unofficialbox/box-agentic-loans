@@ -1,11 +1,12 @@
 /**
  * Same-origin endpoint that hands the LOS React workspace a short-lived Box token
- * scoped to a single folder. The browser never sees a credential, and neither does
- * this class.
+ * scoped to an authorized folder or file. The browser receives only the limited
+ * token; the parent token and client secrets remain on the server.
  *
- * Two Box calls, both through the LOS_Box named credential:
+ * Token issuance uses the LOS_Box named credential:
  *   1. Client Credentials Grant  -> a parent token for the configured subject.
- *   2. Token exchange (downscope) -> a token limited to `scope` on one folder.
+ *   2. Borrower requests list and project allowed files on the server.
+ *   3. Token exchange -> upload-only folder token or per-file preview token.
  * Only the downscoped token is returned.
  *
  * The CCG subject is configuration, not code. A Box user id on LOS_Box_Config__c
@@ -36,29 +37,18 @@ global with sharing class LosBoxTokenService {
     private static final String TOKEN_EXCHANGE_GRANT = 'urn:ietf:params:oauth:grant-type:token-exchange';
     private static final String ACCESS_TOKEN_TYPE = 'urn:ietf:params:oauth:token-type:access_token';
 
-    /**
-     * Scopes minted for the browser.
-     *
-     * These mirror what the workspace is allowed to offer. A control in the UI only
-     * shows an affordance; this decides whether Box honours it, so the two have to be
-     * kept in step -- an enabled control with a missing scope fails at the point of use
-     * rather than being hidden.
-     *
-     * The token is still bound to a single folder by the downscope resource, so this
-     * widens what may be done inside that folder and nothing beyond it.
-     *
-     * Space separated, per OAuth 2.0. A comma separated list is rejected by Box as a
-     * single unsupported scope name -- each value is valid on its own, so the failure
-     * only appears once more than one scope is requested.
-     */
+    /** Minimal internal workspace scopes. Borrower grants use base_upload or base_preview. */
     private static final String DOWNSCOPE_SCOPE =
-        'base_explorer item_preview item_read item_upload item_download item_delete item_rename item_share';
+        'base_explorer item_preview base_upload';
 
     global class TokenResponse {
         global String accessToken;
         global Integer expiresIn;
         global String folderId;
         global String scope;
+        global Boolean borrower;
+        global List<Object> files;
+        global String folderName;
     }
 
     global class ServiceError {
@@ -78,13 +68,19 @@ global with sharing class LosBoxTokenService {
         // A token is short-lived and folder-scoped; never let a proxy or browser cache it.
         response.addHeader('Cache-Control', 'no-store');
 
+        if (LosWorkspaceAccess.isGuest()) {
+            fail(response, 401, 'not_authenticated', 'Sign in to open a loan workspace.');
+            return;
+        }
         String recordId = request.params.get('recordId');
+        String fileId = request.params.get('fileId');
+        Boolean borrower = LosWorkspaceAccess.borrowerAccount() != null;
         String folderId = request.params.get('folderId');
 
         // recordId is the real entry point: the browser names a Salesforce record and the
-        // org's own Box mapping decides the folder, so no Box id travels in a URL and a
+        // org's own Box mapping decides the folder, so a
         // caller cannot ask for a folder the record is not associated with. folderId
-        // remains for the local harness and for pages with no record context.
+        // remains only for an explicitly authorized internal operator and allowlist.
         if (String.isNotBlank(recordId)) {
             Id parsedRecordId;
             try {
@@ -93,7 +89,11 @@ global with sharing class LosBoxTokenService {
                 fail(response, 400, 'invalid_record_id', 'recordId is not a Salesforce id.');
                 return;
             }
-            // Inner classes cannot hold static members in Apex, hence the instance.
+            if (LosWorkspaceAccess.loan(parsedRecordId) == null) {
+                fail(response, 404, 'loan_not_found', 'No accessible loan matches that record.');
+                return;
+            }
+            // Authorization precedes the privileged package mapping lookup.
             folderId = new FolderMapping().forRecord(parsedRecordId);
             if (String.isBlank(folderId)) {
                 fail(response, 404, 'no_box_folder_mapping',
@@ -112,6 +112,10 @@ global with sharing class LosBoxTokenService {
             return;
         }
 
+        if (String.isBlank(recordId) && !LosWorkspaceAccess.mayNameFolder()) {
+            fail(response, 403, 'record_required', 'Choose an accessible loan record.');
+            return;
+        }
         LOS_Box_Config__c config = LOS_Box_Config__c.getOrgDefaults();
         if (config == null || (String.isBlank(config.Box_User_Id__c) && String.isBlank(config.Enterprise_Id__c))) {
             fail(response, 500, 'box_not_configured',
@@ -134,11 +138,28 @@ global with sharing class LosBoxTokenService {
                 fail(response, 500, 'box_auth_failed', 'Box did not return a parent access token.');
                 return;
             }
-            TokenResponse payload = downscope(parentToken, folderId);
+            TokenResponse payload;
+            if (borrower) {
+                List<Object> visible = LosBorrowerDocuments.listFiles(folderId, parentToken);
+                if (String.isNotBlank(fileId)) {
+                    if (!LosBorrowerDocuments.containsFile(visible, fileId)) {
+                        fail(response, 403, 'file_not_allowed', 'That document is not available in this loan workspace.');
+                        return;
+                    }
+                    payload = downscope(parentToken, folderId, 'files/' + fileId, 'base_preview');
+                } else {
+                    // An upload token cannot list, preview, download, share or delete files.
+                    payload = downscope(parentToken, folderId, 'folders/' + folderId, 'base_upload');
+                    if (payload != null) payload.files = visible;
+                }
+            } else {
+                payload = downscope(parentToken, folderId, 'folders/' + folderId, DOWNSCOPE_SCOPE);
+            }
             if (payload == null) {
                 fail(response, 500, 'box_downscope_failed', 'Box did not return a downscoped access token.');
                 return;
             }
+            payload.borrower = borrower;
             response.statusCode = 200;
             response.responseBody = Blob.valueOf(JSON.serialize(payload));
         } catch (Exception e) {
@@ -162,9 +183,7 @@ global with sharing class LosBoxTokenService {
      * a managed-package class, so a caller without access to it throws rather than
      * returning nothing.
      *
-     * `without sharing` because this endpoint also serves the Experience Cloud guest
-     * user, which sees no association records under normal sharing. It returns a folder
-     * id and grants the caller no record access.
+     * `without sharing` only for the managed-package mapping after loan authorization. The caller is authorized against the loan before entering this helper.
      */
     private without sharing class FolderMapping {
         private String forRecord(Id recordId) {
@@ -178,7 +197,7 @@ global with sharing class LosBoxTokenService {
     }
 
     /**
-     * An empty allowlist means "any folder". Populate Allowed_Folder_Ids__c with a
+     * An empty allowlist denies direct-folder requests. Populate Allowed_Folder_Ids__c with a
      * comma-separated list to restrict the endpoint to the demo workspace.
      *
      * This applies only to a caller-supplied folderId. Folders reached through a record
@@ -186,7 +205,7 @@ global with sharing class LosBoxTokenService {
      */
     private static Boolean isFolderAllowed(LOS_Box_Config__c config, String folderId) {
         if (String.isBlank(config.Allowed_Folder_Ids__c)) {
-            return true;
+            return false;
         }
         for (String allowed : config.Allowed_Folder_Ids__c.split(',')) {
             if (allowed.trim() == folderId) {
@@ -197,13 +216,13 @@ global with sharing class LosBoxTokenService {
     }
 
     /** Exchange the parent token for one limited to preview scopes on a single folder. */
-    private static TokenResponse downscope(String parentToken, String folderId) {
+    private static TokenResponse downscope(String parentToken, String folderId, String resource, String scopes) {
         HttpResponse res = post(
             'grant_type=' + EncodingUtil.urlEncode(TOKEN_EXCHANGE_GRANT, 'UTF-8')
             + '&subject_token=' + EncodingUtil.urlEncode(parentToken, 'UTF-8')
             + '&subject_token_type=' + EncodingUtil.urlEncode(ACCESS_TOKEN_TYPE, 'UTF-8')
-            + '&scope=' + EncodingUtil.urlEncode(DOWNSCOPE_SCOPE, 'UTF-8')
-            + '&resource=' + EncodingUtil.urlEncode('https://api.box.com/2.0/folders/' + folderId, 'UTF-8')
+            + '&scope=' + EncodingUtil.urlEncode(scopes, 'UTF-8')
+            + '&resource=' + EncodingUtil.urlEncode('https://api.box.com/2.0/' + resource, 'UTF-8')
         );
         if (res.getStatusCode() != 200) {
             return null;
@@ -217,7 +236,7 @@ global with sharing class LosBoxTokenService {
         payload.accessToken = token;
         payload.expiresIn = body.get('expires_in') == null ? 0 : Integer.valueOf(body.get('expires_in'));
         payload.folderId = folderId;
-        payload.scope = DOWNSCOPE_SCOPE;
+        payload.scope = scopes;
         return payload;
     }
 

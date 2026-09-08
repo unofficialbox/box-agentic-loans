@@ -617,3 +617,24 @@ describe("Visual identity", () => {
     expect(screen.getByRole("navigation", { name: "Primary" }).closest(".cb-rail")).not.toBeNull();
   });
 });
+
+describe("Server-authorized borrower documents", () => {
+  test("uses the safe listing without spending the upload token on Box reads", async () => {
+    window.history.replaceState({}, "", "/?recordId=a01xx0000001234&surface=officer");
+    const fetcher = vi.fn(async (url: string) => {
+      if (String(url).includes("/whoami")) return { ok: true, json: async () => borrower };
+      if (String(url).includes("/box-token")) return { ok: true, json: async () => ({
+        accessToken: "example-upload-only", folderId: "123", borrower: true,
+        files: [{ id: "101", name: "Application.pdf", type: "file" }],
+      }) };
+      if (String(url).includes("api.box.com")) throw new Error("Borrower must not read Box with upload token");
+      return { ok: true, json: async () => [] };
+    });
+    vi.stubGlobal("fetch", fetcher);
+    render(<Workspace />);
+    expect(await screen.findByTestId("box-elements-double")).toBeVisible();
+    expect(screen.queryByRole("link", { name: /Open in Box/ })).not.toBeInTheDocument();
+    expect(screen.queryByText("Loan Officer")).not.toBeInTheDocument();
+    expect(fetcher.mock.calls.some(([url]) => String(url).includes("api.box.com"))).toBe(false);
+  });
+});

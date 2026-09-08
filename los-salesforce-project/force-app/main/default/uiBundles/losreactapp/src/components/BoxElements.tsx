@@ -4,7 +4,7 @@ import BoxAnnotations from "box-annotations";
 import { IntlProvider } from "react-intl";
 import { MemoryRouter } from "react-router-dom";
 import "box-ui-elements/dist/preview.css";
-import type { BoxFolderItem } from "../lib/box";
+import { fetchBoxPreviewToken, type BoxFolderItem } from "../lib/box";
 import { installBoxPreview } from "../lib/boxPreviewRuntime";
 import { BoxDocumentTable } from "./BoxDocumentTable";
 import { PreviewSkeleton } from "./WorkspaceSkeleton";
@@ -96,10 +96,14 @@ export function BoxElements({
   folderId,
   token,
   files,
+  borrower = false,
+  recordId,
 }: {
   folderId: string;
   token: string;
   files: BoxFolderItem[];
+  borrower?: boolean;
+  recordId?: string;
 }) {
   const [selected, setSelected] = useState<BoxFolderItem | null>(null);
 
@@ -113,7 +117,18 @@ export function BoxElements({
    * renders an empty frame with no visible error. Memoized so preview is not torn down
    * and re-initialized on every render.
    */
-  const tokenProvider = useCallback(() => token, [token]);
+  const [previewError, setPreviewError] = useState("");
+  const tokenProvider = useCallback(async () => {
+    if (!borrower) return token;
+    if (!recordId || !selected) throw new Error("Choose an accessible loan document.");
+    const granted = await fetchBoxPreviewToken(recordId, selected.id);
+    if (!granted.ok) {
+      setPreviewError(granted.error);
+      throw new Error(granted.error);
+    }
+    setPreviewError("");
+    return granted.value;
+  }, [borrower, recordId, selected, token]);
   const library = usePreviewLibrary();
 
   if (!token || !folderId) {
@@ -128,12 +143,13 @@ export function BoxElements({
         {selected ? (
           <div className="box-preview-pane" data-testid="box-preview-pane">
             <div className="box-preview-bar">
-              <button type="button" className="secondary-button" onClick={() => setSelected(null)}>
+              <button type="button" className="secondary-button" onClick={() => { setSelected(null); setPreviewError(""); }}>
                 <ArrowLeft size={15} /> All documents
               </button>
               <span className="box-preview-name">{selected.name}</span>
             </div>
             <div className="box-element-host">
+              {previewError ? <div role="alert">{previewError}</div> : null}
               {library === "blocked" ? (
                 <div className="workspace-state" data-testid="box-preview-blocked">
                   Box Content Preview did not initialize. The renderer is bundled with

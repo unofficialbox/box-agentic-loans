@@ -90,6 +90,8 @@ web_modules/
 config/runtime/demo-environment.json
 config/runtime/bootstrap-state.json
 config/runtime/validation-receipts.json
+config/runtime/rehearsal-runs.json
+config/runtime/consolidation-evidence.json
 config/runtime/generated/
 
 # parcel-bundler cache (https://parceljs.org/)

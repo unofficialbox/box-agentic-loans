@@ -52,6 +52,7 @@ private class LosBoxTokenServiceTest {
     }
 
     private static void call(String folderId) {
+        LosWorkspaceAccess.directFolderOverride = true;
         callWith(folderId, null);
     }
 
@@ -103,14 +104,14 @@ private class LosBoxTokenServiceTest {
         System.assertEquals(FOLDER_ID, payload.get('folderId'), 'Should echo the requested folder');
         System.assertEquals(2400, payload.get('expiresIn'), 'Should surface the Box expiry');
         String scope = (String) payload.get('scope');
-        System.assert(scope.contains('item_preview') && scope.contains('item_upload'),
+        System.assert(scope.contains('item_preview') && scope.contains('base_upload'),
             'The workspace needs preview and upload scopes for the embedded Box elements');
         // The workspace offers delete, rename and share, so the token has to honour them:
         // a control that is shown but unscoped fails at the point of use instead of being
         // absent. The token is still bound to one folder, so this widens what may be done
         // inside that folder and nothing outside it.
-        System.assert(scope.contains('item_delete') && scope.contains('item_share'),
-            'The enabled Box controls need delete and share, or they fail when used');
+        System.assert(!scope.contains('item_delete') && !scope.contains('item_share'),
+            'The portal must not receive delete or share scopes');
         System.assert(!scope.contains('root_readwrite') && !scope.contains('manage_'),
             'A browser token must never carry enterprise-wide or management scopes');
         // Box rejects a comma separated list as one unsupported scope name, and only
@@ -121,7 +122,7 @@ private class LosBoxTokenServiceTest {
 
     @IsTest
     static void neverReturnsTheParentToken() {
-        configure(null);
+        configure(FOLDER_ID);
         Test.setMock(HttpCalloutMock.class, okMock());
 
         Test.startTest();
@@ -134,7 +135,7 @@ private class LosBoxTokenServiceTest {
 
     @IsTest
     static void exchangesTheParentTokenScopedToTheRequestedFolder() {
-        configure(null);
+        configure(FOLDER_ID);
         BoxMock mock = okMock();
         Test.setMock(HttpCalloutMock.class, mock);
 
@@ -174,7 +175,7 @@ private class LosBoxTokenServiceTest {
 
     @IsTest
     static void rejectsAMissingFolderId() {
-        configure(null);
+        configure(FOLDER_ID);
         Test.startTest();
         call(null);
         Test.stopTest();
@@ -185,7 +186,7 @@ private class LosBoxTokenServiceTest {
 
     @IsTest
     static void rejectsANonNumericFolderId() {
-        configure(null);
+        configure(FOLDER_ID);
         Test.startTest();
         call('../../etc/passwd');
         Test.stopTest();
@@ -206,7 +207,7 @@ private class LosBoxTokenServiceTest {
 
     @IsTest
     static void reportsWhenBoxRejectsTheClientCredentials() {
-        configure(null);
+        configure(FOLDER_ID);
         Test.setMock(HttpCalloutMock.class, new BoxMock(401, 200, '{}'));
 
         Test.startTest();
@@ -219,7 +220,7 @@ private class LosBoxTokenServiceTest {
 
     @IsTest
     static void reportsWhenBoxRejectsTheDownscopeExchange() {
-        configure(null);
+        configure(FOLDER_ID);
         Test.setMock(HttpCalloutMock.class, new BoxMock(200, 400, '{"error":"invalid_grant"}'));
 
         Test.startTest();
@@ -234,7 +235,8 @@ private class LosBoxTokenServiceTest {
     static void grantsAsTheConfiguredBoxUserWhenOneIsSet() {
         insert new LOS_Box_Config__c(
             SetupOwnerId = UserInfo.getOrganizationId(),
-            Box_User_Id__c = BOX_USER_ID
+            Box_User_Id__c = BOX_USER_ID,
+            Allowed_Folder_Ids__c = FOLDER_ID
         );
         BoxMock mock = okMock();
         Test.setMock(HttpCalloutMock.class, mock);
@@ -256,7 +258,8 @@ private class LosBoxTokenServiceTest {
         insert new LOS_Box_Config__c(
             SetupOwnerId = UserInfo.getOrganizationId(),
             Enterprise_Id__c = '99999',
-            Box_User_Id__c = BOX_USER_ID
+            Box_User_Id__c = BOX_USER_ID,
+            Allowed_Folder_Ids__c = FOLDER_ID
         );
         BoxMock mock = okMock();
         Test.setMock(HttpCalloutMock.class, mock);
@@ -286,7 +289,7 @@ private class LosBoxTokenServiceTest {
 
     @IsTest
     static void resolvesTheFolderFromTheBoxRecordMapping() {
-        configure(null);
+        configure(FOLDER_ID);
         Id recordId = mapRecordToFolder(FOLDER_ID);
         BoxMock mock = okMock();
         Test.setMock(HttpCalloutMock.class, mock);
@@ -306,7 +309,7 @@ private class LosBoxTokenServiceTest {
     static void reportsARecordWithNoBoxFolderRatherThanProvisioningOne() {
         // Provisioning writes the association, and Apex refuses a callout after DML, so
         // it cannot happen here. The client calls LosBoxFolderService and retries.
-        configure(null);
+        configure(FOLDER_ID);
         LOS_Loan__c loan = new LOS_Loan__c(Name = 'Unmapped');
         insert loan;
 
@@ -320,7 +323,7 @@ private class LosBoxTokenServiceTest {
 
     @IsTest
     static void rejectsARecordIdThatIsNotAnId() {
-        configure(null);
+        configure(FOLDER_ID);
 
         Test.startTest();
         callWith(null, 'demo-workspace');
@@ -363,7 +366,7 @@ private class LosBoxTokenServiceTest {
 
     @IsTest
     static void reportsWhenNeitherRecordNorFolderIsGiven() {
-        configure(null);
+        configure(FOLDER_ID);
 
         Test.startTest();
         callWith(null, null);

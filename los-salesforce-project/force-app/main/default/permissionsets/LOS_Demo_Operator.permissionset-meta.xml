@@ -1,13 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
-    <classAccesses>
-        <apexClass>LosBoxTokenService</apexClass>
-        <enabled>true</enabled>
-    </classAccesses>
     <applicationVisibilities>
         <application>LOS_Demo</application>
         <visible>true</visible>
     </applicationVisibilities>
+    <classAccesses>
+        <apexClass>LosBoxTokenService</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>LosWorkspaceAccess</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>LosBorrowerDocuments</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>LOS_Direct_Box_Folder</name>
+    </customPermissions>
     <externalCredentialPrincipalAccesses>
         <enabled>true</enabled>
         <externalCredentialPrincipal>LOS_Box-LOS_Box_Principal</externalCredentialPrincipal>

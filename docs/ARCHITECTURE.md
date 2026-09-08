@@ -1,6 +1,6 @@
 # Architecture
 
-Two platforms, one set of governed actions between them. Box stores the loan file (application package, borrower documents, appraisal, term sheets, credit memos, commitment letters, executed agreements, metadata, versions, audit trail). Salesforce `LOS_Loan__c` stores structured credit truth. Loan-file bytes never flow into Salesforce, and every generation, signature and record write is human-gated: AI drafts, compares, extracts and recommends; people approve credit decisions, exceptions, accepted terms and signatures.
+Two platforms, one set of governed actions between them. Box stores the loan file (application package, borrower documents, appraisal, term sheets, credit memos, commitment letters, executed agreements, metadata, versions, audit trail). Salesforce `LOS_Loan__c` stores structured credit truth. Loan-file bytes never flow into Salesforce, and term write-back requires explicit confirmation, and signature preparation enforces the loan state; draft generation requires a human request: AI drafts, compares, extracts and recommends; people approve credit decisions, exceptions, accepted terms and signatures.
 
 Diagrams: [LOS architecture](diagrams/los-architecture.svg) ([source](diagrams/los-architecture.mmd)) and the [Box + Salesforce flow](diagrams/box-salesforce-los-flow.svg) ([source](diagrams/box-salesforce-los-flow.mmd)).
 
@@ -20,7 +20,7 @@ Diagrams: [LOS architecture](diagrams/los-architecture.svg) ([source](diagrams/l
         │ MCP / Agentforce (internal)             downscoped token (borrower portal)
 ```
 
-Two surfaces share the governed assets. The internal surface is the `LOSLoanTools` hosted MCP server (Claude Desktop, ChatGPT, Slack) or the `LOS_Loan_Copilot` Employee Agent inside Agentforce, running as the signed-in employee over the whole portfolio. The external surface is the Acme Borrower Portal, a React UI Bundle on an authenticated Experience Cloud site, running as the community user and bounded by a sharing set, field permissions and a Box token downscoped to one folder. The portal carries no agent: a Service Agent runs as its own user and takes the loan from the conversation, so it could not be scoped to the borrower.
+Two surfaces share the governed assets. The internal surface is the `LOSLoanTools` hosted MCP server (Claude Desktop, ChatGPT, Slack) or the `LOS_Loan_Copilot` Employee Agent inside Agentforce, running as the signed-in employee over the whole portfolio. The external surface is the Acme Borrower Portal, a React UI Bundle on an authenticated Experience Cloud site, running as the community user and bounded by a sharing set, field permissions and server-authorized document listings, upload-only folder tokens and per-file preview tokens. The portal carries no agent: a Service Agent runs as its own user and takes the loan from the conversation, so it could not be scoped to the borrower.
 
 ## Box
 
