@@ -29,7 +29,11 @@ class AiInstructionTests(unittest.TestCase):
 
     def test_instruction_files_use_portable_paths(self):
         files = [ROOT / "AGENTS.md", ROOT / "CLAUDE.md"]
-        files.extend((ROOT / ".claude").rglob("*.md"))
+        # Another session may keep a git worktree under .claude/worktrees; its files are a
+        # checkout of this repository, not instruction files, and are not ours to test.
+        files.extend(
+            path for path in (ROOT / ".claude").rglob("*.md") if "worktrees" not in path.parts
+        )
         for path in files:
             self.assertIsNone(ABSOLUTE_PATH.search(path.read_text()), path)
 
