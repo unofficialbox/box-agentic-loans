@@ -68,7 +68,7 @@ Two gitignored files hold every environment-bound value. Create both from the re
 cp .env.sample .env
 ```
 
-`.env` carries the shell variables the one-time scripts read (Box client id, CCG subject and folder allowlist, integration user) and the `VITE_*` values for a local live preview; `set -a; source .env; set +a` loads it, and the React bundle reads it through the `losreactapp/.env.local` symlink. Leave `BOX_CLIENT_SECRET` empty and export it for the one run that needs it. The second file is the operator's runtime config:
+`.env` carries the shell variables the one-time scripts read (Box client id, CCG subject and folder allowlist, integration user) and the `VITE_*` values for a local live preview; `set -a; source .env; set +a` loads it for the scripts and for the React bundle's local live preview alike. Leave `BOX_CLIENT_SECRET` empty and export it for the one run that needs it. The second file is the operator's runtime config:
 
 From the repository root:
 
