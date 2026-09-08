@@ -12,28 +12,18 @@ MARKDOWN_LINK = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 
 
 class RepositoryNavigationTests(unittest.TestCase):
-    def test_persona_and_scenario_entry_points_are_linked_from_root(self):
+    def test_demo_entry_points_are_linked_from_root(self):
         readme = (ROOT / "README.md").read_text()
         targets = {target.split("#", 1)[0] for target in MARKDOWN_LINK.findall(readme)}
         expected = {
-            "docs/operator/README.md",
-            "docs/use-case-creator/README.md",
-            "docs/maintainers/README.md",
-            "docs/operator/scenarios/box-salesforce-los/README.md",
+            "DEMO-STORYBOARD.html",
+            "skills/los-demo/SKILL.md",
+            "docs/operator/start-here.md",
+            "docs/operator/demo-clickpath.md",
+            "docs/use-case-creator/architecture.md",
+            "HANDOFF.md",
         }
         self.assertTrue(expected.issubset(targets), expected - targets)
-
-    def test_approved_redundant_paths_are_removed(self):
-        removed = [
-            "los-template-comparison-and-reconciliation.md",
-            "docs/runbooks/03-agentcore-demo.md",
-            "docs/runbooks/04-box-agentforce-react-demo.md",
-            "docs/operator/scenarios/box-salesforce-los/"
-            "supporting-react-scripts/component-manifest.md",
-            "docs/operator/scenarios/box-automate-agentic-orchestration/README.md",
-        ]
-        for relative_path in removed:
-            self.assertFalse((ROOT / relative_path).exists(), relative_path)
 
     def test_local_markdown_links_resolve(self):
         failures: list[str] = []

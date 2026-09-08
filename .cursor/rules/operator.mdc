@@ -1,7 +1,0 @@
----
-description: Configure, deploy, validate, rehearse, or reset the LOS loan origination demo
-globs:
-alwaysApply: false
----
-
-Read `docs/operator/README.md`. Confirm scenario and exact targets, keep secrets and IDs in ignored runtime files, use dry runs first, require approval for external mutations, reconcile partial failures, and report the exact readiness state (nothing in this port has run live yet).

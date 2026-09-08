@@ -932,7 +932,7 @@ def validate(config_path: Path, *, scenario: str, offline: bool = False) -> None
         if not records:
             raise OperatorError("Salesforce LOS_Loan__c is not present in the configured org.")
     scope = "local bindings" if offline else "live Box resources, Salesforce data model, and local bindings"
-    print(f"{scenario.title()} readiness validation passed for {scope}. Complete the smoke-test checklist before presenting.")
+    print(f"{scenario.title()} readiness validation passed for {scope}. Run the storyboard preflight before presenting.")
 
 
 def parser() -> argparse.ArgumentParser:

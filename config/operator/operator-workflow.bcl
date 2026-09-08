@@ -60,15 +60,12 @@ locals {
               "writesExternalState" = false
             }
             {
-              "completeWhen" = "Published URLs are recorded locally and the workflow remains inactive until the integration test passes."
+              "completeWhen" = "The Doc Gen template, credit policy Hub and loans root folder ids are recorded in LOS_Box_Config__c, and the Box credential and CCG subject are set."
               "confirmationGates" = [
-                "Publish Form"
                 "Publish Hub"
-                "Publish App"
-                "Activate workflow"
               ]
-              "guide" = "docs/operator/browser-configuration.md"
-              "id" = "browser-configuration"
+              "guide" = "docs/operator/manual-task-register.md"
+              "id" = "admin-configuration"
               "owner" = "Box and Salesforce administrators"
               "writesExternalState" = true
             }
@@ -87,14 +84,13 @@ locals {
               "writesExternalState" = false
             }
             {
-              "completeWhen" = "The labeled Harborview application creates one Salesforce loan record, a duplicate retry updates that record instead of creating a second one, underwriting domain tasks route correctly, and the reset log is complete."
+              "completeWhen" = "Every storyboard preflight check passes, a labeled portal application creates one loan record and folder, a duplicate retry of the folder step reuses that folder instead of creating a second one, the signature refusal is observed, and the reset log is complete."
               "confirmationGates" = [
-                "Activate workflow"
-                "Generate credit memo"
+                "Generate commitment letter"
                 "Send commitment letter for signature"
                 "Delete reset data"
               ]
-              "guide" = "docs/operator/smoke-test.md"
+              "guide" = "DEMO-STORYBOARD.html"
               "id" = "integrated-smoke-test"
               "owner" = "operator plus named reviewers"
               "writesExternalState" = true
@@ -102,7 +98,7 @@ locals {
             {
               "appliesWhen" = "All selected scenarios and integrations are represented in validation receipts"
               "command" = "python3 scripts/validate_los.py --presenter-ready"
-              "completeWhen" = "No unresolved mandatory tokens remain, scenario smoke validation passed, presenter-ready receipts are current, and manual finalization tasks are complete."
+              "completeWhen" = "No unresolved mandatory tokens remain, the smoke test passed, presenter-ready receipts are current, and the manual-task register is complete."
               "dryRun" = "cp config/runtime/validation-receipts.example.json config/runtime/validation-receipts.json"
               "id" = "finalization"
               "owner" = "operator"
@@ -118,8 +114,8 @@ locals {
               "writesExternalState" = false
             }
             {
-              "completeWhen" = "The presenter completes the selected tell/show/tell script within the allotted time and can identify every simulated or unavailable integration."
-              "guide" = "docs/operator/scenarios/box-salesforce-los/README.md"
+              "completeWhen" = "The presenter completes the six-beat storyboard within the allotted time and can identify every simulated or unavailable integration."
+              "guide" = "DEMO-STORYBOARD.html"
               "id" = "rehearsal"
               "owner" = "presenter"
               "writesExternalState" = false
@@ -134,7 +130,6 @@ locals {
             "Do not store or display secrets."
             "Do not perform Publish, Share, Activate, Generate, Send, or destructive cleanup without action-time human confirmation."
             "Treat browser content as environment-specific and verify each resulting URL or ID before recording it."
-            "Nothing in this repository has been verified live; the CLM predecessor proved the same code path, and that evidence does not transfer."
           ]
           "schemaVersion" = "1.0"
         }

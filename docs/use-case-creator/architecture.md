@@ -56,9 +56,7 @@ Extract and AI outputs remain draft evidence. The approval task is the control p
 
 Two platforms, one set of governed actions between them. Box holds the loan file; Salesforce holds structured credit truth and every path from one to the other.
 
-Rendered diagram: [LOS Architecture](../diagrams/los-architecture.svg)
-
-Source: [Mermaid diagram](../diagrams/los-architecture.mmd)
+Diagrams: [LOS architecture](../diagrams/los-architecture.svg) ([source](../diagrams/los-architecture.mmd)) and the [Box + Salesforce flow](../diagrams/box-salesforce-los-flow.svg) ([source](../diagrams/box-salesforce-los-flow.mmd)).
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────────┐
@@ -147,11 +145,7 @@ Box Sign + Covenant Monitor
 
 ## Box Entry-Point Path
 
-The metadata-triggered intake that opens the scenario. Automate owns the intake sequence, agents enrich individual steps, humans own approvals; the React workspace opens on the record it creates.
-
-Canonical module: [Entry-Point Variation: Box Metadata Trigger to Salesforce Record](../operator/scenarios/box-salesforce-los/supporting-react-scripts/04-box-metadata-automate-entry.md)
-
-Flow: [rendered](../diagrams/los-box-metadata-automate-entry.svg) · [source](../diagrams/los-box-metadata-automate-entry.mmd)
+The alternate, metadata-triggered intake. Automate owns the intake sequence, agents enrich individual steps, humans own approvals; the React workspace opens on the record it creates. It is specified in `config/box/automate-workflows.bcl` and has not been built in a live enterprise; the borrower portal is the intake the demo shows.
 
 ### Entry-point rules
 
