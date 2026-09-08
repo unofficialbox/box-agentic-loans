@@ -43,6 +43,7 @@ export function BoxWorkspace({
    */
   onFailed?: (error: string) => void;
 }) {
+  const [borrower, setBorrower] = useState(false);
   const [token, setToken] = useState("");
   const [folderId, setFolderId] = useState("");
   /** The folder's real name; empty until read, and the configured label stands in. */
@@ -97,10 +98,15 @@ export function BoxWorkspace({
       if (!active) return;
       if (!granted.ok) return fail(granted.error);
 
+      setBorrower(granted.value.borrower === true);
       setToken(granted.value.accessToken);
       setFolderId(granted.value.folderId);
 
-      const listing = await listBoxFolderItems(granted.value.folderId, granted.value.accessToken);
+      const listing = granted.value.borrower
+        ? (Array.isArray(granted.value.files)
+          ? { ok: true as const, value: granted.value.files }
+          : { ok: false as const, error: "The authorized document listing was missing." })
+        : await listBoxFolderItems(granted.value.folderId, granted.value.accessToken);
       if (!active) return;
       if (!listing.ok) return fail(listing.error);
 
@@ -108,7 +114,9 @@ export function BoxWorkspace({
       setFiles(listing.value);
       notifyFiles.current?.(listing.value);
       // Non-fatal: the heading falls back to the configured workspace name.
-      const named = await fetchBoxFolderName(granted.value.folderId, granted.value.accessToken);
+      const named = granted.value.borrower
+        ? { ok: true as const, value: granted.value.folderName || LOS_CONFIG.workspace.name }
+        : await fetchBoxFolderName(granted.value.folderId, granted.value.accessToken);
       if (!active) return;
       setFolderName(named.ok ? named.value : "");
       // Withdraw an earlier failure as well as recording success. The workspace hides the
@@ -150,7 +158,7 @@ export function BoxWorkspace({
           <h2>{folderName || LOS_CONFIG.workspace.name}</h2>
         </div>
         <div className="head-actions">
-          {folderId ? (
+          {folderId && !borrower ? (
             <a
               className="secondary-button"
               href={`https://${LOS_CONFIG.workspace.boxHostname || "app.box.com"}/folder/${encodeURIComponent(folderId)}`}
@@ -173,7 +181,7 @@ export function BoxWorkspace({
         </div>
       </div>
       <Suspense fallback={<TableSkeleton />}>
-        <BoxElements folderId={folderId} token={token} files={files ?? []} />
+        <BoxElements key={folderId} folderId={folderId} token={token} files={files ?? []} borrower={borrower} recordId={context.salesforceRecordId} />
       </Suspense>
     </section>
   );

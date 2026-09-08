@@ -1,18 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
-    <description>Read on the loan fields the portal renders and create, through LosCreateApplication, on the fields an application carries. Risk_Rating__c, LTV__c, DSCR__c and Underwriting_Notes__c stay absent: the bank&apos;s assessment. Rows come from the sharing set.</description>
-    <hasActivationRequired>false</hasActivationRequired>
-    <label>LOS Borrower Portal</label>
     <classAccesses>
         <apexClass>LosBoxTokenService</apexClass>
         <enabled>true</enabled>
     </classAccesses>
-    <!--
-      Provisioning is the borrower's first request after creating an application: the
-      workspace asks the package for the loan's folder and, when there is none yet, asks
-      this class to create one. Without the grant the new loan opens on a 404 it can never
-      leave. The class binds the folder to the record and grants nothing else.
-    -->
     <classAccesses>
         <apexClass>LosBoxFolderService</apexClass>
         <enabled>true</enabled>
@@ -33,6 +24,19 @@
         <apexClass>LosClassifyDocument</apexClass>
         <enabled>true</enabled>
     </classAccesses>
+    <classAccesses>
+        <apexClass>LosWorkspaceAccess</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>LosBorrowerDocuments</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <description>Read on the loan fields the portal renders and create, through LosCreateApplication, on the fields an application carries. Risk_Rating__c, LTV__c, DSCR__c and Underwriting_Notes__c stay absent: the bank's assessment. Rows come from the sharing set.</description>
+    <externalCredentialPrincipalAccesses>
+        <enabled>true</enabled>
+        <externalCredentialPrincipal>LOS_Box-LOS_Box_Principal</externalCredentialPrincipal>
+    </externalCredentialPrincipalAccesses>
     <fieldPermissions>
         <editable>true</editable>
         <field>LOS_Loan__c.Loan_ID__c</field>
@@ -83,14 +87,6 @@
         <field>LOS_Loan__c.Loan_Amount__c</field>
         <readable>true</readable>
     </fieldPermissions>
-    <!--
-      Editable, not just readable, on the fields an application carries. LosCreateApplication
-      inserts in user mode, so the borrower&apos;s own field-level security is what decides
-      which fields a new loan may be born with; a field missing here fails the insert. Object
-      edit stays off below, so editable here means "may be set on a record this user creates",
-      not "may be changed afterwards". Rate, LTV, DSCR, collateral value, risk and officer
-      are not listed, and so cannot be set from the portal by any route.
-    -->
     <fieldPermissions>
         <editable>true</editable>
         <field>LOS_Loan__c.Record_Source__c</field>
@@ -116,16 +112,6 @@
         <field>LOS_Loan__c.Collateral_Type__c</field>
         <readable>true</readable>
     </fieldPermissions>
-    <!--
-      The Box for Salesforce record-to-folder association, read only. LosClassifyDocument
-      bounds a file to its loan through LosLoanPackage, which reads box__FRUP__c with SOQL;
-      a user who cannot see the object gets "sObject type box__FRUP__c is not supported"
-      rather than an empty result, and a loan the portal just created has no folder id on
-      the record itself to fall back to. The token endpoint sidesteps this by asking the
-      package, which is why it never needed the grant. A folder id grants nothing: reaching
-      the folder still takes a token minted per record, and only for a record this user can
-      read. LOS_Loan_Agent carries the same grant for the same reason.
-    -->
     <fieldPermissions>
         <editable>false</editable>
         <field>box__FRUP__c.box__Folder_ID__c</field>
@@ -136,21 +122,8 @@
         <field>box__FRUP__c.box__Record_ID__c</field>
         <readable>true</readable>
     </fieldPermissions>
-    <!--
-      Apex REST is what mints the Box token, and a call to /services/apexrest is refused
-      with a bare 403 unless the caller has API Enabled. The Customer Community profile
-      does not grant it. That is why the workspace could list loans and then fail to
-      load a single document: the GraphQL UI API goes through the site's own bridge and
-      needs no such permission, so one path worked while the other did not.
-
-      It widens nothing this user can reach. API Enabled governs whether the platform will
-      answer them at all, not what it answers with; every call is still bounded by the
-      object read and create, the fields listed here, and the sharing set below.
-    -->
-    <userPermissions>
-        <enabled>true</enabled>
-        <name>ApiEnabled</name>
-    </userPermissions>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>LOS Borrower Portal</label>
     <objectPermissions>
         <allowCreate>true</allowCreate>
         <allowDelete>false</allowDelete>
@@ -158,14 +131,6 @@
         <allowRead>true</allowRead>
         <modifyAllRecords>false</modifyAllRecords>
         <object>LOS_Loan__c</object>
-        <!--
-          Read and create, never edit or delete. No records are shared with a borrower, so
-          read grants the ability to run the query, not the ability to see anybody's rows;
-          the sharing set on Borrower_Account__c decides which rows come back. Create is
-          what LosCreateApplication needs to insert in user mode; the record it creates is
-          bound to the borrower's own account by the class, and once created the borrower
-          cannot change it. Edit stays off so the bank's assessment is never theirs to alter.
-        -->
         <viewAllRecords>false</viewAllRecords>
     </objectPermissions>
     <objectPermissions>
@@ -177,14 +142,6 @@
         <object>box__FRUP__c</object>
         <viewAllRecords>false</viewAllRecords>
     </objectPermissions>
-    <!--
-      Minting the Box token is a callout under the org's Client Credentials Grant, and Apex
-      cannot use that credential on a user's behalf unless the user is granted the
-      principal. Without both of these the endpoint is reached, runs, and throws
-      System.CalloutException, which surfaces to the browser as box_request_failed with no
-      indication that a permission is missing. LOS_Box_Preview_Guest and LOS_Loan_Agent
-      both carry the same pair for the same reason.
-    -->
     <objectPermissions>
         <allowCreate>false</allowCreate>
         <allowDelete>false</allowDelete>
@@ -194,8 +151,8 @@
         <object>UserExternalCredential</object>
         <viewAllRecords>false</viewAllRecords>
     </objectPermissions>
-    <externalCredentialPrincipalAccesses>
+    <userPermissions>
         <enabled>true</enabled>
-        <externalCredentialPrincipal>LOS_Box-LOS_Box_Principal</externalCredentialPrincipal>
-    </externalCredentialPrincipalAccesses>
+        <name>ApiEnabled</name>
+    </userPermissions>
 </PermissionSet>

@@ -137,3 +137,21 @@ test("starting an application creates the record, provisions its folder, and ope
   await expect(page.locator(".loan-banner")).toContainText("LN-2026-0089");
   await expect(page.getByText(/a01xx0000009newAAA/)).toHaveCount(0);
 });
+
+test("a borrower cannot enable an officer surface and does not read Box with an upload token", async ({ page }) => {
+  const boxReads: string[] = [];
+  page.on("request", (req) => { if (req.url().includes("api.box.com")) boxReads.push(req.url()); });
+  await answerIdentity(page, borrower);
+  await page.route("**/services/apexrest/los/loans", (route) => route.fulfill({ json: [] }));
+  await page.route("**/services/apexrest/los/box-token**", (route) => route.fulfill({ json: {
+    accessToken: "example-upload-only", folderId: "123", borrower: true,
+    files: [{ id: "101", name: "Borrower application.pdf", type: "file" }],
+  } }));
+  await page.goto("/?recordId=a01xx0000001234&surface=officer");
+  await expect(page.getByText("Borrower application.pdf").first()).toBeVisible();
+  await expect(page.getByText("Loan Officer", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /Open in Box/ })).toHaveCount(0);
+  expect(boxReads).toEqual([]);
+  await page.getByRole("button", { name: /Your loans/ }).click();
+  await expect(page.getByTestId("loans-view")).toBeVisible();
+});

@@ -274,3 +274,18 @@ describe("provisionBoxFolder", () => {
     expect(result.ok === false && result.error).toContain("box_unavailable");
   });
 });
+
+describe("file preview authorization", () => {
+  test("requests a file grant bound to the selected loan", async () => {
+    const fetcher = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ accessToken: "example-file-preview" }) });
+    vi.stubGlobal("fetch", fetcher);
+    const { fetchBoxPreviewToken } = await import("./box");
+    expect(await fetchBoxPreviewToken("loan-record", "101")).toEqual({ ok: true, value: "example-file-preview" });
+    expect(fetcher.mock.calls[0][0]).toContain("recordId=loan-record&fileId=101");
+  });
+  test("does not substitute the upload token after a refused preview", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 403 }));
+    const { fetchBoxPreviewToken } = await import("./box");
+    expect((await fetchBoxPreviewToken("loan-record", "102")).ok).toBe(false);
+  });
+});

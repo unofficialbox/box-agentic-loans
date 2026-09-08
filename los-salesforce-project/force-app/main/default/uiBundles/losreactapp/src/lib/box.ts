@@ -145,6 +145,9 @@ export function getLosPageContext(search = window.location.search): LosPageConte
 }
 
 export interface BoxWorkspaceToken {
+  borrower?: boolean;
+  files?: BoxFolderItem[];
+  folderName?: string;
   accessToken: string;
   /** The folder the endpoint actually minted for, which may differ from what was asked. */
   folderId: string;
@@ -190,7 +193,7 @@ export async function fetchDownscopedBoxToken(
     if (!granted.accessToken) {
       return failed(granted.error || "Salesforce returned no Box token for this loan.");
     }
-    return { ok: true, value: { accessToken: granted.accessToken, folderId: granted.folderId } };
+    return { ok: true, value: { accessToken: granted.accessToken, folderId: granted.folderId, borrower: granted.borrower, files: granted.files, folderName: granted.folderName } };
   } catch (error) {
     return failed(`The Box token endpoint could not be reached. ${describeError(error)}`);
   }
@@ -218,8 +221,11 @@ async function requestToken(query: string, requestedFolderId: string): Promise<T
       }`,
     };
   }
-  const result = (await response.json()) as { accessToken?: string; folderId?: string };
+  const result = (await response.json()) as Partial<BoxWorkspaceToken>;
   return {
+    borrower: result.borrower,
+    files: result.files,
+    folderName: result.folderName,
     accessToken: result.accessToken || "",
     // Trust the endpoint's folder over the requested one; with a recordId it is the only
     // place the answer exists.
@@ -265,5 +271,17 @@ export async function provisionBoxFolder(
     };
   } catch (error) {
     return failed(`Folder provisioning could not be reached. ${describeError(error)}`);
+  }
+}
+
+/** A fresh file-bound preview grant; the server rechecks loan access and metadata. */
+export async function fetchBoxPreviewToken(recordId: string, fileId: string): Promise<Loaded<string>> {
+  try {
+    const response = await fetch(apexRestUrl(`/services/apexrest/los/box-token?recordId=${encodeURIComponent(recordId)}&fileId=${encodeURIComponent(fileId)}`), { headers: { Accept: "application/json" } });
+    if (!response.ok) return failed("This document is not available for preview. Refresh the loan workspace.");
+    const result = await response.json() as { accessToken?: string };
+    return result.accessToken ? { ok: true, value: result.accessToken } : failed("No document preview token was returned.");
+  } catch (error) {
+    return failed(`The document preview could not be authorized. ${describeError(error)}`);
   }
 }

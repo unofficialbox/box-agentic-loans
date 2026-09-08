@@ -391,6 +391,22 @@ def check_live_receipts(root: Path = ROOT, *, required: bool) -> str:
     return "Box and Salesforce receipts"
 
 
+def check_presenter_output(root: Path = ROOT) -> str:
+    guides = load_script("build_scenario_guides", root)
+    portal = load_script("build_presenter_portal", root)
+    with tempfile.TemporaryDirectory(prefix="los-presenters-") as directory:
+        guides.OUTPUT = Path(directory)
+        for scenario in guides.SCENARIOS:
+            guides.build_scenario(scenario)
+        portal.build_landing(Path(directory) / "index.html")
+        portal.build_combined(Path(directory), Path(directory) / "06-complete-presenter-edition.html")
+        for generated in Path(directory).glob("*.html"):
+            committed = root / "output" / "html" / generated.name
+            if not committed.exists() or generated.read_bytes() != committed.read_bytes():
+                raise ValidationError(f"Presenter drift: {committed.relative_to(root)}")
+    return "3 canonical chapters, landing page and self-contained edition"
+
+
 def check_react_script(script: str, root: Path = ROOT) -> str:
     workspace = root / REACT.relative_to(ROOT)
     if not (workspace / "node_modules").is_dir():
@@ -474,6 +490,7 @@ def validate(*, skip_react: bool, skip_playwright: bool, presenter_ready: bool, 
         ("Mermaid/SVG drift", lambda: check_diagram_drift(root)),
         ("Python tests", lambda: run_command([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"], cwd=root)),
         ("generated fixtures", lambda: check_generated_fixtures(root)),
+        ("generated presenters", lambda: check_presenter_output(root)),
         ("screenshot manifest", lambda: check_screenshot_manifest(root)),
         ("reset + idempotency", lambda: check_reset_and_idempotency_rules(root)),
         ("SOQL field permissions", lambda: check_soql_field_permissions(root)),

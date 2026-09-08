@@ -10,7 +10,7 @@ One scenario, two surfaces. The borrower portal (a Salesforce Multi-Framework Re
 
 The story is in `DEMO-CLICKPATH.md`: Alex Bennett at Acme Bank works the Harborview Logistics loan `LN-2026-0042` ($4.8M, Underwriting). The borrower's marked-up term sheet weakens the DSCR test and inflates the collateral pool; the appraisal puts LTV at 85% and DSCR at 1.12x, outside even the approved exceptions, while Harborview accepted 70% / 1.30x on `LN-2023-0311` and `LN-2025-0148`. A commitment letter is generated; signature is refused; Dana Whitfield sees only Harborview's loans with Internal documents withheld.
 
-**Governance invariant:** Box is authoritative for loan-file content; `LOS_Loan__c` for structured credit truth; the Opportunity is the Box-mapped object. Loan-file bytes never flow to Salesforce. A human gate precedes every generation, signature and write; `LosApplyLoanTerms` needs `confirmed = true` from a person who reviewed the values.
+**Governance invariant:** Box is authoritative for loan-file content; `LOS_Loan__c` for structured credit truth; the Opportunity is the Box-mapped object. Loan-file bytes never flow to Salesforce. Draft generation follows a human request; signature preparation enforces status; `LosApplyLoanTerms` needs `confirmed = true` from a person who reviewed the values.
 
 ## 2. Working rules
 
@@ -50,7 +50,7 @@ The story is in `DEMO-CLICKPATH.md`: Alex Bennett at Acme Bank works the Harborv
 | `.../classes/LosLoanListService.cls`, `LosBorrowerLoans.cls`, `LosCreateApplication.cls`, `LosClassifyDocument.cls` | The borrower projection, list, create and classify |
 | `.../externalCredentials/LOS_Box.externalCredential-meta.xml`, `.../objects/LOS_Box_Config__c/` | Where the Box credential and non-secret settings live |
 | `.../permissionsets/`, `.../sharingSets/LOS_Borrower_Access.sharingSet-meta.xml` | `LOS_Demo_Operator`, `LOS_Box_Preview_Guest`, `LOS_Borrower_Portal`, `LOS_Loan_Agent`, `LOS_MCP_Client`, `LOS_Box_Automate_Integration`; the borrower's record boundary |
-| `.../mcpServerDefinitions/LOSLoanTools.mcpServerDefinition-meta.xml` | The eight hosted MCP tools |
+| `.../mcpServerDefinitions/LOSLoanTools.mcpServerDefinition-meta.xml` | The nine hosted MCP tools |
 | `.../aiAuthoringBundles/LOS_Loan_Copilot/` | Agent Script for the Copilot |
 | `.../objects/LOS_Loan__c/listViews/New_applications` | The loan officer's view of portal applications |
 | `.../cspTrustedSites/` | `LOS_Box_App` (frame-src) and `LOS_Box_Content_Delivery` (connect-src) |
@@ -126,7 +126,7 @@ A Service Agent (`ExternalCopilot`) runs as its own user and takes the loan from
 
 ### 6.10 The portal's entry flow and look
 
-Landing is decided by loan count: none opens Start an application, some open Your loans; a guest gets the sign-in prompt, never an error card. The form submits, provisions, then opens the workspace with `loanId`, `recordId`, `folderId`. Uploads classify after the dialog closes; the checklist ticks on `metadata.enterprise.losDocument.documentType`, untagged files are listed beneath it, `Internal` is withheld. The design is Acme Bank, not the CLM portal: left rail, serif headings, Lato body, evergreen and amber tokens on `:root` in `styles.css`; `styles.test.ts` asserts on the tokens and on never sharing a class name with box-ui-elements (its unscoped `.modal-backdrop` carries `z-index: -1`).
+Landing is decided by loan count: none opens Start an application, some open Your loans; a guest gets the sign-in prompt, never an error card. The form submits, provisions, then opens the workspace with `loanId`, `recordId`, `folderId`. Uploads classify after the dialog closes; the checklist ticks on `metadata.enterprise.losDocument.documentType`, unclassified files remain unavailable until classified; Internal files are omitted by the server and cannot receive a borrower preview grant. The design is Acme Bank, not the CLM portal: left rail, serif headings, Lato body, evergreen and amber tokens on `:root` in `styles.css`; `styles.test.ts` asserts on the tokens and on never sharing a class name with box-ui-elements (its unscoped `.modal-backdrop` carries `z-index: -1`).
 
 ### 6.11 Dependency pins
 

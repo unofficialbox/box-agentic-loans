@@ -1,8 +1,8 @@
 # Demo Clickpath
 
-A borrower starts an application in the Acme Borrower Portal; a term sheet marked up on the borrower's numbers is read against the credit policy library and the two loans Harborview already closed. Six beats, two windows, five to six minutes. Every prompt below is copy-paste.
+A borrower starts an application in the Acme Borrower Portal; a term sheet marked up on the borrower's numbers is read against the credit policy library and the two loans Harborview already closed. Six beats, two windows, an 11-minute full walkthrough. The 6:30 shortened stage variant and reset procedure are in [docs/PRESENTING.md](docs/PRESENTING.md). Every prompt below is copy-paste.
 
-Headless, not branded: Box holds the file, Salesforce holds the record, and the harness is whatever the room uses. Beats 2 to 5 are written for Claude Desktop with the LOS and Box connectors; the same prompts work from ChatGPT, Slack, or the Loan Copilot inside Agentforce. `skills/los-demo/SKILL.md` carries the same prompts and answer rules for an AI harness.
+Headless, not branded: Box holds the file, Salesforce holds the record, and the harness is whatever the room uses. Beats 2 to 5 are written for Claude Desktop with the LOS and Box connectors; the same prompts work from ChatGPT, Slack, or the Loan Copilot inside Agentforce. `skills/los-demo/SKILL.md` carries the tool contracts and answer rules; this file is the canonical source of presenter prompts.
 
 Replace `<your-site>`, `<alias>` and `<borrower-user-email>` with the environment you present from. Nothing else is environment-bound.
 
@@ -38,7 +38,7 @@ sf data query -o <alias> -q "SELECT Loan_ID__c, Status__c FROM LOS_Loan__c WHERE
 
 Expect LN-2023-0311 Closed, LN-2025-0148 Closed, LN-2026-0042 Underwriting.
 
-**P5. Box: no stray duplicates.** In `LOS-2026-Harborview / 02 - Borrower Documents`, delete any `(1)` copy left by a re-run seed; a duplicate carries no metadata and shows as "awaiting classification" in beat 6. Confirm `Loans_Root_Folder_Id__c` in `LOS_Box_Config__c` points at the loans root so beat 2 is scoped.
+**P5. Box: no stray duplicates.** Inventory `LOS-2026-Harborview / 02 - Borrower Documents` for `(1)` copies left by earlier seeds. Unclassified duplicates are excluded from the borrower listing. Queue them for the cleanup owner to review; deletion requires a separate explicit decision. Confirm `Loans_Root_Folder_Id__c` in `LOS_Box_Config__c` points at the loans root so beat 2 is scoped.
 
 **P6. Salesforce Setup: the borrower's login.** Dana Whitfield needs either a real password (Setup, Users, Dana Whitfield, Reset Password; the mail goes to `<borrower-user-email>`) or an admin who opens the site as her with Log in to Experience as User from her user record, which needs no password. Confirm she is a site member with a `NetworkMember` query first; a non-member's login failure looks like bad credentials.
 
@@ -60,7 +60,7 @@ Expect the workspace to open on the new loan with a Required documents card list
 
 Upload two files from `output/pdf/`: `harborview-appraisal-2026.pdf`, then `harborview-financial-statements-fy2025.pdf`.
 
-Expect "Classified as Appraisal by Box AI", then "Classified as Financial Statement by Box AI", and two ticks on the checklist. Nobody chose a type from a menu; Box AI read the document against the `losDocument` template. A file it cannot name is still received and sits under the checklist awaiting the loan officer's classification.
+Expect "Classified as Appraisal by Box AI", then "Classified as Financial Statement by Box AI", and two ticks on the checklist. Nobody chose a type from a menu; Box AI read the document against the `losDocument` template. A file it cannot name is still received, but remains excluded from the document listing until the loan officer classifies it. The upload notice explains the pending classification.
 
 Then the lender's side: open the new record in Salesforce. Expect Status Application, Record Source Borrower Portal, the purpose she typed, a loan ID numbered after the last one that year, and a Box folder already holding her two classified files. One classification feeds the Copilot, the portfolio search in beat 2, and her own checklist.
 
@@ -102,7 +102,7 @@ Expect `extractLoanTerms` to report amount, rate and term matching the record an
 apply the amount, rate and term to the record, confirm
 ```
 
-Expect `applyLoanTerms` to refuse without the confirmation and, with it, to update only those fields. That is the one write in the demo, and a person just authorised it. Never apply the extracted LTV or DSCR: they are policy thresholds and markup requests, not the borrower's numbers on the record.
+First request the same write without confirmation and verify the action refuses. Then use the explicit confirmation above and verify it updates only those fields. That is the one write in the demo, and a person just authorised it. Never apply the extracted LTV or DSCR: they are policy thresholds and markup requests, not the borrower's numbers on the record.
 
 ### 4. What they agreed the last two times (to 7:25)
 
@@ -144,9 +144,9 @@ https://<your-site>.my.site.com/loansvforcesite/login?startURL=%2Floans%2F
 
 Sign in as Dana Whitfield with the password from P6. Use the login path: `/loans/` serves the app for every URL beneath it and never redirects a signed-out visitor.
 
-Expect the header to name her, Dana Whitfield · Harborview Logistics, above the three seeded Harborview loans plus the beat 1 application, and no Pinecrest. Same code, different identity, different rows: a Salesforce sharing set on the borrower account, with the Box token downscoped to one folder.
+Expect the header to name her, Dana Whitfield · Harborview Logistics, above the three seeded Harborview loans plus the beat 1 application, and no Pinecrest. Same code, different identity, different rows: a Salesforce sharing set on the borrower account, with upload-only folder access and separately authorized per-file preview tokens.
 
-Open the 2026 loan. Expect five documents where the internal package lists six: anything tagged Internal is withheld by metadata, not by a different folder, and her LTV, DSCR and risk rating are not in the projection at all.
+Open the 2026 loan. Compare the current inventory with the officer package: the server omits Internal and unclassified documents and grants preview access one authorized file at a time, and her LTV, DSCR and risk rating are not in the projection at all.
 
 There is no Copilot on this page. A Service Agent runs as its own user and takes the loan name from the conversation, so it could be asked about another borrower's loan; it was left off rather than left for someone to find.
 
@@ -156,7 +156,7 @@ Setup, Agentforce Agents: confirm Loan Copilot shows Active, open it, and click 
 
 | Send | Expect |
 |---|---|
-| `What's in the loan package for LN-2026-0042?` | The record summary and eight document names, term-sheet markup included. No record or folder IDs. |
+| `What's in the loan package for LN-2026-0042?` | The record summary and the current document inventory, term-sheet markup included. No record or folder IDs. |
 | `What does the borrower's markup change about the rate and the guaranty?` | 6.50% requested against 6.85% fixed; limited guaranty capped at $1,000,000 each; cited to the markup PDF. |
 | `Extract the terms from the term sheet and validate them against the record.` | Seven fields. LTV 75 vs 85 and DSCR 1.25 vs 1.12 flagged as mismatches. States that nothing was written. |
 | `Does credit policy allow 85% LTV and 1.12x DSCR? Cite the policy IDs.` | LOS-LTV-001 and LOS-LTV-002, LOS-DSCR-001 and LOS-DSCR-002. Both requests outside the approved exceptions. |
@@ -176,10 +176,10 @@ Every run of beat 1 creates a real `LOS_Loan__c` in Application status and a rea
 
 ## If someone asks
 
-- **Every write is governed, and a person is in each one.** The application and each classification are written by Apex actions the borrower cannot bypass. `extractLoanTerms` only reads; `applyLoanTerms` writes seven allow-listed fields when a person says confirm and refuses on a Closed or Servicing loan. Doc Gen drafts into the governed folder; Box Sign only prepares a request. Both sides of the write-back ran live: the unconfirmed call was refused, and a confirmed call wrote amount, rate and term and nothing else.
+- **Know which control enforces each write.** The borrower explicitly submits the application and uploads; Apex performs classification. `extractLoanTerms` reads; `applyLoanTerms` requires confirmation and refuses Closed or Servicing loans. Direct Box Doc Gen follows the presenter's authorization and Box permissions, rather than the Apex confirmation gate. The LOS signature action prepares a request only in allowed loan states. Record the actual unconfirmed refusal and confirmed field changes during this rehearsal; historical runs are not current evidence.
 - **This is not Claudeforce.** Claudeforce is a Salesforce pilot connector for Sales Cloud that neither Box nor this demo can open. What is shown is the headless pattern it will sit inside. Do not claim compatibility with a product nobody in the room can use.
 - **The Box MCP server package for Agentforce is not generally available.** Its security review is stalled. The Loan Copilot runs on Apex actions and does not depend on it.
-- **Where does the data move? Nowhere.** Documents stay in Box; Salesforce permission sets decide what a user may read or write on the record; Box permissions decide which content they may see; the assistant calls both and copies nothing.
+- **Where do the documents live? In Box.** Documents stay in Box; Salesforce permission sets decide what a user may read or write on the record; Box permissions decide which content they may see; the assistant reads both; extracted values and generated draft content cross those interfaces while source documents remain in Box.
 - **Why no Copilot on the borrower site?** A Service Agent runs as its assigned agent user and cannot inherit Dana's access. An Employee Agent inherits the signed-in user's permissions; that is where the internal Loan Copilot runs.
 - **The tagging on seeded files is manual.** Portal uploads are classified by Box AI as they land; the seeded Harborview files were tagged by the seed script and by hand. A metadata cascade policy on the loan folder is what would make it survive the next loan.
 

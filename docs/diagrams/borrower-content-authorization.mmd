@@ -1,0 +1,8 @@
+flowchart LR
+    B[Borrower portal] --> A[Authenticate and authorize loan]
+    A --> L[Server-filtered document list]
+    A --> U[Upload-only folder token]
+    A --> F[Authorize requested file and metadata]
+    F --> P[File-scoped preview token]
+    U --> X[Box uploads]
+    P --> D[One permitted Box document]

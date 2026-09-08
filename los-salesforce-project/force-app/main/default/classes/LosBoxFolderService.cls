@@ -32,6 +32,10 @@ global with sharing class LosBoxFolderService {
         response.addHeader('Content-Type', 'application/json');
         response.addHeader('Cache-Control', 'no-store');
 
+        if (LosWorkspaceAccess.isGuest()) {
+            fail(response, 401, 'not_authenticated', 'Sign in to open a loan workspace.');
+            return;
+        }
         String recordParam = request.params.get('recordId');
         Id recordId;
         try {
@@ -41,6 +45,10 @@ global with sharing class LosBoxFolderService {
             return;
         }
 
+        if (LosWorkspaceAccess.loan(recordId) == null) {
+            fail(response, 404, 'loan_not_found', 'No accessible loan matches that record.');
+            return;
+        }
         String folderId = new Provisioner().forRecord(recordId);
         if (String.isBlank(folderId)) {
             fail(response, 500, 'box_folder_not_provisioned',
@@ -56,9 +64,7 @@ global with sharing class LosBoxFolderService {
     }
 
     /**
-     * `without sharing` for the same reason as the token endpoint: the Experience Cloud
-     * guest user sees no association records under normal sharing, and this returns a
-     * folder id rather than granting any record access.
+     * `without sharing` only for managed-package provisioning after caller/loan authorization.
      */
     private without sharing class Provisioner {
         private String forRecord(Id recordId) {
@@ -101,8 +107,7 @@ global with sharing class LosBoxFolderService {
      * back over the API with `permissions.can_upload = true`, and the token exchange still
      * answers `invalid_resource`. Nothing in that error points at collaborations.
      *
-     * So every folder the package provisions needs this grant, or its loan silently falls
-     * back to synthetic fixtures. The CLM predecessor's demo workspace only ever worked
+     * So every folder the package provisions needs this grant, or its loan workspace reports a token error. The CLM predecessor's demo workspace only ever worked
      * because someone made the same grant by hand.
      *
      * Failure is logged, not raised: the folder exists and the association is real either

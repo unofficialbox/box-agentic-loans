@@ -59,7 +59,7 @@ sf project deploy start --target-org <alias> --source-dir force-app/main/default
 
 ## 4. Box preview
 
-The borrower workspace shows Box content through a short-lived token minted by `LosBoxTokenService` (`/services/apexrest/los/box-token?recordId=<sfid>`): the org resolves the record's folder through `box__FRUP__c`, grants as the configured Box user with client credentials, downscopes to that one folder, and returns the token. The browser never sees the client secret or the enterprise token; Apex never holds a credential either. Until this is configured the workspace says it could not be opened and names the reason. There is no fixture fallback.
+The borrower workspace shows Box content through a short-lived token minted by `LosBoxTokenService` (`/services/apexrest/los/box-token?recordId=<sfid>`): the org first authorizes the caller against the loan and borrower account, then resolves its folder through `box__FRUP__c`, grants as the configured Box user with client credentials, returns an upload-only token and a filtered document listing. Preview requests additionally require `fileId` and receive a token scoped only to that permitted file. The browser never sees the client secret or the enterprise token; Apex never holds a credential either. Until this is configured the workspace says it could not be opened and names the reason. There is no fixture fallback.
 
 Box renders the document on its own origin in an iframe because Experience Cloud allows only `'self'` under `script-src` and `CspTrustedSite` cannot widen it; it can grant `frame-src`, which is what the `LOS_Box_App` trusted site does.
 

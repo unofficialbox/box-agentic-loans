@@ -25,7 +25,7 @@ Box connector, used as the signed-in user, for everything about content: `search
 
 LOS connector, for the record and the governed writes: `getLoanPackage` (the loan, its folder id, and every file id), `listLoans`, `extractLoanTerms` (compare extracted terms to the record), `applyLoanTerms` (write, only with "confirm"), `prepareSignatureRequest` (refuses by status), `classifyDocument`; `findDocumentsByRisk`, `askLoanDocument` and `generateCommitmentLetter` are fallbacks for when the Box connector is off or lacks a tool.
 
-Rule of thumb: if the question is about what a document says, call Box. If it is about the loan record, or it changes anything, call LOS. Take folder and file ids from `getLoanPackage` or a Box search; never ask the presenter for one and never print one.
+Rule of thumb: if the question is about what a document says, call Box. For loan records, confirmed term updates and the signature-state check, call LOS. For an explicitly requested draft, use Box Doc Gen after verifying the destination and record-derived facts. Take folder and file ids from `getLoanPackage` or a Box search; never ask the presenter for one and never print one.
 
 ## Extraction prompts that return the borrower's numbers
 
@@ -35,15 +35,17 @@ For `ai_extract_structured_from_fields` on the markup, name the fields so Box AI
 
 Beat 1 (borrower starts an application in the portal) and beat 6 (the borrower's scoped view) happen in a browser, not here. The demo loan is `LN-2026-0042`, Harborview Logistics, in Underwriting, with a term sheet the CFO marked up.
 
-| Beat | Prompt the presenter sends | What a correct answer contains |
-|---|---|---|
-| 2 | Which loan documents across the portfolio are flagged critical policy risk? Search the Box metadata under the LOS-2026-Harborview workspace. | Box: find the workspace folder by name; read the `losDocument` template with `get_metadata_template_schema` (scope `enterprise`) and use its returned `scope` as `<scope>.losDocument` in `search_files_metadata`; query `policyRisk = :risk` bounded to the folder. Never call `list_metadata_templates`; it returns every template in the enterprise and swamps the session. One hit, the borrower-marked term sheet, opened inline. "High or above" adds the FY2025 financial statements and the appraisal. No LOS call. |
-| 3 | Open the LN-2026-0042 package. Using Box AI, extract from the marked-up term sheet the loan amount, the bank's rate, the rate the borrower requests, the term, and the DSCR as the borrower proposes it. Then ask the Acme credit policy library whether the borrower's LTV and DSCR positions are within policy or an approved exception, citing policy IDs. | `getLoanPackage`, then Box AI extract: $4,800,000; 6.85% bank, 6.50% requested; 120 months; DSCR 1.10x annual. Box AI on the Hub: LOS-LTV-001 (75%) / LOS-LTV-002 (80%); LOS-DSCR-001 (1.25x) / LOS-DSCR-002 (1.15x); outside even the exceptions. Markup previewed inline. |
-| 3a | Validate those terms against the Salesforce record. | `extractLoanTerms`: amount, rate, term match; LTV and DSCR mismatch; nothing written. |
-| 3b | apply the amount, rate and term to the record, confirm | `applyLoanTerms` refuses without "confirm"; with it, only those fields update. Never apply LTV or DSCR from an extract. |
-| 4 | Using Box AI across the two executed Harborview loan agreements and the 2026 term sheet markup, compare the LTV and DSCR covenants. What did Harborview actually agree before, where in each agreement, and who signed? | `getLoanPackage` for the two closed loans, then one Box AI multi-file answer: 70% LTV and 1.30x DSCR tested quarterly, Section 8 and Schedule 1, signed by Jordan Pike and Priya Shah; the markup asks 1.10x annual. One table; the 2025 agreement previewed at Schedule 1. |
-| 5 | Draft the commitment letter for this Harborview loan with Box Doc Gen, using the commitment-letter template, the approved terms, the policy exception and the precedent from the closed loans. Save it in the loan folder and show it to me. | `getLoanPackage` for the record and folder; Box `list_docgen_templates` for `los-commitment-letter-template.docx`; `create_docgen_batch` (pdf, into the loan folder) with the field structure below; then list the folder and preview the letter: a draft pending Credit Committee. |
-| 5b | Send the Harborview commitment letter for signature. | `prepareSignatureRequest` is called and refuses, naming Underwriting. Do not refuse on the model's behalf. |
+Presenter prompts have one source: [DEMO-CLICKPATH.md](../../DEMO-CLICKPATH.md). Read the relevant beat there; the table below specifies tool behavior and expected evidence.
+
+| Beat | Tool behavior and expected evidence |
+|---|---|
+| 2 | Box: find the workspace folder by name; read the `losDocument` template with `get_metadata_template_schema` (scope `enterprise`) and use its returned `scope` as `<scope>.losDocument` in `search_files_metadata`; query `policyRisk = :risk` bounded to the folder. Never call `list_metadata_templates`; it returns every template in the enterprise and swamps the session. One hit, the borrower-marked term sheet, opened inline. "High or above" adds the FY2025 financial statements and the appraisal. No LOS call. |
+| 3 | `getLoanPackage`, then Box AI extract: $4,800,000; 6.85% bank, 6.50% requested; 120 months; DSCR 1.10x annual. Box AI on the Hub: LOS-LTV-001 (75%) / LOS-LTV-002 (80%); LOS-DSCR-001 (1.25x) / LOS-DSCR-002 (1.15x); outside even the exceptions. Markup previewed inline. |
+| 3a | `extractLoanTerms`: amount, rate, term match; LTV and DSCR mismatch; nothing written. |
+| 3b | `applyLoanTerms` refuses without "confirm"; with it, only those fields update. Never apply LTV or DSCR from an extract. |
+| 4 | `getLoanPackage` for the two closed loans, then one Box AI multi-file answer: 70% LTV and 1.30x DSCR tested quarterly, Section 8 and Schedule 1, signed by Jordan Pike and Priya Shah; the markup asks 1.10x annual. One table; the 2025 agreement previewed at Schedule 1. |
+| 5 | `getLoanPackage` for the record and folder; Box `list_docgen_templates` for `los-commitment-letter-template.docx`; `create_docgen_batch` (pdf, into the loan folder) with the field structure below; then list the folder and preview the letter: a draft pending Credit Committee. |
+| 5b | `prepareSignatureRequest` is called and refuses, naming Underwriting. Do not refuse on the model's behalf. |
 
 ## The commitment-letter template
 
@@ -62,7 +64,7 @@ Fill `loan` from `getLoanPackage`, `terms` from beat 3 (the policy IDs and excep
 
 ## If someone asks
 
-- **Where does the data move?** Documents stay in Box. The Box connector runs as the signed-in user under Box permissions; the LOS connector runs under the Salesforce External Client App scopes and permission sets. You call both and never copy a file.
+- **Where does the data move?** Box stores the source documents. Preview renditions, extracted values and metadata travel to the browser, harness and Salesforce as needed. The Box connector uses the signed-in user's permissions; LOS uses the Salesforce connection's permissions.
 - **Is this Claudeforce?** No. Claudeforce is a Salesforce pilot connector for Sales Cloud that this team does not have. This is the headless pattern it will sit inside: Box, Salesforce and whichever harness the customer uses.
 - **Is the Box MCP server for Agentforce generally available?** Not yet; its package is in Salesforce security review. The Loan Copilot in this org uses Apex actions and does not depend on it.
 - **Can the assistant sign or send?** No. Doc Gen drafts; Box Sign prepares a request for a person to send; the write-back needs a spoken "confirm".
