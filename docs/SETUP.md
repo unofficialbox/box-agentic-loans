@@ -119,6 +119,22 @@ sf agent activate --version <n> --target-org <alias>
 
 If a mis-typed agent already exists, delete it in Agent Builder first; the Metadata API refuses with "setup object in use". The Copilot is internal only; an Agentforce panel on a site would additionally need a Lightning Out 2.0 app (creatable through the Tooling API as `LightningOutApp` plus `LightningOutAppHost`, with `IsEnabled=true`) and a rebuild with `VITE_AGENTFORCE_APP_ID`.
 
+## 5a. Connect an MCP client to the LOS server
+
+The hosted server `LOSLoanTools` deploys with the metadata but is inert until three org-side steps run, none of which put a value in this repository.
+
+1. **Activate the server.** Deploying `mcpServerDefinitions/` creates the definition only. Activation is a Tooling record: create `McpServerAccess` with `DeveloperName = LOSLoanTools`, `MasterLabel`, `Active = true`, and `McpServerId` set to the definition's Id. Setup → Integration → **MCP Servers** → LOS Loan Tools then shows Server Status Active and the Server URL, which for a production or Developer Edition org is `https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools` (sandboxes and scratch orgs insert `sandbox/` after `v1/`).
+2. **Deploy the External Client App.** `externalClientApps/LOS_Claude_MCP` with its OAuth settings (`MCP` and `RefreshToken` scopes), global OAuth set (callback `https://claude.ai/api/mcp/auth_callback`, PKCE required, consumer secret optional, named-user JWT tokens) and policy (admin pre-authorized users). Read the consumer key from Setup → External Client App Manager → LOS Claude MCP → Settings → OAuth; never retrieve `ExtlClntAppGlobalOauthSettings` into source, it carries the secret.
+3. **Grant the user.** Assign `LOS_MCP_Client` to every presenter, and add them to the app's pre-authorized profiles or permission sets (Setup → External Client App Manager → LOS Claude MCP → Policies).
+
+Then in the client:
+
+- **Claude Desktop or claude.ai:** Customize → Connectors → + → Add custom connector. Name `LOS Loan Tools`, server URL from step 1, Advanced settings → OAuth Client ID = the consumer key, no secret. Click Connect; the org login completes the OAuth flow. Configure → all nine tools on. Load the Box connector alongside it.
+- **ChatGPT:** the same app with the ChatGPT callback URL added to the ECA; untested here.
+- **Slack:** the workspace connected to the org with this server enabled; untested here.
+
+Expect: the connector lists nine tools (`listLoans` through `prepareSignatureRequest`) and beat 2 of the clickpath answers from `findDocumentsByRisk`.
+
 ## 6. Administrator checklist
 
 Complete each item for every new environment. Record IDs only in the gitignored runtime files.
