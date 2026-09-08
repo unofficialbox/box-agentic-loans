@@ -21,10 +21,10 @@ Expect one row, Active.
 **P2. Claude Desktop: set the answer length.** Claude Desktop defaults to an essay, and a hosted MCP server exposes tool descriptions, not a response style. Put this in the project's custom instructions and run the beats inside that project; a fresh chat outside it carries none of these rules.
 
 ```text
-Answer in 60 words or fewer unless I ask for more. Lead with the finding. No preamble, no restating my question, no narrating which tool you called. Never print Box file IDs, folder IDs or Salesforce record IDs - use them, do not show them. Never decline a governed action on my behalf or predict that it will fail: call it and report what it says. Never apply extracted terms to a record unless I say the word confirm. Offer at most one follow-up, in one line. At most one table, only when comparing the same covenant across loans. Cite each source file once, as a link, at the end. No closing offers.
+Answer in 60 words or fewer unless I ask for more. Lead with the finding. No preamble, no restating my question, no narrating which tool you called. Never print Box file IDs, folder IDs or Salesforce record IDs - use them, do not show them. Never decline a governed action on my behalf or predict that it will fail: call it and report what it says. Never apply extracted terms to a record unless I say the word confirm. Offer at most one follow-up, in one line. At most one table, only when comparing the same covenant across loans. After an answer that rests on one document, open that document inline with the Box connector's get_file_preview instead of linking it; one preview per answer. No closing offers.
 ```
 
-Expect beat 4 to answer in a short paragraph and one table.
+Expect beat 4 to answer in a short paragraph and one table, and every beat to end with the document itself on screen rather than a link. If a beat comes back with a link, say "show me the document" once; the rule above makes that the last time.
 
 **P3. Claude Desktop: both connectors loaded, LOS refreshed.** Beat 2 searches Box metadata and beat 3 opens the marked-up term sheet; neither works with only the LOS tools. The LOS connector is a custom connector on `https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools` with the External Client App's consumer key as OAuth Client ID (docs/SETUP.md §5a). If it predates the Extract, Apply or Classify tools, disconnect and reconnect it under Settings, Connectors, reusing the same URL.
 
