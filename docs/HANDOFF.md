@@ -116,7 +116,7 @@ A Service Agent (`ExternalCopilot`) runs as its own user and takes the loan from
 
 ### 6.8 Hosted MCP
 
-`McpServerDefinition` is undocumented: an Apex tool is `aa:apex-<ClassName>` with `apiSource API_CATALOG` and `operation` set to the class name; the developer name is alphanumeric only; only `global @InvocableMethod` methods are exposed; activation is a `McpServerAccess` Tooling record with the same `DeveloperName`; API v66.0+, source-deploy only. Never retrieve `ExtlClntAppGlobalOauthSettings`; it returns the consumer secret.
+`McpServerDefinition` is undocumented: an Apex tool is `aa:apex-<ClassName>` with `apiSource API_CATALOG` and `operation` set to the class name; the developer name is alphanumeric only; only `global @InvocableMethod` methods are exposed; activation is a `McpServerAccess` Tooling record (`DeveloperName`, `MasterLabel`, `Active = true`, `McpServerId` = the definition Id) and the client URL is `https://api.salesforce.com/platform/mcp/v1/custom/<DeveloperName>` (`v1/sandbox/custom/` for sandboxes); API v66.0+, source-deploy only. Never retrieve `ExtlClntAppGlobalOauthSettings`; it returns the consumer secret.
 
 ### 6.9 Salesforce platform edges
 

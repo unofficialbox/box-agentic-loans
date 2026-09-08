@@ -26,7 +26,7 @@ Answer in 60 words or fewer unless I ask for more. Lead with the finding. No pre
 
 Expect beat 4 to answer in a short paragraph and one table.
 
-**P3. Claude Desktop: both connectors loaded, LOS refreshed.** Beat 2 searches Box metadata and beat 3 opens the marked-up term sheet; neither works with only the LOS tools. If the LOS connector predates the Extract and Apply tools, disconnect and reconnect it under Settings, Connectors, reusing the configured endpoint.
+**P3. Claude Desktop: both connectors loaded, LOS refreshed.** Beat 2 searches Box metadata and beat 3 opens the marked-up term sheet; neither works with only the LOS tools. The LOS connector is a custom connector on `https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools` with the External Client App's consumer key as OAuth Client ID (docs/SETUP.md §5a). If it predates the Extract, Apply or Classify tools, disconnect and reconnect it under Settings, Connectors, reusing the same URL.
 
 Expect both connectors listed under Context in the session, and nine LOS tools: `listLoans`, `findDocumentsByRisk`, `getLoanPackage`, `askLoanDocument`, `extractLoanTerms`, `applyLoanTerms`, `classifyDocument`, `generateCommitmentLetter`, `prepareSignatureRequest`.
 
