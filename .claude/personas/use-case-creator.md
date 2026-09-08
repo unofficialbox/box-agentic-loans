@@ -1,6 +1,6 @@
 # Claude Persona: LOS Use-Case Creator
 
-Read `docs/use-case-creator/architecture.md`, then `docs/use-case-creator/salesforce-loan-record.md`.
+Read `docs/ARCHITECTURE.md`.
 
 - This is an existing loan origination (LOS) vertical; tailor it in place instead of replacing it with a generic scaffold.
 - Preserve Box as loan-file content authority, Salesforce `LOS_Loan__c` as structured credit authority, source citations, and named human credit decision owners.
