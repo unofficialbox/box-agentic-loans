@@ -14,7 +14,7 @@ async function answerIdentity(page: Page, identity: unknown) {
 
 test("loan workspace reports a failed read, and speaks for no loan it cannot name", async ({ page }) => {
   await page.goto("/?recordId=a01xx0000001234&loanId=LN-2026-0042&folderId=123");
-  await expect(page).toHaveTitle(/Crestline Bank/);
+  await expect(page).toHaveTitle(/Acme Bank/);
   // No org behind the built bundle, so the workspace must say so rather than render the
   // synthetic folder it used to fall back to.
   await expect(page.getByTestId("box-error")).toBeVisible();
@@ -42,15 +42,15 @@ test("shows a borrower nothing of the bank's own underwriting process", async ({
   await expect(page.getByText("Priya Shah")).toHaveCount(0);
 });
 
-test("is Crestline Bank's portal, with the rail and not the CLM top bar", async ({ page }) => {
+test("is Acme Bank's portal, with the rail and not the CLM top bar", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator(".cb-rail").getByText("Crestline Bank")).toBeVisible();
+  await expect(page.locator(".cb-rail").getByText("Acme Bank")).toBeVisible();
   await expect(page.locator(".cb-rail").getByText("Borrower Portal")).toBeVisible();
-  await expect(page.locator(".brand-mark")).toHaveText("CB");
+  await expect(page.locator(".brand-mark")).toHaveText("AB");
   await expect(page.getByText(/Headless 360/)).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Start an application/ })).toBeVisible();
   // The palette is on :root, so anything on the page can be checked against it.
-  const green = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--cb-green").trim());
+  const green = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--ab-green").trim());
   expect(green.toLowerCase()).toBe("#0f4c45");
 });
 

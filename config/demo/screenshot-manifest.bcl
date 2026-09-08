@@ -11,7 +11,7 @@ locals {
         "config" = {
           "artifact_name" = "screenshot-manifest"
           "artifact_type" = "config"
-          "captureStatus" = "13 loan-demo screens captured on 2026-09-04 from the live Salesforce org and Box enterprise (MT-072). Surfaces that are still browser-built specifications (Box App dashboard and views, Box Automate intake, approval and connector stages, the signed-in borrower workspace) have no capture and render as 'Screen capture pending' placeholders."
+          "captureStatus" = "13 loan-demo screens captured 2026-09-03 to 2026-09-08 from the live Salesforce org and Box enterprise (MT-072). Surfaces that are still browser-built specifications (Box App dashboard and views, Box Automate intake, approval and connector stages, the signed-in borrower workspace) have no capture and render as 'Screen capture pending' placeholders."
           "created_at" = "2026-07-23T11:55:20Z"
           "cropRule" = "Capture the real page viewport only; exclude browser tabs, address bars, documentation pages, and unrelated desktop content."
           "enterprise_id" = ""
@@ -21,42 +21,42 @@ locals {
           "provider_object_id" = "demo/screenshot-manifest"
           "screenshots" = [
             {
-              "capturedOn" = "2026-09-03"
+              "capturedOn" = "2026-09-08"
               "path" = "output/screenshots/box-automate-loan-orchestration/box-commitment-letter-preview.png"
               "readiness" = "real-demo"
               "scenario" = "box-salesforce-los"
               "sourceSurface" = "Box preview of the generated commitment letter"
             }
             {
-              "capturedOn" = "2026-09-03"
+              "capturedOn" = "2026-09-08"
               "path" = "output/screenshots/box-automate-loan-orchestration/box-docgen-templates.png"
               "readiness" = "real-demo"
               "scenario" = "box-salesforce-los"
               "sourceSurface" = "Box Doc Gen templates folder"
             }
             {
-              "capturedOn" = "2026-09-03"
+              "capturedOn" = "2026-09-08"
               "path" = "output/screenshots/box-automate-loan-orchestration/box-hub-credit-policy-library-live.png"
               "readiness" = "real-demo"
               "scenario" = "box-salesforce-los"
-              "sourceSurface" = "Box Hubs: Crestline Credit Policy Library"
+              "sourceSurface" = "Box Hubs: Acme Credit Policy Library"
             }
             {
-              "capturedOn" = "2026-09-03"
+              "capturedOn" = "2026-09-08"
               "path" = "output/screenshots/box-automate-loan-orchestration/box-loan-folder-live.png"
               "readiness" = "real-demo"
               "scenario" = "box-salesforce-los"
               "sourceSurface" = "Box loan folder for LN-2026-0042 with documents and generated commitment letter"
             }
             {
-              "capturedOn" = "2026-09-03"
+              "capturedOn" = "2026-09-08"
               "path" = "output/screenshots/box-automate-loan-orchestration/box-term-sheet-metadata.png"
               "readiness" = "real-demo"
               "scenario" = "box-salesforce-los"
               "sourceSurface" = "Box term-sheet markup with losDocument metadata"
             }
             {
-              "capturedOn" = "2026-09-03"
+              "capturedOn" = "2026-09-08"
               "path" = "output/screenshots/box-automate-loan-orchestration/box-workspace-live.png"
               "readiness" = "real-demo"
               "scenario" = "box-salesforce-los"
@@ -70,25 +70,25 @@ locals {
               "sourceSurface" = "Salesforce Setup: Agentforce Agents list with Loan Copilot active"
             }
             {
-              "capturedOn" = "2026-09-04"
+              "capturedOn" = "2026-09-08"
               "path" = "output/screenshots/box-salesforce-los/los-borrower-apply.png"
               "readiness" = "real-demo"
               "scenario" = "box-salesforce-los"
-              "sourceSurface" = "Crestline Borrower Portal: Start an application form, filled"
+              "sourceSurface" = "Acme Borrower Portal: Start an application form, filled"
             }
             {
-              "capturedOn" = "2026-09-04"
+              "capturedOn" = "2026-09-08"
               "path" = "output/screenshots/box-salesforce-los/los-borrower-loans.png"
               "readiness" = "real-demo"
               "scenario" = "box-salesforce-los"
-              "sourceSurface" = "Crestline Borrower Portal: signed-in borrower loan list with the new-application action (Experience Cloud React UI Bundle)"
+              "sourceSurface" = "Acme Borrower Portal: signed-in borrower loan list with the new-application action (Experience Cloud React UI Bundle)"
             }
             {
-              "capturedOn" = "2026-09-04"
+              "capturedOn" = "2026-09-08"
               "path" = "output/screenshots/box-salesforce-los/los-borrower-workspace-checklist.png"
               "readiness" = "real-demo"
               "scenario" = "box-salesforce-los"
-              "sourceSurface" = "Crestline Borrower Portal: new application workspace with two uploads classified by Box AI and the required-documents checklist"
+              "sourceSurface" = "Acme Borrower Portal: new application workspace with two uploads classified by Box AI and the required-documents checklist"
             }
             {
               "capturedOn" = "2026-09-03"
@@ -105,11 +105,11 @@ locals {
               "sourceSurface" = "Salesforce LOS Loan record page (Loan Origination app)"
             }
             {
-              "capturedOn" = "2026-09-04"
+              "capturedOn" = "2026-09-08"
               "path" = "output/screenshots/box-salesforce-los/los-react-workspace.png"
               "readiness" = "real-demo"
               "scenario" = "box-salesforce-los"
-              "sourceSurface" = "Crestline Borrower Portal: LN-2026-0042 workspace over the governed Box folder, Internal documents withheld"
+              "sourceSurface" = "Acme Borrower Portal: LN-2026-0042 workspace over the governed Box folder, Internal documents withheld"
             }
           ]
         }

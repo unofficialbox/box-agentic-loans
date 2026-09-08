@@ -337,7 +337,7 @@ def check_reset_and_idempotency_rules(root: Path = ROOT) -> str:
     connectors = bcl.load_bcl(root / "config" / "box" / "https-connectors.bcl")
     operator_text = json.dumps(operator).lower()
     connector_text = json.dumps(connectors).lower()
-    manual_text = (root / "docs" / "operator" / "manual-task-register.md").read_text(encoding="utf-8").lower()
+    manual_text = (root / "docs" / "SETUP.md").read_text(encoding="utf-8").lower()
     required = {
         "operator duplicate check": "duplicate" in operator_text,
         "operator reset check": "reset" in operator_text,

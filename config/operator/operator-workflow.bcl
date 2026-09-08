@@ -64,7 +64,7 @@ locals {
               "confirmationGates" = [
                 "Publish Hub"
               ]
-              "guide" = "docs/operator/manual-task-register.md"
+              "guide" = "docs/SETUP.md"
               "id" = "admin-configuration"
               "owner" = "Box and Salesforce administrators"
               "writesExternalState" = true
@@ -90,7 +90,7 @@ locals {
                 "Send commitment letter for signature"
                 "Delete reset data"
               ]
-              "guide" = "DEMO-STORYBOARD.html"
+              "guide" = "DEMO-CLICKPATH.md"
               "id" = "integrated-smoke-test"
               "owner" = "operator plus named reviewers"
               "writesExternalState" = true
@@ -108,14 +108,14 @@ locals {
               "appliesWhen" = "Presenting managed Box + Salesforce Loan Origination rather than local deterministic fixtures"
               "command" = "python3 scripts/demo_operator.py validate --scenario box-salesforce-los"
               "completeWhen" = "Required Agentforce, Box, and Salesforce bindings validate and provider deployment tests are recorded."
-              "guide" = "docs/operator/start-here.md"
+              "guide" = "docs/SETUP.md"
               "id" = "agentic-readiness"
               "owner" = "Agentforce and demo operators"
               "writesExternalState" = false
             }
             {
               "completeWhen" = "The presenter completes the six-beat storyboard within the allotted time and can identify every simulated or unavailable integration."
-              "guide" = "DEMO-STORYBOARD.html"
+              "guide" = "DEMO-CLICKPATH.md"
               "id" = "rehearsal"
               "owner" = "presenter"
               "writesExternalState" = false

@@ -159,7 +159,7 @@ def synthetic_note(kind: str):
     )
 
 
-BANK = "Crestline Bank"
+BANK = "Acme Bank"
 BANK_ADDRESS = "200 Commerce Street, Suite 900, Boston, Massachusetts 02109"
 BORROWER_2026 = "Harborview Logistics Holdings LLC"
 PROPERTY = "1200 Harbor Way, Everett, Massachusetts 02149"
@@ -229,7 +229,7 @@ def build_loan_application():
         table(
             [
                 ["Sources", "Amount", "Uses", "Amount"],
-                ["Crestline Bank loan", "$4,800,000", "Purchase price", "$6,000,000"],
+                ["Acme Bank loan", "$4,800,000", "Purchase price", "$6,000,000"],
                 ["Borrower equity", "$1,200,000", "Closing costs and reserves", "$0 (borrower-paid outside closing)"],
                 ["Total", "$6,000,000", "Total", "$6,000,000"],
             ],
@@ -256,7 +256,7 @@ def build_loan_application():
 
 
 def loan_agreement_sections(*, executed: bool, ltv_pct: int, dscr: str, reporting: str):
-    """Sections 1-12 of Crestline's form of loan agreement.
+    """Sections 1-12 of Acme's form of loan agreement.
 
     The term sheet and both executed agreements are built from this one list so the
     section numbers are identical across all three documents. That is what lets a reader
@@ -290,7 +290,7 @@ def loan_agreement_sections(*, executed: bool, ltv_pct: int, dscr: str, reportin
 
 
 def build_term_sheet_markup():
-    """Crestline's term sheet, returned by the borrower with its markup in red.
+    """Acme's term sheet, returned by the borrower with its markup in red.
 
     The point of this document is that the risk is not where anyone would look for it.
     Section 8, the one titled "Financial Covenants", is untouched: it still reads 75% and
@@ -693,7 +693,7 @@ def build_executed_loan_agreement(
     borrower: str,
     prior_year: int | None = None,
 ):
-    """A prior Harborview loan agreement, executed, on Crestline's own form.
+    """A prior Harborview loan agreement, executed, on Acme's own form.
 
     These two documents exist to make one point that a single term sheet cannot make: the
     2026 markup is not asking the bank for something new. It is asking the bank to give
@@ -804,7 +804,7 @@ def build_executed_loan_agreement(
         p(f"Executed by the parties on {signed_on}.", "Small"),
         table(
             [
-                ["CRESTLINE BANK", borrower.upper()],
+                ["ACME BANK", borrower.upper()],
                 ["By: /s/ Priya Shah", "By: /s/ Jordan Pike"],
                 ["Name: Priya Shah", "Name: Jordan Pike"],
                 ["Title: Chief Credit Officer", "Title: Chief Financial Officer"],

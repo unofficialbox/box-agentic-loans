@@ -7,7 +7,7 @@ private class EmailIntakeHandlerTest {
         email.fromName = 'Jordan Pike';
         email.subject = subject;
         email.plainTextBody = 'Please find our loan application package attached.';
-        email.toAddresses = new List<String>{ 'lending@crestlinebank.example' };
+        email.toAddresses = new List<String>{ 'lending@acmebank.example' };
         if (withAttachment) {
             Messaging.InboundEmail.BinaryAttachment att = new Messaging.InboundEmail.BinaryAttachment();
             att.fileName = 'harborview-loan-application-2026.pdf';

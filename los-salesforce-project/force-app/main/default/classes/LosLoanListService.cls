@@ -20,7 +20,7 @@
  * surface answered -- Risk_Rating__c was selected here long after GraphQL dropped it, so
  * the bank's own assessment of a deal reached the borrower's browser through this door.
  * LTV__c, DSCR__c and Underwriting_Notes__c are withheld for the same reason: they are
- * Crestline's underwriting, not facts the borrower is party to. And every field must be
+ * Acme's underwriting, not facts the borrower is party to. And every field must be
  * readable by the permission sets that serve the site: Salesforce enforces field-level
  * security inside SOQL for guest users and reports an unreadable field as
  * `No such column`, which fails the whole request rather than blanking a column.

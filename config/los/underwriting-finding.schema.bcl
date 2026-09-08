@@ -9,7 +9,7 @@ locals {
     "resources" = [
       {
         "config" = {
-          "$id" = "https://crestlinebank.example/schemas/los/underwriting-finding.schema.json"
+          "$id" = "https://acmebank.example/schemas/los/underwriting-finding.schema.json"
           "$schema" = "https://json-schema.org/draft/2020-12/schema"
           "additionalProperties" = false
           "artifact_name" = "underwriting-finding.schema"
