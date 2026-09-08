@@ -293,11 +293,12 @@
     <p class="eyebrow">Presenter storyboard</p>
     <h1>Harborview Demo Storyboard</h1>
     <p class="standfirst">A borrower starts the application in the Crestline Borrower Portal; a term sheet marked up on the borrower's numbers is read against the credit policy library and the two loans Harborview already closed. Six beats, two windows, every prompt below is copy-paste.</p>
+    <p class="standfirst"><strong>Headless, not branded.</strong> Box holds the file, Salesforce holds the record, and the harness is whatever the customer already uses: Claude Desktop here, the same two MCP connectors from ChatGPT or Slack, the Loan Copilot inside Agentforce. Pick the surface the room lives on. Say "Claudeforce" only to explain that it is a Salesforce pilot this demo does not depend on.</p>
     <p class="standfirst"><strong>Bind before use.</strong> The site URL and the borrower login below are placeholders; substitute the values for the environment you are presenting from. Everything else -- prompts, loan references, expected answers -- is portable. <strong>None of it has been run against a live org yet</strong>; expected answers come from the deterministic fixtures.</p>
     <div class="facts">
       <span><b>5–6 min</b> run time</span>
       <span><b>Private browser</b> beats 1 and 6</span>
-      <span><b>Claude Desktop</b> beats 2–5</span>
+      <span><b>Claude Desktop</b> beats 2–5, or any harness with both connectors</span>
       <span><b>Loan Copilot</b> internal only</span>
     </div>
   </header>
@@ -502,9 +503,12 @@
   <section>
     <h2>If someone asks</h2>
     <div class="limits">
-      <h3>Three things to answer honestly</h3>
+      <h3>Six things to answer honestly</h3>
       <ul>
-        <li><strong>The write-back is the one governed write, and it is not yet live-verified.</strong> <code>extractLoanTerms</code> reads and compares; <code>applyLoanTerms</code> writes seven allow-listed fields only when a person confirms, and refuses on a Closed or Servicing loan. Both have unit tests and no live run. Doc Gen writes the letter into the governed folder and Box Sign prepares a request; Extract on the <em>executed</em> letter to set maturity and covenant dates is specified, not built.</li>
+        <li><strong>Every write is governed, and a person is in each one.</strong> The borrower's application and each document classification are written by Apex actions the borrower cannot bypass (beat 1, live-verified). <code>extractLoanTerms</code> reads and compares (live-verified); <code>applyLoanTerms</code> writes seven allow-listed fields only when a person says confirm, and refuses on a Closed or Servicing loan (refusal live-verified; a confirmed write is MT-057, the demo owner's call). Doc Gen drafts into the governed folder (live-verified) and Box Sign only prepares a request; Extract on the <em>executed</em> letter to set maturity and covenant dates is specified, not built.</li>
+        <li><strong>This is not Claudeforce.</strong> Claudeforce is a Salesforce pilot connector for Sales Cloud that neither Box nor this demo has access to. What is shown is the headless pattern it will sit inside: Box and Salesforce as MCP connectors under whichever harness the customer uses. Do not claim compatibility with a product nobody in the room can open.</li>
+        <li><strong>The Box MCP server package for Agentforce is not generally available.</strong> Its Salesforce security review is stalled on a platform bug. Demonstrate it if asked, but do not call it GA. The Loan Copilot here runs on Apex actions and does not depend on that package.</li>
+        <li><strong>Where the data moves.</strong> Nowhere. Documents stay in Box; Salesforce's External Client App scopes and permission sets decide what a user may read or write on the record; Box permissions decide which content they may see; the assistant calls both and copies nothing. Say it in those words -- it is the question every customer asks.</li>
         <li><strong>The Copilot is not on the borrower site, by decision.</strong> A Service Agent runs as its assigned agent user, so it could not inherit Dana's access. An Employee Agent inherits the signed-in user's permissions instead; that's the surface where "same agent, different access" holds, and it's where the internal Loan Copilot runs.</li>
         <li><strong>The metadata tagging on seeded files is manual.</strong> Portal uploads are classified by Box AI as they land (beat 1); the seeded Harborview files were tagged by the seed script and by hand. A metadata cascade policy on the loan folder is what would make it survive the next loan.</li>
       </ul>
@@ -512,7 +516,7 @@
   </section>
 
   <footer>
-    Loans: LN-2023-0311 · LN-2025-0148 · LN-2026-0042 · Pinecrest LN-2026-0088. Not yet verified against a live org.
+    Loans: LN-2023-0311 · LN-2025-0148 · LN-2026-0042 · Pinecrest LN-2026-0088 · plus each rehearsal's application. Beats verified live 2026-09-03/04; the confirmed write-back (MT-057) is the one beat still unexercised.
   </footer>
 
 </div>

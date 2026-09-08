@@ -4,8 +4,9 @@
 
 > **Presenting?** Open **[`DEMO-STORYBOARD.html`](DEMO-STORYBOARD.html)** — the six-beat Harborview storyboard:
 > preflight checks, every prompt as copy-paste, and what each beat should return.
+> Presenting from Claude Desktop, ChatGPT or Slack? Load [`skills/los-demo/SKILL.md`](skills/los-demo/SKILL.md): the answer rules, the prompts, and the honest answers, in one file.
 
-This repository is a commercial loan origination (LOS) demo built on **Box + Salesforce**: a governed loan file in Box, a structured `LOS_Loan__c` record in Salesforce, governed Apex actions between them, deterministic local fixtures, portable configuration, and self-contained presenter output.
+This repository is a commercial loan origination (LOS) demo built on **Box + Salesforce**, presented headless: the harness is whichever one the customer uses (Claude Desktop, ChatGPT, Slack, or Agentforce inside the org), and both platforms are reached through MCP connectors. It is a governed loan file in Box, a structured `LOS_Loan__c` record in Salesforce, governed Apex actions between them, deterministic local fixtures, portable configuration, and self-contained presenter output.
 
 **Provenance.** The implementation was ported from the Box + Salesforce contract lifecycle (CLM) demo, whose Box preview, Doc Gen, Sign preparation, MCP server and scoped external workspace were all proven against a live org. The loans port has since been deployed and smoke-tested live in one Box enterprise and one Salesforce org (2026-09-03): the CCG token endpoint, loan package, Box AI ask and extract, the refused unconfirmed write-back, the signature guard, portfolio search, Doc Gen template registration and the credit policy Hub all ran against real services. The Box App, Form and Automate intake surfaces remain browser tasks and are still specification-only; readiness labels below say which is which.
 

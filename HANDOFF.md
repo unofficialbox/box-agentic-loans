@@ -66,6 +66,7 @@ The CLM repo got live Box working through two waves of stacked failures, each ma
 | `.../sharingSets/LOS_Borrower_Access.sharingSet-meta.xml` | Maps `LOS_Loan__c.Borrower_Account__c` to the community user's Account — the borrower portal's record boundary |
 | `.../mcpServerDefinitions/LOSLoanTools.mcpServerDefinition-meta.xml` | Hosted MCP server: `listLoans, findDocumentsByRisk, getLoanPackage, askLoanDocument, extractLoanTerms, applyLoanTerms, generateCommitmentLetter, prepareSignatureRequest` |
 | `.../aiAuthoringBundles/LOS_Loan_Copilot/` | Agent Script for the internal Loan Copilot (`get_loan_package`, `ask_box_ai`, `extract_loan_terms`); `default_agent_user` is bound per org |
+| `skills/los-demo/SKILL.md` | Presenter skill for any AI harness: answer rules, the six beats' prompts and expected answers, the honest answers |
 | `los-salesforce-project/scripts/configure-los-box-*.sh` | Set the Box credential (MT-038) and CCG subject + folder allowlist (MT-039) |
 | `.../losreactapp/src/components/BoxWorkspace.tsx` | Token, then folder listing; either failure renders `DataError` with the reason, and no fixture stands in |
 | `.../losreactapp/src/components/BoxElements.tsx` | Folder table + lazy Content Preview; needs `react-intl` and `MemoryRouter` providers |
@@ -382,6 +383,26 @@ back the consumer secret.
   tabular numbers, 6px card radius with a 1px line and no shadow, pill primary buttons,
   outlined secondary, small-caps status chips; charts in evergreen, amber and sand, not
   blue. `styles.test.ts` asserts on the tokens — update it with them, not around them.
+
+### 6.13 Other harnesses, and what "Claudeforce" is
+
+Salesforce's partner team (2 Sep 2026) framed the story as headless: Box, Salesforce, and
+the AI harness the customer already uses, with "Claudeforce" being a Sales Cloud pilot
+connector nobody outside the pilot can open. The demo is built to that framing:
+
+- **Claude Desktop** is the rehearsed path (storyboard beats 2 to 5). The LOS hosted MCP
+  server and the Box connector are both loaded; `skills/los-demo/SKILL.md` carries the
+  answer rules and prompts so a presenter does not paste instructions into a project.
+- **ChatGPT** needs the same External Client App with a ChatGPT callback URL and the
+  `mcp` and `api` scopes, plus the Box connector ChatGPT already offers. Untested here.
+- **Slack** needs a Slack workspace connected to the org (Slackbot) with the LOS MCP
+  server enabled; Salesforce's headless widgets then render list views in the channel.
+  Untested here.
+- **Agentforce** is the internal path: the Loan Copilot runs on Apex actions, so it does
+  not depend on the Box MCP server package for Agentforce, whose security review is
+  stalled. Do not describe that package as generally available.
+
+Testing ChatGPT or Slack is an hour with the accounts; the tools and answers are the same.
 
 ### 6.12 Dependency pins that are load-bearing
 
