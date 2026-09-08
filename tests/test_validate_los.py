@@ -45,7 +45,15 @@ class LOSValidationTests(unittest.TestCase):
     def test_screenshot_manifest_matches_disk(self) -> None:
         # The manifest must agree with the files on disk (MT-072); an empty inventory is
         # tolerated and reported as capture pending, a populated one is counted.
-        detail = validation.check_screenshot_manifest(ROOT, today=date(2026, 9, 4))
+        # The clock is the newest capture in the manifest, so re-capturing screens never
+        # turns this into a test of the calendar; the freshness rule itself is exercised
+        # against a date the manifest actually carries.
+        manifest = validation.bcl.load_bcl(ROOT / "config" / "demo" / "screenshot-manifest.bcl")
+        newest = max(
+            (date.fromisoformat(entry["capturedOn"]) for entry in manifest.get("screenshots", [])),
+            default=date(2026, 9, 4),
+        )
+        detail = validation.check_screenshot_manifest(ROOT, today=newest)
         self.assertRegex(detail, r"(\d+ current real screenshots|0 screenshots \(capture pending\))")
 
     def test_reset_and_idempotency_rules_are_present(self) -> None:
