@@ -164,7 +164,7 @@ Every run of beat 1 creates a real `LOS_Loan__c` in Application status and a rea
 
 ## If someone asks
 
-- **Every write is governed, and a person is in each one.** The application and each classification are written by Apex actions the borrower cannot bypass. `extractLoanTerms` only reads; `applyLoanTerms` writes seven allow-listed fields when a person says confirm and refuses on a Closed or Servicing loan. Doc Gen drafts into the governed folder; Box Sign only prepares a request. The confirmed write-back (MT-057) is the one beat not yet exercised live.
+- **Every write is governed, and a person is in each one.** The application and each classification are written by Apex actions the borrower cannot bypass. `extractLoanTerms` only reads; `applyLoanTerms` writes seven allow-listed fields when a person says confirm and refuses on a Closed or Servicing loan. Doc Gen drafts into the governed folder; Box Sign only prepares a request. Both sides of the write-back ran live: the unconfirmed call was refused, and a confirmed call wrote amount, rate and term and nothing else.
 - **This is not Claudeforce.** Claudeforce is a Salesforce pilot connector for Sales Cloud that neither Box nor this demo can open. What is shown is the headless pattern it will sit inside. Do not claim compatibility with a product nobody in the room can use.
 - **The Box MCP server package for Agentforce is not generally available.** Its security review is stalled. The Loan Copilot runs on Apex actions and does not depend on it.
 - **Where does the data move? Nowhere.** Documents stay in Box; Salesforce permission sets decide what a user may read or write on the record; Box permissions decide which content they may see; the assistant calls both and copies nothing.

@@ -134,7 +134,7 @@ Complete each item for every new environment. Record IDs only in the gitignored 
 - Give the borrower portal an authenticated user (Dana Whitfield on Harborview Logistics) with `LOS_Borrower_Portal`, site membership and a real password; `NetworkMember` must list her.
 - Decide whether signed-out visitors may read loans (MT-045). `LOS_Loan__c` is Private, so a guest sees an empty list; a guest sharing rule exposes real records to anyone who can open the site.
 - Select real reviewers for Credit Risk, Collateral, Compliance, Loan Documentation, Pricing, Insurance and Servicing, with Credit Administration as the triage fallback, and grant them least-privilege Box access.
-- Per run: submit a labelled portal application and confirm record, folder and classification (MT-058); run Extract and confirm the write-back refuses without `confirmed = true` (MT-057); confirm signature is blocked on an Underwriting loan; confirm a repeated loan ID updates the same record.
+- Per run: submit a labelled portal application and confirm record, folder and classification (MT-058); run Extract and confirm the write-back refuses without `confirmed = true`, then apply amount, rate and term with it (MT-057; never LTV or DSCR, which the extract reads from the policy text); confirm signature is blocked on an Underwriting loan; confirm a repeated loan ID updates the same record.
 - After UI changes: capture screenshots from the real viewport and update `config/demo/screenshot-manifest.bcl` (MT-072).
 - Reset: record test artifacts, restore demo state, and delete data or remove collaborators only with the owner's approval of the exact objects (MT-074).
 
