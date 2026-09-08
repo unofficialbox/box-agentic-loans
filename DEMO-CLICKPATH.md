@@ -26,9 +26,9 @@ Answer in 60 words or fewer unless I ask for more. Lead with the finding. No pre
 
 Expect beat 4 to answer in a short paragraph and one table, and every beat to end with the document itself on screen rather than a link. If a beat comes back with a link, say "show me the document" once; the rule above makes that the last time.
 
-**P3. Claude Desktop: both connectors loaded, LOS refreshed.** Beat 2 searches Box metadata and beat 3 opens the marked-up term sheet; neither works with only the LOS tools. The LOS connector is a custom connector on `https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools` with the External Client App's consumer key as OAuth Client ID (docs/SETUP.md §5a). If it predates the Extract, Apply or Classify tools, disconnect and reconnect it under Settings, Connectors, reusing the same URL.
+**P3. Claude Desktop: both connectors loaded, LOS refreshed.** Beats 2 and 4 run entirely on the Box connector and beat 3 reads through it; the LOS tools carry the record, the confirmed write, generation and the signature refusal. Nothing works with only one of them. The LOS connector is a custom connector on `https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools` with the External Client App's consumer key as OAuth Client ID (docs/SETUP.md §5a). If it predates the Extract, Apply or Classify tools, disconnect and reconnect it under Settings, Connectors, reusing the same URL.
 
-Expect both connectors listed under Context in the session, and nine LOS tools: `listLoans`, `findDocumentsByRisk`, `getLoanPackage`, `askLoanDocument`, `extractLoanTerms`, `applyLoanTerms`, `classifyDocument`, `generateCommitmentLetter`, `prepareSignatureRequest`.
+Expect both connectors listed under Context in the session. Box must offer folder search, metadata search, Box AI extract, single- and multi-file QA, Hub QA, folder listing and file preview. LOS offers nine tools: `listLoans`, `findDocumentsByRisk`, `getLoanPackage`, `askLoanDocument`, `extractLoanTerms`, `applyLoanTerms`, `classifyDocument`, `generateCommitmentLetter`, `prepareSignatureRequest`.
 
 **P4. Terminal: the loan statuses.** Beat 5's refusal needs the 2026 loan in Underwriting; beat 4 needs the two earlier loans Closed.
 
@@ -70,51 +70,63 @@ Beats 2 to 5 pick up LN-2026-0042, the Harborview loan now in Underwriting, with
 
 ### 2. The portfolio already knows what's risky (Claude Desktop, to 4:05)
 
+Box does this beat. The LOS tools are not called.
+
 ```text
-Which loan documents across the portfolio are flagged critical policy risk?
+Which loan documents across the portfolio are flagged critical policy risk? Search the Box metadata under the LOS-2026-Harborview workspace.
 ```
 
-Expect `harborview-term-sheet-2026-borrower-markup.pdf` as the one Critical document. Ask for High or above and the FY2025 financial statements and the appraisal join it.
+Expect the assistant to find the workspace folder by name, run a Box metadata search on the `losDocument` template for `policyRisk = Critical` bounded to that folder, name `harborview-term-sheet-2026-borrower-markup.pdf` as the one hit, and open it inline. Ask for High or above and the FY2025 financial statements and the appraisal join it.
 
-If it returns another borrower's file: Box metadata search is enterprise-wide, and only `ancestor_folder_id` bounds it; `findDocumentsByRisk` reads that from `Loans_Root_Folder_Id__c` (P5).
+If it returns another borrower's file: Box metadata search is enterprise-wide, and only the ancestor folder bounds it. The workspace name is what scopes it here; `findDocumentsByRisk` on the LOS server does the same from configuration if the Box connector is off.
 
 ### 3. Extract the terms, then read them against policy (to 6:30)
 
-```text
-Extract the loan terms from the Harborview application package and validate them against the record, then tell me where we are outside credit policy and cite the policy library.
-```
-
-Expect seven extracted fields with a citation each ($4,800,000, 6.85%, 120 months, collateral $5,650,000 from the appraisal rather than the borrower's $6,000,000, LTV 85%, DSCR 1.12x), LTV and DSCR flagged against the record, then the exposure: Section 9.3 restates DSCR to 1.10x tested annually and Schedule A adds FF&E at book value; LOS-LTV-001 (75%) with exception LOS-LTV-002 (80%), LOS-DSCR-001 (1.25x) with exception LOS-DSCR-002 (1.15x); 85% / 1.12x is outside even the exceptions, and Credit Risk owns the deviation.
-
-Land it: a CRM record cannot find this, because the borrower's number is what was typed into it, and the markup never uses the phrase "loan-to-value".
-
-Then:
+Box reads; Salesforce compares and writes.
 
 ```text
-apply those values to the record, confirm
+Open the LN-2026-0042 package. Using Box AI, extract from the marked-up term sheet the loan amount, the bank's rate, the rate the borrower requests, the term, and the DSCR as the borrower proposes it. Then ask the Acme credit policy library whether the borrower's LTV and DSCR positions are within policy or an approved exception, citing policy IDs.
 ```
 
-Expect `applyLoanTerms` to refuse without the confirmation and, with it, to update only the allow-listed fields. That is the one write in the demo, and a person just authorised it.
+Expect `getLoanPackage` to name the folder, then Box AI structured extraction on the markup: $4,800,000; 6.85% bank rate and 6.50% requested; 120 months; DSCR proposed at 1.10x tested annually. Then Box AI over the policy Hub: LOS-LTV-001 (75%) with exception LOS-LTV-002 (80%, interest reserve), LOS-DSCR-001 (1.25x) with exception LOS-DSCR-002 (1.15x, cash reserve); 85% and 1.10x are outside even the exceptions, Credit Risk owns the deviation. The markup previews inline with the red interest and guaranty changes.
+
+Land it: a CRM record cannot find this, because the borrower's number is what was typed into it, and the markup never uses the phrase "loan-to-value". Then the record:
+
+```text
+Validate those terms against the Salesforce record.
+```
+
+Expect `extractLoanTerms` to report amount, rate and term matching the record and LTV and DSCR mismatching it, with nothing written. Then:
+
+```text
+apply the amount, rate and term to the record, confirm
+```
+
+Expect `applyLoanTerms` to refuse without the confirmation and, with it, to update only those fields. That is the one write in the demo, and a person just authorised it. Never apply the extracted LTV or DSCR: they are policy thresholds and markup requests, not the borrower's numbers on the record.
 
 ### 4. What they agreed the last two times (to 7:25)
 
+Box does this beat across three files.
+
 ```text
-Compare the LTV and DSCR covenants across the two Harborview loans we have already closed and this 2026 term sheet. What did Harborview actually agree before?
+Using Box AI across the two executed Harborview loan agreements and the 2026 term sheet markup, compare the LTV and DSCR covenants. What did Harborview actually agree before, where in each agreement, and who signed?
 ```
 
-Expect both closed loans (the 2023 line of credit and the 2025 equipment loan) at a negotiated 70% LTV and 1.30x DSCR tested quarterly, from Schedule 1 of each executed agreement, and the 2026 markup walking both back.
+Expect `getLoanPackage` for the two closed loans to hand over the executed agreements, then one Box AI multi-file answer: both closed loans at 70% LTV and 1.30x DSCR tested quarterly, Section 8 and Schedule 1 of each executed agreement, signed by Jordan Pike for Harborview and Priya Shah for Acme Bank; the 2026 markup asks 1.10x tested annually. One table, then the 2025 agreement previewed at Schedule 1.
 
 Land it: Harborview's markup regresses two positions their own CFO agreed, in writing, twice.
 
 ### 5. Put the terms on paper, then stop (to 9:20)
 
+Salesforce generates under the bank's identity; Box shows the result.
+
 ```text
-Draft the commitment letter for this Harborview loan at the approved terms, using the policy exception and the precedent from the closed loans.
+Draft the commitment letter for this Harborview loan at the approved terms, using the policy exception and the precedent from the closed loans. Then list the loan folder and show me the letter.
 ```
 
-Doc Gen is asynchronous: the reply says "submitted" and `commitment-letter-LN-2026-0042.pdf` lands in the Harborview folder a few seconds later. Keep that folder open in a tab and refresh it.
+Doc Gen is asynchronous: `generateCommitmentLetter` says "submitted" and `commitment-letter-LN-2026-0042.pdf` lands a few seconds later. Expect the assistant to list the folder through Box, find the letter, and open it inline: borrower and entity, amount, rate, term, the covenants at issue, the approved exceptions, Credit Risk as owner, the precedent, and on its face that it is a draft pending Credit Committee.
 
-Expect the letter to carry borrower and entity, amount, rate, term, collateral, the covenants at issue, the approved exceptions, Credit Risk as owner, the precedent, and on its face that it is a draft pending Credit Committee.
+If asked why generation is a Salesforce tool: the letter is built from the record and the bank's template data under the bank's Box identity, and a presenter's Box connector has no Doc Gen scope.
 
 ```text
 Send the Harborview commitment letter for signature.
