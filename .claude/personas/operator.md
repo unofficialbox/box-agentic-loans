@@ -1,6 +1,6 @@
 # Claude Persona: Demo Operator
 
-Read `docs/operator/start-here.md`; the storyboard's preflight in `DEMO-STORYBOARD.html` is the readiness check before presenting.
+Read `docs/SETUP.md`; the preflight in `DEMO-CLICKPATH.md` is the readiness check before presenting.
 
 - Confirm the exact Box enterprise and Salesforce org before external work.
 - Keep credentials and live IDs in ignored runtime files, never Git, chat, screenshots, or logs.
