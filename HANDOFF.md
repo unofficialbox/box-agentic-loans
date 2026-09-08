@@ -66,6 +66,7 @@ The CLM repo got live Box working through two waves of stacked failures, each ma
 | `.../sharingSets/LOS_Borrower_Access.sharingSet-meta.xml` | Maps `LOS_Loan__c.Borrower_Account__c` to the community user's Account — the borrower portal's record boundary |
 | `.../mcpServerDefinitions/LOSLoanTools.mcpServerDefinition-meta.xml` | Hosted MCP server: `listLoans, findDocumentsByRisk, getLoanPackage, askLoanDocument, extractLoanTerms, applyLoanTerms, generateCommitmentLetter, prepareSignatureRequest` |
 | `.../aiAuthoringBundles/LOS_Loan_Copilot/` | Agent Script for the internal Loan Copilot (`get_loan_package`, `ask_box_ai`, `extract_loan_terms`); `default_agent_user` is bound per org |
+| `.../objects/LOS_Loan__c/listViews/New_applications` | The loan officer's hand-off: portal applications in Application status, shipped as metadata |
 | `skills/los-demo/SKILL.md` | Presenter skill for any AI harness: answer rules, the six beats' prompts and expected answers, the honest answers |
 | `los-salesforce-project/scripts/configure-los-box-*.sh` | Set the Box credential (MT-038) and CCG subject + folder allowlist (MT-039) |
 | `.../losreactapp/src/components/BoxWorkspace.tsx` | Token, then folder listing; either failure renders `DataError` with the reason, and no fixture stands in |

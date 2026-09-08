@@ -25,15 +25,13 @@ Expect: five answers in a row without a fallback.
 
 ## 2. Show new applications to the loan officer
 
-Borrower applications arrive in Application status with Record Source "Borrower Portal". Give them a pinned list view.
+Borrower applications arrive in Application status with Record Source "Borrower Portal". The **New applications** list view ships with the metadata (`objects/LOS_Loan__c/listViews/New_applications`), so nothing is built by hand. Pin it once per org:
 
 1. **App Launcher → Loan Origination → Loans** tab.
-2. List view gear → **New**. Name `New applications`, leave the API name, choose **All users can see this list view**, Save.
-3. Gear → **Select Fields to Display**. Show Loan ID, Loan Name, Borrower, Loan Type, Amount, Record Source, Created Date. Save.
-4. Filter (funnel icon) → **Add Filter**: Status equals Application → Done → Save.
-5. Gear → **Pin list**.
+2. Open the list view picker and choose **New applications**.
+3. List view gear → **Pin list**.
 
-Expect: one row, LN-2026-0043 with Record Source "Borrower Portal", until the next rehearsal of beat 1 adds another.
+Expect: one row, LN-2026-0043 with Record Source "Borrower Portal", until the next rehearsal of beat 1 adds another. If the view is missing, the object folder was not deployed; run `python3 scripts/demo_operator.py salesforce-deploy`.
 
 ## What a rehearsal leaves behind
 
