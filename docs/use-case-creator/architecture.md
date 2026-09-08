@@ -22,7 +22,7 @@
 | `06 - Executed Loan Documents` folder | Signed loan agreements and commitment letters with retention and maturity metadata |
 | `07 - Covenants and Servicing` folder/view | Post-closing covenant tests, insurance renewals, inspections, maturity notices, and owner assignments |
 | `Credit Policies` folder | Approved lending standards and approved exceptions as Markdown |
-| `Crestline Credit Policy Library` Hub | Curated publication surface for approved policy Markdown files and governance guidance |
+| `Acme Credit Policy Library` Hub | Curated publication surface for approved policy Markdown files and governance guidance |
 
 ### Metadata Templates
 

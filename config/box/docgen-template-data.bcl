@@ -75,7 +75,7 @@ locals {
             "maturity" = {
               "maturityDate" = "2026-09-30"
               "noticeDeadline" = "2026-08-31"
-              "noticeText" = "Crestline Bank provides notice that the revolving line of credit identified above matures on the date shown. All outstanding principal and accrued interest is due at maturity unless the facility is renewed."
+              "noticeText" = "Acme Bank provides notice that the revolving line of credit identified above matures on the date shown. All outstanding principal and accrued interest is due at maturity unless the facility is renewed."
               "requestedAction" = "Please confirm whether Harborview Logistics intends to renew, refinance, or repay the facility before the response date."
             }
             "notice" = {
@@ -88,8 +88,8 @@ locals {
               "title" = "Chief Financial Officer"
             }
             "sender" = {
-              "company" = "Crestline Bank"
-              "email" = "lending@crestlinebank.example"
+              "company" = "Acme Bank"
+              "email" = "lending@acmebank.example"
               "name" = "Alex Bennett"
               "title" = "Commercial Loan Officer"
             }

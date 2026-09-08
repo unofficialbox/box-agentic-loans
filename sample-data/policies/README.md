@@ -6,7 +6,7 @@ This folder is the source for the LOS demo's governed credit policy library. Eac
 
 - Upload the files under `approved/` to the live Box `Credit Policies` folder in the `LOS-2026-Harborview` workspace.
 - Apply the `Credit Policy` (`losPolicy`) metadata template to each file.
-- Publish the approved folder and selected policy files to the `Crestline Credit Policy Library` Hub; pin `LOS-LTV-001`, `LOS-DSCR-001`, and `LOS-RATE-001`.
+- Publish the approved folder and selected policy files to the `Acme Credit Policy Library` Hub; pin `LOS-LTV-001`, `LOS-DSCR-001`, and `LOS-RATE-001`.
 - Keep approved-exception language visually distinct from the standard position.
 - Use the `lastReviewed`, `nextReview`, and `usageCount` metadata to make the Hub and Box App feel operational rather than static.
 

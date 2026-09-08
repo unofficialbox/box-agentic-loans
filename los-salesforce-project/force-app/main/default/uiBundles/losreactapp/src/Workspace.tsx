@@ -292,8 +292,8 @@ export function Workspace() {
       */}
       <aside className="cb-rail">
         <div className="brand">
-          <span className="brand-mark" aria-hidden="true">CB</span>
-          <span className="brand-copy"><strong>Crestline Bank</strong><small>Borrower Portal</small></span>
+          <span className="brand-mark" aria-hidden="true">AB</span>
+          <span className="brand-copy"><strong>Acme Bank</strong><small>Borrower Portal</small></span>
         </div>
         <nav aria-label="Primary">
           {navItem("apply", "Start an application", <FilePlus2 size={17} aria-hidden="true" />)}

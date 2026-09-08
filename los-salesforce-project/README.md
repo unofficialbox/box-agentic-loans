@@ -1,6 +1,6 @@
 # LOS Salesforce Project
 
-This Salesforce DX project contains the portable `LOS_Loan__c` data model, layout, permission sets, tab, Lightning record page, the governed Apex actions (borrower application create, Box AI document classification, loan package, Box AI ask and extract, term write-back, commitment letter, Box Sign preparation), the `LOSLoanTools` MCP server definition, the `LOS_Loan_Copilot` agent script, and an authenticated external Experience Cloud site powered by a Salesforce Multi-Framework React UI Bundle (the Crestline Borrower Portal).
+This Salesforce DX project contains the portable `LOS_Loan__c` data model, layout, permission sets, tab, Lightning record page, the governed Apex actions (borrower application create, Box AI document classification, loan package, Box AI ask and extract, term write-back, commitment letter, Box Sign preparation), the `LOSLoanTools` MCP server definition, the `LOS_Loan_Copilot` agent script, and an authenticated external Experience Cloud site powered by a Salesforce Multi-Framework React UI Bundle (the Acme Borrower Portal).
 
 Start with [LOS Demo Operator Start Here](../docs/operator/start-here.md). The root automation deploys the portable components and deliberately excludes tenant-specific OAuth metadata.
 
