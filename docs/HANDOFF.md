@@ -21,7 +21,7 @@ The story is in `DEMO-CLICKPATH.md`: Alex Bennett at Acme Bank works the Harborv
 
 ## 3. Current state
 
-- Deployed once to one org and one enterprise (2026-09-03/04) and smoke-tested: token endpoint, loan package, Box AI ask and extract, refused unconfirmed write-back, signature guard, bounded portfolio search, Doc Gen registration, policy Hub, and the borrower intake (application, folder, two classified uploads). IDs from that run live only in gitignored `config/runtime/*.json`.
+- Deployed once to one org and one enterprise (2026-09-03/04) and smoke-tested: token endpoint, loan package, Box AI ask and extract, refused unconfirmed write-back and a confirmed write of amount, rate and term (2026-09-08), signature guard, bounded portfolio search, Doc Gen registration, policy Hub, and the borrower intake (application, folder, two classified uploads). IDs from that run live only in gitignored `config/runtime/*.json`.
 - `python3 scripts/validate_los.py` should pass every repository-mode check with one skip (live receipts). Four checks shell out to the UI bundle, so `npm ci` in `los-salesforce-project/force-app/main/default/uiBundles/losreactapp` runs first.
 - Two actions have no CLM ancestor: `LosExtractLoanTerms` (read-only Box AI extract compared to the record) and `LosApplyLoanTerms` (allow-listed write; refuses without `confirmed = true` and on Closed/Servicing). Two more arrived with the intake: `LosCreateApplication` and `LosClassifyDocument`.
 - The Loan Copilot is internal only. Its `default_agent_user` is bound per org at publish.
@@ -144,7 +144,7 @@ Claude Desktop is the rehearsed path. ChatGPT needs the same External Client App
 4. MT-040: per-user Box OAuth, scaffolded by the committed `LOS_Box` auth provider.
 5. `LosBoxAuth` has no test coverage; blocks production deploy or packaging.
 6. The generate/sign tail of the Automate workflow (`automate-workflows.bcl` orders 8 to 10) is spec-only.
-7. MT-057: the write-back has run live only in refusal mode. A confirmed write is the demo owner's call.
+7. MT-057 is closed: a confirmed write of amount, rate and term ran on 2026-09-08. The extracted LTV and DSCR were not applied because the extract returns the policy thresholds the markup quotes, not the borrower's numbers; a demo that applies them erases beat 3's mismatch.
 8. `default_agent_user` must be bound per org before publish.
 9. Any org mutation is the user's call to fire, with a confirmed target.
 10. MT-058 has run once; each rehearsal creates a real record and folder, removed only under MT-074.
