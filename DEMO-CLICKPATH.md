@@ -26,9 +26,9 @@ Answer in 60 words or fewer unless I ask for more. Lead with the finding. No pre
 
 Expect beat 4 to answer in a short paragraph and one table, and every beat to end with the document itself on screen rather than a link. If a beat comes back with a link, say "show me the document" once; the rule above makes that the last time.
 
-**P3. Claude Desktop: both connectors loaded, LOS refreshed.** Beats 2 and 4 run entirely on the Box connector and beat 3 reads through it; the LOS tools carry the record, the confirmed write, generation and the signature refusal. Nothing works with only one of them. The LOS connector is a custom connector on `https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools` with the External Client App's consumer key as OAuth Client ID (docs/SETUP.md §5a). If it predates the Extract, Apply or Classify tools, disconnect and reconnect it under Settings, Connectors, reusing the same URL.
+**P3. Claude Desktop: both connectors loaded, LOS refreshed.** Beats 2 and 4 run entirely on the Box connector and beat 3 reads through it; beat 5 generates through Box Doc Gen; the LOS tools carry the record, the confirmed write and the signature refusal. Nothing works with only one of them. The LOS connector is a custom connector on `https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools` with the External Client App's consumer key as OAuth Client ID (docs/SETUP.md §5a). If it predates the Extract, Apply or Classify tools, disconnect and reconnect it under Settings, Connectors, reusing the same URL.
 
-Expect both connectors listed under Context in the session. Box must offer folder search, metadata search, Box AI extract, single- and multi-file QA, Hub QA, folder listing and file preview. LOS offers nine tools: `listLoans`, `findDocumentsByRisk`, `getLoanPackage`, `askLoanDocument`, `extractLoanTerms`, `applyLoanTerms`, `classifyDocument`, `generateCommitmentLetter`, `prepareSignatureRequest`.
+Expect both connectors listed under Context in the session. Box must offer folder search, metadata search, Box AI extract, single- and multi-file QA, Hub QA, Doc Gen (templates and batch), folder listing and file preview; the Doc Gen tools are off by default in the Box Admin Console. LOS offers nine tools: `listLoans`, `findDocumentsByRisk`, `getLoanPackage`, `askLoanDocument`, `extractLoanTerms`, `applyLoanTerms`, `classifyDocument`, `generateCommitmentLetter`, `prepareSignatureRequest`.
 
 **P4. Terminal: the loan statuses.** Beat 5's refusal needs the 2026 loan in Underwriting; beat 4 needs the two earlier loans Closed.
 
@@ -118,21 +118,21 @@ Land it: Harborview's markup regresses two positions their own CFO agreed, in wr
 
 ### 5. Put the terms on paper, then stop (to 9:20)
 
-Salesforce generates under the bank's identity; Box shows the result.
+Box generates; Salesforce refuses.
 
 ```text
-Draft the commitment letter for this Harborview loan at the approved terms, using the policy exception and the precedent from the closed loans. Then list the loan folder and show me the letter.
+Draft the commitment letter for this Harborview loan with Box Doc Gen, using the commitment-letter template, the approved terms, the policy exception and the precedent from the closed loans. Save it in the loan folder and show it to me.
 ```
 
-Doc Gen is asynchronous: `generateCommitmentLetter` says "submitted" and `commitment-letter-LN-2026-0042.pdf` lands a few seconds later. Expect the assistant to list the folder through Box, find the letter, and open it inline: borrower and entity, amount, rate, term, the covenants at issue, the approved exceptions, Credit Risk as owner, the precedent, and on its face that it is a draft pending Credit Committee.
+Expect `getLoanPackage` for the record and folder, Box `list_docgen_templates` to find `los-commitment-letter-template.docx`, then `create_docgen_batch` into the loan folder with the letter's fields filled from beats 3 and 4. Doc Gen is asynchronous: the batch is accepted and the PDF lands a few seconds later; the assistant lists the folder through Box and opens the letter inline. Expect borrower and entity, amount, rate, term, the covenants at issue, the approved exceptions, Credit Risk as owner, the precedent, and on its face that it is a draft pending Credit Committee.
 
-If asked why generation is a Salesforce tool: the letter is built from the record and the bank's template data under the bank's Box identity, and a presenter's Box connector has no Doc Gen scope.
+If the Box connector refuses Doc Gen: the Box Admin Console must have the Doc Gen MCP tools enabled and the connector reconnected afterwards (docs/SETUP.md §5a); `generateCommitmentLetter` on the LOS server produces the same letter under the bank's identity.
 
 ```text
 Send the Harborview commitment letter for signature.
 ```
 
-Expect the action to be called and to refuse, naming Underwriting. That is a state check in Apex (`SIGNABLE = Approved, Commitment`), not a prompt instruction; once approved, the action still only prepares a request for a person to send.
+Expect `prepareSignatureRequest` to be called and to refuse, naming Underwriting. That is a state check in Apex (`SIGNABLE = Approved, Commitment`), not a prompt instruction; once approved, the action still only prepares a request for a person to send.
 
 If the assistant declines without calling the action, the beat has not happened. Say "call it anyway and show me what it returns".
 
