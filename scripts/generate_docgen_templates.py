@@ -83,7 +83,7 @@ def set_table_geometry(table, widths_dxa):
             set_cell_margins(cell)
 
 
-def configure(doc, running_label, footer_label="Crestline Bank | LOS-2026-Harborview"):
+def configure(doc, running_label, footer_label="Acme Bank | LOS-2026-Harborview"):
     section = doc.sections[0]
     section.page_width = Inches(8.5)
     section.page_height = Inches(11)
@@ -243,7 +243,7 @@ def term_sheet_markup():
         doc,
         "In negotiation",
         "Term Sheet - Commercial Real Estate Loan - Borrower Markup",
-        "Crestline Bank and Harborview Logistics Holdings LLC | LOS-2026-Harborview | Draft, with borrower markup",
+        "Acme Bank and Harborview Logistics Holdings LLC | LOS-2026-Harborview | Draft, with borrower markup",
     )
 
     def term(heading, body, proposed):
@@ -295,7 +295,7 @@ def term_sheet_markup():
 
 
 def commitment_letter():
-    """The document Crestline sends once the terms are resolved on the loan record.
+    """The document Acme sends once the terms are resolved on the loan record.
 
     Generating "the loan agreement" is the wrong artifact here -- the definitive documents
     come later, from Loan Documentation. What the bank produces at this point is a
@@ -307,7 +307,7 @@ def commitment_letter():
     so this template is the place they are assembled, not the place they are invented.
     """
     doc = Document()
-    configure(doc, "LOS Commitment Letter", "Crestline Bank | {{loan.id}}")
+    configure(doc, "LOS Commitment Letter", "Acme Bank | {{loan.id}}")
     add_title(
         doc,
         "Commitment letter",
@@ -357,7 +357,7 @@ def main():
     for name, document in templates.items():
         document.core_properties.title = name.removesuffix(".docx").replace("-", " ").title()
         document.core_properties.subject = "Box DocGen template for the Harborview LOS demo"
-        document.core_properties.author = "Crestline Bank LOS Demo"
+        document.core_properties.author = "Acme Bank LOS Demo"
         document.save(OUTPUT / name)
         print(OUTPUT / name)
 

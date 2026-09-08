@@ -608,9 +608,9 @@ describe("Uploading a required document", () => {
 });
 
 describe("Visual identity", () => {
-  test("is Crestline Bank's borrower portal, and not the CLM portal it was forked from", async () => {
+  test("is Acme Bank's borrower portal, and not the CLM portal it was forked from", async () => {
     render(<Workspace />);
-    expect(screen.getByText("Crestline Bank")).toBeVisible();
+    expect(screen.getByText("Acme Bank")).toBeVisible();
     expect(screen.getByText("Borrower Portal")).toBeVisible();
     expect(screen.queryByText(/Headless 360/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Start an application/ })).toBeVisible();

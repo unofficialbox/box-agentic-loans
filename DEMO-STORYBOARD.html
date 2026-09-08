@@ -292,7 +292,7 @@
   <header class="masthead">
     <p class="eyebrow">Presenter storyboard</p>
     <h1>Harborview Demo Storyboard</h1>
-    <p class="standfirst">A borrower starts the application in the Crestline Borrower Portal; a term sheet marked up on the borrower's numbers is read against the credit policy library and the two loans Harborview already closed. Six beats, two windows, every prompt below is copy-paste.</p>
+    <p class="standfirst">A borrower starts the application in the Acme Borrower Portal; a term sheet marked up on the borrower's numbers is read against the credit policy library and the two loans Harborview already closed. Six beats, two windows, every prompt below is copy-paste.</p>
     <p class="standfirst"><strong>Headless, not branded.</strong> Box holds the file, Salesforce holds the record, and the harness is whatever the customer already uses: Claude Desktop here, the same two MCP connectors from ChatGPT or Slack, the Loan Copilot inside Agentforce. Pick the surface the room lives on. Say "Claudeforce" only to explain that it is a Salesforce pilot this demo does not depend on.</p>
     <p class="standfirst"><strong>Bind before use.</strong> The site URL and the borrower login below are placeholders; substitute the values for the environment you are presenting from. Everything else -- prompts, loan references, expected answers -- is portable. <strong>None of it has been run against a live org yet</strong>; expected answers come from the deterministic fixtures.</p>
     <div class="facts">
@@ -387,7 +387,7 @@
         <span class="where">Private browser window</span>
         <h3>Sign in as Dana once, and check what she lands on</h3>
         <p>Beat 1 opens on her screen, so the login has to work before the room is watching. Sign in at the <code>/loansvforcesite/login</code> path from beat 6, not under <code>/loans/</code>.</p>
-        <div class="expect"><strong>Expect</strong> the portal to open on <strong>Your loans</strong> with the three Harborview loans and a <strong>Start a new application</strong> button, under the Crestline Bank mark with <em>Borrower Portal</em> beneath it. A borrower with no loans lands on <strong>Start an application</strong> instead; a signed-out visitor gets the sign-in prompt, never an error card.</div>
+        <div class="expect"><strong>Expect</strong> the portal to open on <strong>Your loans</strong> with the three Harborview loans and a <strong>Start a new application</strong> button, under the Acme Bank mark with <em>Borrower Portal</em> beneath it. A borrower with no loans lands on <strong>Start an application</strong> instead; a signed-out visitor gets the sign-in prompt, never an error card.</div>
         <div class="warn"><strong>A rehearsal leaves a record behind.</strong> Every run of beat 1 creates a real <code>LOS_Loan__c</code> in Application status and a real Box folder, numbered after the last one for the year. Either present with the rehearsal application in view or have the demo owner remove it and its folder first (MT-074); do not delete it yourself during setup.</div>
       </div>
     </div>

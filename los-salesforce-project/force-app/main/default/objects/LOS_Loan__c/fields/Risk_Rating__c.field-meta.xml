@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Risk_Rating__c</fullName>
-    <description>The bank's own credit risk rating for the loan. Deliberately withheld from the borrower portal: it is Crestline's assessment, not a fact about the loan.</description>
+    <description>The bank's own credit risk rating for the loan. Deliberately withheld from the borrower portal: it is Acme's assessment, not a fact about the loan.</description>
     <label>Risk Rating</label>
     <required>false</required>
     <type>Picklist</type>

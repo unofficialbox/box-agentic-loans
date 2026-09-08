@@ -1,6 +1,6 @@
 ---
 name: los-demo
-description: Present the Crestline Bank loan origination demo from an AI harness (Claude Desktop first; the same rules apply in ChatGPT or Slack) with the LOS and Box MCP connectors. Use when asked to run, rehearse, or answer questions during the Harborview demo.
+description: Present the Acme Bank loan origination demo from an AI harness (Claude Desktop first; the same rules apply in ChatGPT or Slack) with the LOS and Box MCP connectors. Use when asked to run, rehearse, or answer questions during the Harborview demo.
 ---
 
 # LOS demo presenter

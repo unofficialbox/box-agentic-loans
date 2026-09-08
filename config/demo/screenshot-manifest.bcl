@@ -39,7 +39,7 @@ locals {
               "path" = "output/screenshots/box-automate-loan-orchestration/box-hub-credit-policy-library-live.png"
               "readiness" = "real-demo"
               "scenario" = "box-salesforce-los"
-              "sourceSurface" = "Box Hubs: Crestline Credit Policy Library"
+              "sourceSurface" = "Box Hubs: Acme Credit Policy Library"
             }
             {
               "capturedOn" = "2026-09-03"
@@ -74,21 +74,21 @@ locals {
               "path" = "output/screenshots/box-salesforce-los/los-borrower-apply.png"
               "readiness" = "real-demo"
               "scenario" = "box-salesforce-los"
-              "sourceSurface" = "Crestline Borrower Portal: Start an application form, filled"
+              "sourceSurface" = "Acme Borrower Portal: Start an application form, filled"
             }
             {
               "capturedOn" = "2026-09-04"
               "path" = "output/screenshots/box-salesforce-los/los-borrower-loans.png"
               "readiness" = "real-demo"
               "scenario" = "box-salesforce-los"
-              "sourceSurface" = "Crestline Borrower Portal: signed-in borrower loan list with the new-application action (Experience Cloud React UI Bundle)"
+              "sourceSurface" = "Acme Borrower Portal: signed-in borrower loan list with the new-application action (Experience Cloud React UI Bundle)"
             }
             {
               "capturedOn" = "2026-09-04"
               "path" = "output/screenshots/box-salesforce-los/los-borrower-workspace-checklist.png"
               "readiness" = "real-demo"
               "scenario" = "box-salesforce-los"
-              "sourceSurface" = "Crestline Borrower Portal: new application workspace with two uploads classified by Box AI and the required-documents checklist"
+              "sourceSurface" = "Acme Borrower Portal: new application workspace with two uploads classified by Box AI and the required-documents checklist"
             }
             {
               "capturedOn" = "2026-09-03"
@@ -109,7 +109,7 @@ locals {
               "path" = "output/screenshots/box-salesforce-los/los-react-workspace.png"
               "readiness" = "real-demo"
               "scenario" = "box-salesforce-los"
-              "sourceSurface" = "Crestline Borrower Portal: LN-2026-0042 workspace over the governed Box folder, Internal documents withheld"
+              "sourceSurface" = "Acme Borrower Portal: LN-2026-0042 workspace over the governed Box folder, Internal documents withheld"
             }
           ]
         }

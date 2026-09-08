@@ -8,7 +8,7 @@ A commercial **loan origination** (LOS) demo built on **Box + Salesforce**, port
 
 **One scenario:** **Box + Salesforce Loan Origination**. Primary surface is the Salesforce Multi-Framework React app (the borrower portal); governed Apex actions are the only path between Box and Salesforce, and humans keep credit authority. The borrower portal is the main entry point: a borrower signs in, starts an application (`LosCreateApplication`), and uploads the documents `config/los/required-documents.bcl` asks for, each classified by Box AI (`LosClassifyDocument`) against `losDocument`. The metadata-triggered Automate workflow is the alternate path — email or Box intake still reaches the record — so `config/box/*.bcl`, the 04 entry-point module, and the `LOS_Box_Automate_Integration` permission set are all retained.
 
-**The story** (see `DEMO-STORYBOARD.html`): Alex Bennett, Commercial Loan Officer at Crestline Bank, works the Harborview Logistics distribution-facility loan (`LN-2026-0042`, $4.8M, in Underwriting). The borrower's marked-up term sheet weakens the DSCR test in Section 9.3 and inflates the collateral pool in Schedule A; the appraisal came in at $5.65M, so LTV is 85% and DSCR 1.12x — outside even the approved policy exceptions. Harborview accepted 70% / 1.30x on both loans it already closed (`LN-2023-0311`, `LN-2025-0148`). A commitment letter is generated; signature is refused because the loan is not Approved; the borrower portal shows Dana Whitfield only Harborview's loans with Internal documents withheld.
+**The story** (see `DEMO-STORYBOARD.html`): Alex Bennett, Commercial Loan Officer at Acme Bank, works the Harborview Logistics distribution-facility loan (`LN-2026-0042`, $4.8M, in Underwriting). The borrower's marked-up term sheet weakens the DSCR test in Section 9.3 and inflates the collateral pool in Schedule A; the appraisal came in at $5.65M, so LTV is 85% and DSCR 1.12x — outside even the approved policy exceptions. Harborview accepted 70% / 1.30x on both loans it already closed (`LN-2023-0311`, `LN-2025-0148`). A commitment letter is generated; signature is refused because the loan is not Approved; the borrower portal shows Dana Whitfield only Harborview's loans with Internal documents withheld.
 
 **Governance invariant:** Box is authoritative for loan-file *content*; Salesforce `LOS_Loan__c` is authoritative for structured *credit truth*; the Opportunity is the Box-mapped object. Loan-file bytes never flow to Salesforce. Human gates precede any generation, signature, or Salesforce write.
 
@@ -374,10 +374,10 @@ back the consumer secret.
   `metadata.enterprise.losDocument.documentType`; untagged files are listed beneath it,
   never ticked and never hidden. `Internal` is still withheld.
 - **It is not the CLM portal, and should not look like it.** Left rail (232px, icons under
-  980px) with the "CB" monogram, **Crestline Bank**, and the line *Borrower Portal*; a slim
+  980px) with the "CB" monogram, **Acme Bank**, and the line *Borrower Portal*; a slim
   top bar with the page title and `ProfileMenu`; no top-bar tabs and no "Headless 360".
-  Tokens live on `:root` in `styles.css` (`--cb-ink`, `--cb-bg` warm cream, `--cb-green`
-  evergreen primary, `--cb-amber` accent, `--cb-line`, `--cb-muted`, and the
+  Tokens live on `:root` in `styles.css` (`--ab-ink`, `--ab-bg` warm cream, `--ab-green`
+  evergreen primary, `--ab-amber` accent, `--ab-line`, `--ab-muted`, and the
   success/warning/danger trio). Serif headings, Lato body (box-ui-elements needs it),
   tabular numbers, 6px card radius with a 1px line and no shadow, pill primary buttons,
   outlined secondary, small-caps status chips; charts in evergreen, amber and sand, not

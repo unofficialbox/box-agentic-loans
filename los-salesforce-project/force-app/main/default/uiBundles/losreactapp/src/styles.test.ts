@@ -67,23 +67,23 @@ describe("styles.css", () => {
  * look can be read in one block -- and so the navy-and-blue CLM portal this app was
  * forked from cannot creep back one hex code at a time.
  */
-describe("Crestline Bank identity", () => {
+describe("Acme Bank identity", () => {
   const css = stripComments(readFileSync(join(__dirname, "styles.css"), "utf8"));
   const root = css.slice(css.indexOf(":root {"), css.indexOf("}", css.indexOf(":root {")));
 
   test("declares the palette as custom properties on :root", () => {
     const expected: Record<string, string> = {
-      "--cb-ink": "#1B2A2F",
-      "--cb-bg": "#F6F3EC",
-      "--cb-surface": "#FFFFFF",
-      "--cb-line": "#E4DED2",
-      "--cb-green": "#0F4C45",
-      "--cb-green-deep": "#0A332E",
-      "--cb-amber": "#C9871A",
-      "--cb-success": "#2E7D5B",
-      "--cb-warning": "#B8641B",
-      "--cb-danger": "#A93A3A",
-      "--cb-muted": "#6B7470",
+      "--ab-ink": "#1B2A2F",
+      "--ab-bg": "#F6F3EC",
+      "--ab-surface": "#FFFFFF",
+      "--ab-line": "#E4DED2",
+      "--ab-green": "#0F4C45",
+      "--ab-green-deep": "#0A332E",
+      "--ab-amber": "#C9871A",
+      "--ab-success": "#2E7D5B",
+      "--ab-warning": "#B8641B",
+      "--ab-danger": "#A93A3A",
+      "--ab-muted": "#6B7470",
     };
     for (const [token, value] of Object.entries(expected)) {
       expect(root).toMatch(new RegExp(`${token}:\\s*${value};`, "i"));
@@ -91,9 +91,9 @@ describe("Crestline Bank identity", () => {
   });
 
   test("uses a serif stack for headings and keeps Lato for the body", () => {
-    expect(root).toMatch(/--cb-serif:\s*"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;/);
-    expect(root).toMatch(/--cb-sans:\s*Lato,/);
-    expect(css).toMatch(/h1, h2, h3 \{ font-family: var\(--cb-serif\);/);
+    expect(root).toMatch(/--ab-serif:\s*"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;/);
+    expect(root).toMatch(/--ab-sans:\s*Lato,/);
+    expect(css).toMatch(/h1, h2, h3 \{ font-family: var\(--ab-serif\);/);
   });
 
   test("carries none of the CLM portal's colours", () => {
