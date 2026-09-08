@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>New_applications</fullName>
+    <!--
+      Where a borrower's application surfaces for the loan officer. The portal creates the
+      record in Application status with Record Source "Borrower Portal" and tells nobody;
+      this view is the hand-off, so it ships with the metadata rather than being rebuilt by
+      hand in every org.
+    -->
+    <columns>NAME</columns>
+    <columns>Loan_ID__c</columns>
+    <columns>Borrower__c</columns>
+    <columns>Loan_Type__c</columns>
+    <columns>Loan_Amount__c</columns>
+    <columns>Record_Source__c</columns>
+    <columns>CREATED_DATE</columns>
+    <filterScope>Everything</filterScope>
+    <filters>
+        <field>Status__c</field>
+        <operation>equals</operation>
+        <value>Application</value>
+    </filters>
+    <label>New applications</label>
+    <sharedTo>
+        <allInternalUsers></allInternalUsers>
+    </sharedTo>
+</ListView>
