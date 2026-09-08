@@ -19,7 +19,7 @@ See [`scripts/README.md`](../../scripts/README.md) for the operator scripts and 
 6. Complete [Browser Configuration](browser-configuration.md).
 7. Complete [Box Preview Setup](box-preview-setup.md) to bring up governed Box content; until it is done the workspace reports that it cannot be opened.
 8. Run the [Smoke Test](smoke-test.md).
-9. Rehearse the [scenario guide](scenarios/box-salesforce-los/README.md).
+9. Rehearse the [scenario guide](scenarios/box-salesforce-los/README.md), then the [Rehearsal Clickpath](rehearsal-clickpath.md) for the Loan Copilot and the loan officer's list view.
 10. Build [Presenter Deliverables](presenter-deliverables.md) and finish the [Manual-Task Register](manual-task-register.md).
 11. Complete [Finalization](final-phase.md) before declaring presenter readiness.
 
