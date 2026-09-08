@@ -76,7 +76,7 @@ Box does this beat. The LOS tools are not called.
 Which loan documents across the portfolio are flagged critical policy risk? Search the Box metadata under the LOS-2026-Harborview workspace.
 ```
 
-Expect the assistant to find the workspace folder by name, run a Box metadata search on the `losDocument` template for `policyRisk = Critical` bounded to that folder, name `harborview-term-sheet-2026-borrower-markup.pdf` as the one hit, and open it inline. Ask for High or above and the FY2025 financial statements and the appraisal join it.
+Expect the assistant to find the workspace folder by name, read the `losDocument` template's scope (one small schema call, not the full template list), run a Box metadata search for `policyRisk = Critical` bounded to that folder, name `harborview-term-sheet-2026-borrower-markup.pdf` as the one hit, and open it inline. Ask for High or above and the FY2025 financial statements and the appraisal join it.
 
 If it returns another borrower's file: Box metadata search is enterprise-wide, and only the ancestor folder bounds it. The workspace name is what scopes it here; `findDocumentsByRisk` on the LOS server does the same from configuration if the Box connector is off.
 
