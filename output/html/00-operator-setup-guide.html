@@ -241,6 +241,9 @@
 </section>
 <section class="guide-section" id="3-create-local-configuration">
 <h2>3. Create local configuration</h2>
+<p>Two gitignored files hold every environment-bound value. Create both from the repository root:</p>
+<pre><code class="language-bash">cp .env.sample .env</code></pre>
+<p><code>.env</code> carries the shell variables the one-time scripts read (Box client id, CCG subject and folder allowlist, integration user) and the <code>VITE_*</code> values for a local live preview; <code>set -a; source .env; set +a</code> loads it, and the React bundle reads it through the <code>losreactapp/.env.local</code> symlink. Leave <code>BOX_CLIENT_SECRET</code> empty and export it for the one run that needs it. The second file is the operator&#x27;s runtime config:</p>
 <p>From the repository root:</p>
 <pre><code class="language-bash">cp config/runtime/demo-environment.example.json config/runtime/demo-environment.json</code></pre>
 <p>If already authenticated to Box and Salesforce, auto-fill from CLIs:</p>
