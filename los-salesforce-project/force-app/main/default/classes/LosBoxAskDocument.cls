@@ -48,7 +48,7 @@ public with sharing class LosBoxAskDocument {
     }
 
     @InvocableMethod(
-        label='Ask Box AI about a LOS loan document'
+        label='Ask Box AI about a loan document'
         description='Asks Box AI a question about one loan document, identified by its Box file ID. The answer is grounded in that file.'
     )
     public static List<Result> ask(List<Request> requests) {
