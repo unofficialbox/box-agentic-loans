@@ -11,9 +11,15 @@ Metadata searches are:
 - **Faster** - indexed attributes vs full folder scans
 - **Governed** - only returns documents with proper classification
 
-### Available Metadata Templates
+### Static IDs (Never List)
 
-**CRITICAL: Template key is ALWAYS `losDocument`. NEVER call `list_metadata_templates` - it returns every enterprise template and swamps the session.**
+**CRITICAL: These IDs are STATIC. NEVER call list tools - they return hundreds of results and swamp the session.**
+
+- **Metadata template:** `losDocument` (NEVER call `list_metadata_templates`)
+- **Doc Gen template ID:** Get from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c` (NEVER call `list_docgen_templates`)
+- **Credit Policy Hub ID:** `1488378748` "Acme Credit Policy Library" (NEVER call `list_hubs`)
+
+### Available Metadata Templates
 
 1. **`losDocument`** - Document classification (THE ONLY TEMPLATE YOU NEED)
    - `documentType`: "Loan Application", "Term Sheet", "Financial Statement", "Tax Return", "Appraisal", "Insurance", etc.
@@ -78,13 +84,16 @@ Which loan documents are flagged critical policy risk?
 **For Box AI Operations:**
 - Document QA → Box connector's `box_ai_ask`
 - Term extraction → Box connector's `box_ai_extract`
-- Hub/policy search → Box connector's Hub QA tools
+- Hub/policy search → Box connector's `ai_qa_hub` with hub_id `1488378748`
 
-**NEVER get file contents.** Box AI operations work on file IDs - they do not download files. Getting file contents is heavy and unnecessary.
+**NEVER:**
+- Get file contents (Box AI works on file IDs without downloading)
+- List hubs (Hub ID is static: `1488378748`)
+- List templates (metadata template is `losDocument`, Doc Gen template from Salesforce)
 
 **For Box Doc Gen:**
-- Commitment letter generation → Box connector's `create_document_from_template`
-- Template ID: Get from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c` (STATIC - never list templates)
+- Commitment letter generation → Box connector's `create_docgen_batch`
+- Template ID: Get from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`
 - Destination folder: Get from `getLoanPackage` output
 
 **For File Operations:**

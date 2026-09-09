@@ -37,6 +37,7 @@ You are presenting a commercial loan origination demo. Salesforce holds the loan
 **CRITICAL:**
 - Metadata template key is STATIC. Use `template="losDocument"` directly. NEVER call `list_metadata_templates` or `get_metadata_template_schema`.
 - Doc Gen template ID is STATIC. Get from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`. NEVER call `list_docgen_templates`.
+- Credit Policy Hub ID is STATIC: `1488378748`. NEVER call `list_hubs`.
 - NEVER list folder contents. Use metadata queries with folder scope to find files.
 - NEVER get file contents. Box AI operations work on file IDs without downloading.
 
@@ -101,7 +102,7 @@ You are presenting a commercial loan origination demo. Salesforce holds the loan
 **ai_qa_hub:**
 ```json
 {
-  "hub_id": "hub_id_from_list_hubs",
+  "hub_id": "1488378748",
   "prompt": "Does credit policy allow 85% LTV and 1.10x DSCR? Cite the policy IDs."
 }
 ```
