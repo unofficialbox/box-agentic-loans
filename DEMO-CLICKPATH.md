@@ -1,15 +1,77 @@
 # Demo Clickpath
 
-A borrower starts an application in the Acme Borrower Portal; a term sheet marked up on the borrower's numbers is read against the credit policy library and the two loans Harborview already closed. Six beats, two windows, an 11-minute full walkthrough. The 6:30 shortened stage variant and reset procedure are in [docs/PRESENTING.md](docs/PRESENTING.md). Every prompt below is copy-paste.
+A borrower starts an application in the Acme Borrower Portal; a term sheet marked up on the borrower's numbers is read against the credit policy library and the two loans Harborview already closed. Six beats, two windows, an 11-minute full walkthrough. The 6:30 shortened stage variant and reset procedure are in [docs/PRESENTING.md](docs/PRESENTING.md).
 
-Headless, not branded: Box holds the file, Salesforce holds the record, and the harness is whatever the room uses. Beats 2 to 5 are written for Claude Desktop with the LOS and Box connectors; the same prompts work from ChatGPT, Slack, or the Loan Copilot inside Agentforce. `skills/loan-origination/SKILL.md` carries the tool contracts and answer rules; this file is the canonical source of presenter prompts.
+Headless, not branded: Box holds the file, Salesforce holds the record, and the harness is whatever the room uses. Beats 2 to 5 are written for Claude Desktop with the LOS and Box connectors; the same prompts work from ChatGPT, Slack, or the Loan Copilot inside Agentforce.
 
-Replace `<your-site>`, `<alias>` and `<borrower-user-email>` with the environment you present from. Nothing else is environment-bound.
+---
+
+## Quick Preflight Checks
+
+Before starting:
+- [ ] **P1:** Loan Copilot has active version
+- [ ] **P2:** Claude Desktop custom instructions set (bullets/tables, 60 words, preview files)
+- [ ] **P3:** Both connectors loaded (Box + LOS), LOS refreshed
+- [ ] **P4:** Loan statuses: LN-2023-0311 Closed, LN-2025-0148 Closed, LN-2026-0042 Approved
+- [ ] **P5:** No duplicate files in Box folders
+- [ ] **P6:** Dana Whitfield borrower login ready
+- [ ] **P7:** Test sign in once as Dana
+
+---
+
+## Quick Reference - Copy/Paste Prompts
+
+**Beat 1 (Browser):** `https://<your-site>.my.site.com/loansvforcesite/login?startURL=%2Floans%2F`
+
+**Beat 2 (Claude Desktop):**
+```
+Which loan documents for LN-2026-0042 are flagged critical policy risk?
+```
+
+**Beat 3 (Claude Desktop):**
+```
+Extract loan terms from the marked-up term sheet for LN-2026-0042 and check them against credit policy.
+```
+
+**Beat 3a (Claude Desktop):**
+```
+Validate those terms against the Salesforce record.
+```
+
+**Beat 3b (Claude Desktop):**
+```
+apply the amount, rate and term to the record, confirm
+```
+
+**Beat 4 (Claude Desktop):**
+```
+Compare the covenant terms across Harborview's prior executed loans and the 2026 markup.
+```
+
+**Beat 5 (Claude Desktop):**
+```
+Generate the commitment letter for LN-2026-0042.
+```
+
+**Beat 5b (Claude Desktop):**
+```
+Send the Harborview commitment letter for signature.
+```
+
+**Beat 6 (Browser):** `https://<your-site>.my.site.com/loansvforcesite/login?startURL=%2Floans%2F`
+
+---
 
 ## Key Terms
 
 - **LTV (Loan-to-Value)**: Loan amount as a percentage of collateral value. 85% LTV = borrowing $850K against $1M property.
 - **DSCR (Debt Service Coverage Ratio)**: Cash flow available to cover debt payments. 1.25x DSCR = $1.25 of income for every $1 of debt payment.
+
+---
+
+# Detailed Instructions
+
+Replace `<your-site>`, `<alias>` and `<borrower-user-email>` below with your environment. Nothing else is environment-bound.
 
 ## Preflight
 
