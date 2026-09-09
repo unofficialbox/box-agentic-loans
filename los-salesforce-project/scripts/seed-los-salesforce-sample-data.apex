@@ -9,7 +9,7 @@
 
 final String HARBORVIEW = 'Harborview Logistics';
 final String PINECREST = 'Pinecrest Dental Group';
-final String HARBORVIEW_CONTACT = 'jordan.pike@harborviewlogistics.example';
+final String HARBORVIEW_CONTACT = 'kadams@boxdemo.com';
 final String PINECREST_CONTACT = 'sarah.kim@pinecrestdental.example';
 final String OPP_2023 = 'Harborview Working Capital Line 2023';
 final String OPP_2025 = 'Harborview Fleet Expansion 2025';

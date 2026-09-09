@@ -31,7 +31,7 @@ locals {
           "contacts" = [
             {
               "account" = "Harborview Logistics"
-              "email" = "jordan.pike@harborviewlogistics.example"
+              "email" = "kadams@boxdemo.com"
               "firstName" = "Jordan"
               "lastName" = "Pike"
               "title" = "Chief Financial Officer"
@@ -45,7 +45,7 @@ locals {
           ]
           "loans" = [
             {
-              "applicantEmail" = "jordan.pike@harborviewlogistics.example"
+              "applicantEmail" = "kadams@boxdemo.com"
               "applicantName" = "Jordan Pike"
               "borrower" = "Harborview Logistics"
               "borrowerAccount" = "Harborview Logistics"
@@ -71,7 +71,7 @@ locals {
               "underwritingNotes" = "Executed prior-year line of credit; retained for demo loan history. Schedule 1: LTV 70% maximum, DSCR 1.30x tested quarterly."
             }
             {
-              "applicantEmail" = "jordan.pike@harborviewlogistics.example"
+              "applicantEmail" = "kadams@boxdemo.com"
               "applicantName" = "Jordan Pike"
               "borrower" = "Harborview Logistics"
               "borrowerAccount" = "Harborview Logistics"
@@ -97,7 +97,7 @@ locals {
               "underwritingNotes" = "Executed prior-year equipment term loan; retained for demo loan history. Schedule 1 carried forward: LTV 70% maximum, DSCR 1.30x tested quarterly."
             }
             {
-              "applicantEmail" = "jordan.pike@harborviewlogistics.example"
+              "applicantEmail" = "kadams@boxdemo.com"
               "applicantName" = "Jordan Pike"
               "borrower" = "Harborview Logistics"
               "borrowerAccount" = "Harborview Logistics"
@@ -117,7 +117,7 @@ locals {
               "opportunity" = "Harborview Logistics - Distribution Facility Acquisition"
               "recordSource" = "Manual"
               "riskRating" = "High"
-              "status" = "Underwriting"
+              "status" = "Approved"
               "targetClosingDateOffsetMonths" = 4
               "termMonths" = 120
               "underwritingNotes" = "Appraisal came in at $5,650,000 against a stated $6,000,000: LTV 85% and DSCR 1.12x, outside LOS-LTV-002 and LOS-DSCR-002. Borrower markup weakens the DSCR test in Section 9.3 and adds FF&E to Schedule A. Owned by Credit Risk."

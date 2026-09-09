@@ -31,17 +31,17 @@ Answer in 60 words or fewer unless I ask for more. Lead with the finding. No pre
 
 Expect beat 4 to answer in a short paragraph and one table, and every beat to end with the document itself on screen rather than a link. If a beat comes back with a link, say "show me the document" once; the rule above makes that the last time.
 
-**P3. Claude Desktop: both connectors loaded, LOS refreshed.** Beats 2 and 4 run entirely on the Box connector and beat 3 reads through it; beat 5 generates through Box Doc Gen; the LOS tools carry the record, the confirmed write and the signature refusal. Nothing works with only one of them. The LOS connector is a custom connector on `https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools` with the External Client App's consumer key as OAuth Client ID (docs/SETUP.md §5a). If it predates the Extract, Apply or Classify tools, disconnect and reconnect it under Settings, Connectors, reusing the same URL.
+**P3. Claude Desktop: both connectors loaded, LOS refreshed.** Beats 2 and 4 run entirely on the Box connector and beat 3 reads through it; beat 5 generates through Box Doc Gen; the LOS tools carry the record, the confirmed write and the signature preparation. Nothing works with only one of them. The LOS connector is a custom connector on `https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools` with the External Client App's consumer key as OAuth Client ID (docs/SETUP.md §5a). If it predates the Extract, Apply or Classify tools, disconnect and reconnect it under Settings, Connectors, reusing the same URL.
 
 Expect both connectors listed under Context in the session. Box must offer folder search, metadata search, Box AI extract, single- and multi-file QA, Hub QA, Doc Gen (templates and batch), folder listing and file preview; the Doc Gen tools are off by default in the Box Admin Console. LOS offers six tools: `listLoans`, `getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `classifyDocument`, `prepareSignatureRequest`. Use Box MCP directly for metadata search, Box AI, and Doc Gen.
 
-**P4. Terminal: the loan statuses.** Beat 5's refusal needs the 2026 loan in Underwriting; beat 4 needs the two earlier loans Closed.
+**P4. Terminal: the loan statuses.** Beat 5's signature preparation needs the 2026 loan in Approved; beat 4 needs the two earlier loans Closed.
 
 ```bash
 sf data query -o <alias> -q "SELECT Loan_ID__c, Status__c FROM LOS_Loan__c WHERE Borrower__c='Harborview Logistics' ORDER BY Loan_ID__c"
 ```
 
-Expect LN-2023-0311 Closed, LN-2025-0148 Closed, LN-2026-0042 Underwriting.
+Expect LN-2023-0311 Closed, LN-2025-0148 Closed, LN-2026-0042 Approved.
 
 **P5. Box: no stray duplicates.** Inventory `LOS-2026-Harborview / 02 - Borrower Documents` for `(1)` copies left by earlier seeds. Unclassified duplicates are excluded from the borrower listing. Queue them for the cleanup owner to review; deletion requires a separate explicit decision. Confirm `Loans_Root_Folder_Id__c` in `LOS_Box_Config__c` points at the loans root so beat 2 is scoped.
 
@@ -71,7 +71,7 @@ Then the lender's side: open the new record in Salesforce. Expect Status Applica
 
 If asked: creating the record and provisioning its folder are two requests, because Apex cannot make a callout after DML. If the folder step fails the workspace says so; retry from the workspace, not the form. A borrower who emails the package instead is captured onto the Opportunity's Box folder, and `losLoan` metadata in `01 - Application Intake` starts the alternate Automate path. Say it in one sentence; do not show it.
 
-Beats 2 to 5 pick up LN-2026-0042, the Harborview loan now in Underwriting, with the term sheet the CFO sent back on her numbers.
+Beats 2 to 5 pick up LN-2026-0042, the Harborview loan now in Approved status, with the term sheet the CFO sent back on her numbers.
 
 ### 2. The portfolio already knows what's risky (Claude Desktop, to 4:05)
 
@@ -81,7 +81,9 @@ Box does this beat. The LOS tools are not called.
 Which loan documents across the portfolio are flagged critical policy risk? Search the Box metadata under the LOS-2026-Harborview workspace.
 ```
 
-Expect the assistant to find the workspace folder by name, read the `losDocument` template's scope (one small schema call, not the full template list), run a Box metadata search for `policyRisk = Critical` bounded to that folder, name `harborview-term-sheet-2026-borrower-markup.pdf` as the one hit, and open it inline. Ask for High or above and the FY2025 financial statements and the appraisal join it.
+Expect the assistant to find the workspace folder by name, run a Box metadata search for `policyRisk = Critical` bounded to that folder, name `harborview-term-sheet-2026-borrower-markup.pdf` as the one hit, and **MUST call `get_file_preview` to show the document inline**. The document should appear on screen, not just a filename or link. Ask for High or above and the FY2025 financial statements and the appraisal join it.
+
+**If the assistant only cites "Source: filename.pdf" without showing the document:** Say "show me the document" — P2 custom instructions require preview after citing. The beat is not complete until the document appears.
 
 If it returns another borrower's file: Box metadata search is enterprise-wide, and only the ancestor folder bounds it. The workspace name is what scopes it here.
 
@@ -93,7 +95,7 @@ Box reads; Salesforce compares and writes.
 Open the LN-2026-0042 package. Using Box AI, extract from the marked-up term sheet the loan amount, the bank's rate, the rate the borrower requests, the term, and the DSCR (debt service coverage ratio) as the borrower proposes it. Then ask the Acme credit policy library whether the borrower's LTV (loan-to-value) and DSCR positions are within policy or an approved exception, citing policy IDs.
 ```
 
-Expect `getLoanPackage` to name the folder, then Box AI structured extraction on the markup: $4,800,000; 6.85% bank rate and 6.50% requested; 120 months; DSCR proposed at 1.10x tested annually. Then Box AI over the policy Hub: LOS-LTV-001 (75%) with exception LOS-LTV-002 (80%, interest reserve), LOS-DSCR-001 (1.25x) with exception LOS-DSCR-002 (1.15x, cash reserve); 85% and 1.10x are outside even the exceptions, Credit Risk owns the deviation. The markup previews inline with the red interest and guaranty changes.
+Expect `getLoanPackage` to name the folder, then Box AI structured extraction on the markup: $4,800,000; 6.85% bank rate and 6.50% requested; 120 months; DSCR proposed at 1.10x tested annually. Then Box AI over the policy Hub: LOS-LTV-001 (75%) with exception LOS-LTV-002 (80%, interest reserve), LOS-DSCR-001 (1.25x) with exception LOS-DSCR-002 (1.15x, cash reserve); 85% and 1.10x are outside even the exceptions, Credit Risk owns the deviation. **The markup MUST preview inline** with `get_file_preview` showing the red interest and guaranty changes.
 
 Land it: a CRM record cannot find this, because the borrower's number is what was typed into it, and the markup never uses the phrase "loan-to-value". Then the record:
 
@@ -137,7 +139,7 @@ If the Box connector refuses Doc Gen: the Box Admin Console must have the Doc Ge
 Send the Harborview commitment letter for signature.
 ```
 
-Expect `prepareSignatureRequest` to be called and to refuse, naming Underwriting. That is a state check in Apex (`SIGNABLE = Approved, Commitment`), not a prompt instruction; once approved, the action still only prepares a request for a person to send.
+Expect `prepareSignatureRequest` to be called and to succeed, returning a Box Sign prepare URL addressed to kadams@boxdemo.com. The loan's Approved status passes the state check (`SIGNABLE = Approved, Commitment`). Nothing has been sent — a person needs to open the prepare URL, place the signature fields, and send it themselves. That gate is intentional: the action prepares only, never sends.
 
 If the assistant declines without calling the action, the beat has not happened. Say "call it anyway and show me what it returns".
 

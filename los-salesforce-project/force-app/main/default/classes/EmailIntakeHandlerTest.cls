@@ -23,7 +23,7 @@ private class EmailIntakeHandlerTest {
         insert acct;
         insert new Contact(
             FirstName = 'Jordan', LastName = 'Pike',
-            Email = 'jordan.pike@harborviewlogistics.example', AccountId = acct.Id
+            Email = 'kadams@boxdemo.com', AccountId = acct.Id
         );
         Opportunity opp = new Opportunity(
             Name = 'Harborview Logistics - Distribution Facility Acquisition',
@@ -32,7 +32,7 @@ private class EmailIntakeHandlerTest {
         );
         insert opp;
 
-        Messaging.InboundEmail email = buildEmail('jordan.pike@harborviewlogistics.example', 'Harborview loan application package 2026', true);
+        Messaging.InboundEmail email = buildEmail('kadams@boxdemo.com', 'Harborview loan application package 2026', true);
         Messaging.InboundEnvelope env = new Messaging.InboundEnvelope();
         env.fromAddress = email.fromAddress;
 

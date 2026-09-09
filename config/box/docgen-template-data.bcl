@@ -83,7 +83,7 @@ locals {
             }
             "recipient" = {
               "company" = "Harborview Logistics"
-              "email" = "jordan.pike@harborviewlogistics.example"
+              "email" = "kadams@boxdemo.com"
               "name" = "Jordan Pike"
               "title" = "Chief Financial Officer"
             }

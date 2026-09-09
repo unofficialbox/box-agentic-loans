@@ -10,7 +10,7 @@
  * The attachment bytes come from the Los_Sample_Loan_Application static resource (the repo's
  * sample Harborview loan application PDF), so the demo sends a real loan document.
  */
-String SENDER    = 'jordan.pike@harborviewlogistics.example';   // must match a Contact.Email
+String SENDER    = 'kadams@boxdemo.com';   // must match a Contact.Email
 String SUBJECT   = 'Harborview loan application package 2026 (demo)';
 String FILE_NAME = 'harborview-loan-application-2026.pdf';
 Blob   FILE_BODY = [SELECT Body FROM StaticResource WHERE Name = 'Los_Sample_Loan_Application' LIMIT 1].Body;

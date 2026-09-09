@@ -31,7 +31,7 @@ For `ai_extract_structured_from_fields` on the markup, name the fields so Box AI
 
 ## The beats
 
-Demo loan: `LN-2026-0042` (Harborview Logistics, Underwriting status, CFO-marked term sheet). Beats 1 and 6 happen in browser.
+Demo loan: `LN-2026-0042` (Harborview Logistics, Approved status, CFO-marked term sheet). Beats 1 and 6 happen in browser.
 
 | Beat | Tool behavior and expected evidence |
 |---|---|
@@ -41,7 +41,7 @@ Demo loan: `LN-2026-0042` (Harborview Logistics, Underwriting status, CFO-marked
 | 3b | `applyLoanTerms` refuses without "confirm". With confirm: updates amount/rate/term only. Never apply LTV or DSCR. |
 | 4 | `getLoanPackage` for two closed loans → Box AI multi-file: 70% LTV, 1.30x DSCR quarterly, Section 8 & Schedule 1, Pike/Shah signatures. Table format. Preview 2025 agreement at Schedule 1. |
 | 5 | `getLoanPackage` → `create_docgen_batch` (template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`) → metadata query to find generated letter → preview letter (draft pending Credit Committee). |
-| 5b | `prepareSignatureRequest` refuses (Underwriting status). |
+| 5b | `prepareSignatureRequest` succeeds (Approved status), returns prepare URL addressed to kadams@boxdemo.com. Nothing sent — person must place fields and send. |
 
 ## Commitment letter template structure
 
