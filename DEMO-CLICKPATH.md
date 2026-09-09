@@ -126,7 +126,7 @@ Draft the commitment letter for this Harborview loan with Box Doc Gen, using the
 
 Expect `getLoanPackage` for the record and folder, Box `list_docgen_templates` to find `los-commitment-letter-template.docx`, then `create_docgen_batch` into the loan folder with the letter's fields filled from beats 3 and 4. Doc Gen is asynchronous: the batch is accepted and the PDF lands a few seconds later; the assistant lists the folder through Box and opens the letter inline. Expect borrower and entity, amount, rate, term, the covenants at issue, the approved exceptions, Credit Risk as owner, the precedent, and on its face that it is a draft pending Credit Committee.
 
-If the Box connector refuses Doc Gen: the Box Admin Console must have the Doc Gen MCP tools enabled and the connector reconnected afterwards (docs/SETUP.md §5a); `generateCommitmentLetter` on the LOS server produces the same letter under the bank's identity.
+If the Box connector refuses Doc Gen: the Box Admin Console must have the Doc Gen MCP tools enabled and the connector reconnected afterwards (docs/SETUP.md §5a).
 
 ```text
 Send the Harborview commitment letter for signature.
