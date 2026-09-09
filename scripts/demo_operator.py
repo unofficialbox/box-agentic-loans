@@ -170,11 +170,12 @@ def run(command: list[str], *, cwd: Path = ROOT, dry_run: bool = False) -> str:
         return ""
     result = subprocess.run(command, cwd=cwd, check=False, text=True, capture_output=True)
     if result.returncode:
-        raise OperatorError(f"Command failed ({result.returncode}): {printable}\n{result.stderr.strip()}")
+        error_output = result.stderr.strip() if result.stderr.strip() else result.stdout.strip()
+        raise OperatorError(f"Command failed ({result.returncode}): {printable}\n\n--- Full Output ---\n{error_output}\n--- End Output ---")
     return result.stdout.strip()
 
 
-def deploy_uibundle(project: Path, *, alias: str, dry_run: bool) -> None:
+def deploy_uibundle(project: Path, *, alias: str, dry_run: bool) -> bool:
     # Deploy the bundle directory itself. `.forceignore` keeps node_modules and the
     # other build inputs out of the package; without it the UIBundle component packs
     # the whole folder (~357 MB) and the Metadata API rejects the 50 MB request.
@@ -190,7 +191,12 @@ def deploy_uibundle(project: Path, *, alias: str, dry_run: bool) -> None:
         "--source-dir",
         "force-app/main/default/uiBundles/losreactapp",
     ]
-    run(command, cwd=project, dry_run=dry_run)
+    try:
+        run(command, cwd=project, dry_run=dry_run)
+        return True
+    except OperatorError as e:
+        print(f"{STATUS_ICONS['warn']} UIBundle deployment failed (React Multi-Framework may not be enabled): {e}")
+        return False
 
 
 def run_json(command: list[str], *, cwd: Path = ROOT) -> Any:
@@ -820,6 +826,7 @@ def salesforce_deploy(config_path: Path, *, dry_run: bool) -> None:
         "force-app/main/default/namedCredentials",
         "force-app/main/default/externalCredentials",
         "force-app/main/default/cspTrustedSites",
+        "force-app/main/default/customPermissions",
         "force-app/main/default/layouts/LOS_Loan__c-LOS Loan Layout.layout-meta.xml",
         "force-app/main/default/flexipages/LOS_Loan_Record_Page.flexipage-meta.xml",
         "force-app/main/default/applications/LOS_Demo.app-meta.xml",
@@ -841,13 +848,17 @@ def salesforce_deploy(config_path: Path, *, dry_run: bool) -> None:
         for source in sources:
             command.extend(["--source-dir", source])
         run(command, cwd=project, dry_run=dry_run)
-    deploy_uibundle(project, alias=alias, dry_run=dry_run)
+    uibundle_deployed = deploy_uibundle(project, alias=alias, dry_run=dry_run)
     experience_command = ["sf", "project", "deploy", "start", "--target-org", alias, "--wait", "20"]
     for source in experience_site_sources:
         experience_command.extend(["--source-dir", source])
     run(experience_command, cwd=project, dry_run=dry_run)
     assign_salesforce_admin_permission_sets(project, alias=alias, dry_run=dry_run)
-    action = "Salesforce deployment plan validated" if dry_run else "Salesforce data model, permissions, app, record page, Box tab, UI Bundle, and authenticated Experience Cloud site deployed"
+    if dry_run:
+        action = "Salesforce deployment plan validated"
+    else:
+        uibundle_status = "UI Bundle, and " if uibundle_deployed else ""
+        action = f"Salesforce data model, permissions, app, record page, Box tab, {uibundle_status}authenticated Experience Cloud site deployed"
     print(f"{action}.")
 
 

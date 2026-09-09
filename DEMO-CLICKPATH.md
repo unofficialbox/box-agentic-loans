@@ -28,7 +28,7 @@ Expect beat 4 to answer in a short paragraph and one table, and every beat to en
 
 **P3. Claude Desktop: both connectors loaded, LOS refreshed.** Beats 2 and 4 run entirely on the Box connector and beat 3 reads through it; beat 5 generates through Box Doc Gen; the LOS tools carry the record, the confirmed write and the signature refusal. Nothing works with only one of them. The LOS connector is a custom connector on `https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools` with the External Client App's consumer key as OAuth Client ID (docs/SETUP.md §5a). If it predates the Extract, Apply or Classify tools, disconnect and reconnect it under Settings, Connectors, reusing the same URL.
 
-Expect both connectors listed under Context in the session. Box must offer folder search, metadata search, Box AI extract, single- and multi-file QA, Hub QA, Doc Gen (templates and batch), folder listing and file preview; the Doc Gen tools are off by default in the Box Admin Console. LOS offers nine tools: `listLoans`, `findDocumentsByRisk`, `getLoanPackage`, `askLoanDocument`, `extractLoanTerms`, `applyLoanTerms`, `classifyDocument`, `generateCommitmentLetter`, `prepareSignatureRequest`.
+Expect both connectors listed under Context in the session. Box must offer folder search, metadata search, Box AI extract, single- and multi-file QA, Hub QA, Doc Gen (templates and batch), folder listing and file preview; the Doc Gen tools are off by default in the Box Admin Console. LOS offers six tools: `listLoans`, `getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `classifyDocument`, `prepareSignatureRequest`. Use Box MCP directly for metadata search, Box AI, and Doc Gen.
 
 **P4. Terminal: the loan statuses.** Beat 5's refusal needs the 2026 loan in Underwriting; beat 4 needs the two earlier loans Closed.
 
@@ -78,7 +78,7 @@ Which loan documents across the portfolio are flagged critical policy risk? Sear
 
 Expect the assistant to find the workspace folder by name, read the `losDocument` template's scope (one small schema call, not the full template list), run a Box metadata search for `policyRisk = Critical` bounded to that folder, name `harborview-term-sheet-2026-borrower-markup.pdf` as the one hit, and open it inline. Ask for High or above and the FY2025 financial statements and the appraisal join it.
 
-If it returns another borrower's file: Box metadata search is enterprise-wide, and only the ancestor folder bounds it. The workspace name is what scopes it here; `findDocumentsByRisk` on the LOS server does the same from configuration if the Box connector is off.
+If it returns another borrower's file: Box metadata search is enterprise-wide, and only the ancestor folder bounds it. The workspace name is what scopes it here.
 
 ### 3. Extract the terms, then read them against policy (to 6:30)
 

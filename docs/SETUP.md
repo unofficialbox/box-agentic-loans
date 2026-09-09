@@ -129,12 +129,12 @@ The hosted server `LOSLoanTools` deploys with the metadata but is inert until th
 
 Then in the client:
 
-- **Claude Desktop or claude.ai:** Customize → Connectors → + → Add custom connector. Name `LOS Loan Tools`, server URL from step 1, Advanced settings → OAuth Client ID = the consumer key, no secret. Click Connect; the org login completes the OAuth flow. Configure → all nine tools on. Load the Box connector alongside it.
+- **Claude Desktop or claude.ai:** Customize → Connectors → + → Add custom connector. Name `LOS Loan Tools`, server URL from step 1, Advanced settings → OAuth Client ID = the consumer key, no secret. Click Connect; the org login completes the OAuth flow. Configure → all six tools on. Load the Box connector alongside it.
 - **Box connector:** in the Box Admin Console → Integrations → Box MCP Server, enable read and write tools for Box Doc Gen and Box AI (they are off by default), then disconnect and reconnect the Box connector in the client; a token issued before the change keeps the old grants and every Doc Gen call answers "Access denied".
 - **ChatGPT:** the same app with the ChatGPT callback URL added to the ECA; untested here.
 - **Slack:** the workspace connected to the org with this server enabled; untested here.
 
-Expect: the connector lists nine tools (`listLoans` through `prepareSignatureRequest`) and beat 2 of the clickpath answers from `findDocumentsByRisk`.
+Expect: the connector lists six tools (`listLoans`, `getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `classifyDocument`, `prepareSignatureRequest`). Beat 2 uses Box MCP `query_metadata` directly.
 
 ## 6. Administrator checklist
 

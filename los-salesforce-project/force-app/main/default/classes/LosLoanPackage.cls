@@ -255,11 +255,36 @@ public with sharing class LosLoanPackage {
         if (contents.entries == null) {
             return docs;
         }
+
+        // First, collect files at the root level
         for (box.Entry item : contents.entries) {
             if (item.type == 'file') {
                 docs.add(new Doc(item.name, item.id));
             }
         }
+
+        // If root is empty but has folders, recurse into "02 - Borrower Documents" subfolder
+        // This handles the common LOS workspace pattern where documents live in subfolders
+        if (docs.isEmpty()) {
+            for (box.Entry item : contents.entries) {
+                if (item.type == 'folder' && item.name == '02 - Borrower Documents') {
+                    try {
+                        box.Folder subfolder = new box.Toolkit().getFolderContents(item.id);
+                        if (subfolder != null && subfolder.entries != null) {
+                            for (box.Entry file : subfolder.entries) {
+                                if (file.type == 'file') {
+                                    docs.add(new Doc(file.name, file.id));
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        System.debug(LoggingLevel.WARN, 'LOS Box: subfolder listing failed: ' + e.getMessage());
+                    }
+                    break;
+                }
+            }
+        }
+
         return docs;
     }
 
