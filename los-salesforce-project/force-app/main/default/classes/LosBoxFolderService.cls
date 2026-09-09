@@ -56,6 +56,15 @@ global with sharing class LosBoxFolderService {
             return;
         }
 
+        // Update the denormalized folder ID on the loan record so the workspace can read it
+        try {
+            LOS_Loan__c loan = [SELECT Id FROM LOS_Loan__c WHERE Id = :recordId LIMIT 1];
+            loan.Box_Workspace_Folder_ID__c = folderId;
+            update loan;
+        } catch (Exception e) {
+            System.debug(LoggingLevel.WARN, 'LOS Box: could not update folder ID on loan: ' + e.getMessage());
+        }
+
         FolderResponse payload = new FolderResponse();
         payload.folderId = folderId;
         payload.recordId = recordId;
