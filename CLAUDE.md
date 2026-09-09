@@ -88,7 +88,7 @@ Which loan documents are flagged critical policy risk?
 - Destination folder: Get from `getLoanPackage` output
 
 **For File Operations:**
-- File listing → Box connector
+- Finding files → Box connector's `query_metadata` (NEVER list folder contents)
 - File preview → Box connector's `get_file_preview` (ALWAYS show after citing)
 - Metadata operations → Box connector
 
@@ -245,7 +245,9 @@ query_metadata(template="losDocument", query="borrowerEntity='Harborview Logisti
    ```
    ✅ Fast: query_metadata(template="losDocument", query="policyRisk='Critical'")
    ❌ Slow: getLoanPackage for each loan → filter by risk in prompt
+   ❌ Slow: list_folder_content → filter in prompt
    ```
+   **NEVER list folder contents.** Always use metadata queries with folder scope to find files.
 
 2. **Parallel Tool Calls:** When operations are independent, call tools in parallel
    ```
@@ -318,7 +320,7 @@ Need to find documents?
 | Find by loan reference | Box | `query_metadata(loanReference=...)` | Structured field |
 | Get loan's docs | LOS | `getLoanPackage` | Returns governed set |
 | **Box AI** | Box | `box_ai_ask`, `box_ai_extract` | Direct, faster |
-| **File Operations** | Box | `get_file_preview`, etc. | Native Box operations |
+| **File Preview** | Box | `get_file_preview` | Show documents inline |
 | **Hub/Policy Search** | Box | Hub QA tools | Box Hubs, not Salesforce |
 | **Doc Gen** | Box | `create_document_from_template` | Direct API, MCP-first |
 | **Loan Records** | LOS | `listLoans` | Salesforce SOQL |
