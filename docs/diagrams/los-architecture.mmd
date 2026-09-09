@@ -4,12 +4,14 @@ flowchart TB
   subgraph internal["Internal surface"]
     mcp["MCP server<br/>Claude Desktop"]
     copilot["Agentforce Loan Copilot"]
+    boxmcp["Box MCP<br/>direct API"]
   end
 
-  subgraph apex["Salesforce Apex - governed actions"]
+  subgraph apex["Salesforce Apex - governed actions (6 tools)"]
     package["Loan package<br/>resolve, list, cite"]
-    ask["Ask a document<br/>Box AI, scoped to one loan"]
-    docgen["Generate commitment letter<br/>extract and apply terms, human-confirmed"]
+    extract["Extract & validate terms<br/>Box AI + policy Hub"]
+    apply["Apply terms<br/>confirmed writes only"]
+    classify["Classify document<br/>Box AI metadata"]
     sign["Prepare signature<br/>state-gated, never sends"]
     token["Downscoped Box token<br/>one folder, short lived"]
   end
@@ -17,6 +19,7 @@ flowchart TB
   subgraph box["Box - unstructured data"]
     boxContent["Applications, term sheets, appraisals"]
     boxMetadata["Metadata templates, versions"]
+    boxAI["Box AI & Doc Gen"]
     boxSign["Box Sign package"]
   end
 
@@ -32,18 +35,25 @@ flowchart TB
   intake --> loan
 
   mcp --> package
-  mcp --> ask
-  mcp --> docgen
+  mcp --> extract
+  mcp --> apply
+  mcp --> classify
   mcp --> sign
+  boxmcp --> boxMetadata
+  boxmcp --> boxAI
+
   copilot --> package
-  copilot --> ask
+  copilot --> extract
 
   package <--> loan
   package <--> boxMetadata
-  ask --> boxContent
-  docgen --> boxContent
+  extract --> boxContent
+  extract --> boxAI
+  classify --> boxAI
+  classify --> boxMetadata
   sign --> boxSign
   sign -. refuses unless approved .-> approvals
+  apply --> loan
 
   external --> token
   token --> boxContent
@@ -56,8 +66,8 @@ flowchart TB
   classDef sf fill:#dcfce7,stroke:#15803d,color:#0f172a
   classDef control fill:#f1f5f9,stroke:#64748b,color:#0f172a
 
-  class mcp,copilot agent
-  class package,ask,docgen,sign,token action
-  class boxContent,boxMetadata,boxSign box
+  class mcp,copilot,boxmcp agent
+  class package,extract,apply,classify,sign,token action
+  class boxContent,boxMetadata,boxAI,boxSign box
   class loan,approvals,sharing sf
   class intake,external control

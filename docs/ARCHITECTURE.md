@@ -6,18 +6,32 @@ Diagrams: [LOS architecture](diagrams/los-architecture.svg) ([source](diagrams/l
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────────┐
-│                          Salesforce - governed Apex actions                          │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────────┐  │
-│  │ Loan     │ │ Ask a    │ │ Extract  │ │ Apply    │ │ Generate │ │ Prepare       │  │
-│  │ package  │ │ document │ │ terms    │ │ terms    │ │ letter   │ │ signature     │  │
-│  │          │ │          │ │ (reads)  │ │(confirmed│ │          │ │ (state-gated) │  │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └───────┬───────┘  │
-│  ┌────┴────────────┴────────────┴────────────┴────────────┴───────────────┴───────┐  │
-│  │           Client Credentials Grant - the Box token never leaves Apex           │  │
-│  └────────────────────────────────────────────────────────────────────────────────┘  │
+│                     Salesforce - governed Apex actions (6 tools)                     │
+│                                                                                      │
+│  Salesforce only:                                                                   │
+│  ┌──────────┐  ┌──────────┐                                                        │
+│  │ List     │  │ Apply    │                                                        │
+│  │ loans    │  │ terms    │                                                        │
+│  │ (SOQL)   │  │(confirmed│                                                        │
+│  └──────────┘  └──────────┘                                                        │
+│                                                                                      │
+│  Box via CCG:                                                                       │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌───────────────┐                     │
+│  │ Loan     │  │ Extract  │  │ Classify │  │ Prepare       │                     │
+│  │ package  │  │ terms    │  │ document │  │ signature     │                     │
+│  │          │  │ (Box AI) │  │ (Box AI) │  │ (state-gated) │                     │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └───────┬───────┘                     │
+│  ┌────┴──────────────┴──────────────┴──────────────┴─────────────────────────┐   │
+│  │       Client Credentials Grant - the Box token never leaves Apex           │   │
+│  └────────────────────────────────────────────────────────────────────────────┘   │
 └──────────────────────────────────────────────────────────────────────────────────────┘
-        ▲                                                              ▲
-        │ MCP / Agentforce (internal)             downscoped token (borrower portal)
+        ▲                                                      ▲
+        │ MCP / Agentforce (internal)     downscoped token (borrower portal)
+
+Additional Box operations now use Box MCP directly (not via Salesforce):
+- Metadata search: Box MCP query_metadata (enterprise-wide, faster)
+- Box AI QA: Box MCP box_ai_ask (direct API)
+- Doc Gen: Box MCP create_document_from_template (direct API)
 ```
 
 Two surfaces share the governed assets. The internal surface is the `LOSLoanTools` hosted MCP server (Claude Desktop, ChatGPT, Slack) or the `LOS_Loan_Copilot` Employee Agent inside Agentforce, running as the signed-in employee over the whole portfolio. The external surface is the Acme Borrower Portal, a React UI Bundle on an authenticated Experience Cloud site, running as the community user and bounded by a sharing set, field permissions and server-authorized document listings, upload-only folder tokens and per-file preview tokens. The portal carries no agent: a Service Agent runs as its own user and takes the loan from the conversation, so it could not be scoped to the borrower.
@@ -59,16 +73,16 @@ Only `Name`, `Loan_Amount__c` and `Target_Closing_Date__c` are required on the l
 |---|---|---|---|
 | `LosLoanList` | MCP | Lists loans by status and borrower | Never offered to the borrower site |
 | `LosLoanPackage` | MCP, agent | Resolves a loan by ID, name or record ID; lists its Box documents | A loan with no folder is reported, not provisioned |
-| `LosBoxAskDocument` | MCP, agent | Asks Box AI about one document or the policy Hub | A file outside the named loan's folder |
+| `LosBoxAskDocument` | Agent only | Asks Box AI about one document or the policy Hub; used by Copilot | A file outside the named loan's folder |
 | `LosExtractLoanTerms` | MCP, agent | Box AI Extract of amount, rate, term, collateral value, LTV, DSCR, maturity; validation against record and policy | Writes nothing, ever |
 | `LosApplyLoanTerms` | MCP, agent | Writes human-accepted terms to the seven allow-listed fields | `confirmed != true`; a Closed or Servicing loan; any other field |
-| `LosPortfolioSearch` | MCP | Metadata search on `losDocument.policyRisk` under the loans root | An unconfigured root; an enum value outside the template |
-| `LosGenerateCommitmentLetter` | MCP | Box Doc Gen draft into the loan's folder | No configured template; the draft approves nothing |
+| `LosClassifyDocument` | MCP, agent, portal | Box AI structured extraction of `losDocument.documentType` for one upload | A file outside the loan's folder; a type outside the enum |
 | `LosSendForSignature` | MCP | Prepares a Box Sign request and returns the prepare URL | Any status but Approved or Commitment; it never sends |
+| ~~`LosPortfolioSearch`~~ | Removed | Use Box MCP `query_metadata` directly (faster, enterprise-wide) | |
+| ~~`LosGenerateCommitmentLetter`~~ | Removed | Use Box MCP `create_document_from_template` directly | |
 | `LosBorrowerLoans` | Borrower portal | The signed-in borrower's loans via Contact, Account | Any other borrower's loan |
 | `LosCreateApplication` | Borrower portal, `POST /los/applications` | One `LOS_Loan__c` in Application status for the caller's own Account, numbered after the last that year, user-mode DML | Guests (401); no Contact or Account (403); invalid type, amount, term or purpose (400); any account id in the body; rate, LTV, DSCR, risk or officer, ever |
 | `LosBoxFolderService` | Borrower portal, `POST /los/box-folder` | Provisions the loan's Box folder through the Box for Salesforce package and grants the CCG user direct access | Runs as a second request: Apex cannot call out after DML, so create and provision are never one call |
-| `LosClassifyDocument` | Borrower portal, `POST /los/classify`, agent | Box AI structured extraction of `losDocument.documentType` for one upload, written with `versionStatus = Draft` | A file outside the loan's folder; a loan the caller cannot read; a type outside the enum, in which case it writes nothing and reports the document as awaiting classification |
 | `LosBoxTokenService` | Borrower portal, `GET /los/box-token` | Resolves the record's folder, grants as the configured Box user, downscopes to that folder | A folder outside `Allowed_Folder_Ids__c` |
 
 All Box calls go through `LosBoxAuth` with the `LOS_Box` external credential, so no MCP client, agent or browser holds an enterprise token. Configuration is the `LOS_Box_Config__c` custom setting: CCG subject, folder allowlist, policy Hub, loans root, commitment-letter template.
