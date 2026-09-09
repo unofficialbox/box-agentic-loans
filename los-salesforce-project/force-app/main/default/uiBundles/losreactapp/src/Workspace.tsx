@@ -8,6 +8,7 @@ import { UploadDialog, type UploadedFile } from "./components/UploadDialog";
 import { WorkspaceMetrics } from "./components/WorkspaceMetrics";
 import { LoanList } from "./components/LoanList";
 import { ProfileMenu } from "./components/ProfileMenu";
+import { EmbeddedSign } from "./components/EmbeddedSign";
 import { fetchIdentity, type LosIdentity } from "./lib/identity";
 import type { BoxFolderItem } from "./lib/box";
 import { classifyDocument } from "./lib/classify";
@@ -114,6 +115,8 @@ export function Workspace() {
   const [reloadKey, setReloadKey] = useState(0);
   /** What Box AI said about each upload, newest last. */
   const [notices, setNotices] = useState<Notice[]>([]);
+  /** Embed URL for pending signature request */
+  const [signEmbedUrl, setSignEmbedUrl] = useState<string | null>(null);
   const loans = useLoans();
   /**
    * A record in the URL means the page was opened with context -- a Lightning or
@@ -185,6 +188,7 @@ export function Workspace() {
     setFiles(null);
     setBoxError("");
     setNotices([]);
+    setSignEmbedUrl(loan.signEmbedUrl || null);
     window.history.pushState({}, "", search ? `?${search}` : window.location.pathname);
     setSelected(loan);
     setView("workspace");
@@ -376,6 +380,48 @@ export function Workspace() {
                       </li>
                     ))}
                   </ul>
+                ) : null}
+                {signEmbedUrl ? (
+                  <div className="signature-panel">
+                    <h3>Signature Required</h3>
+                    <p>Please review and sign the commitment letter below.</p>
+                    <EmbeddedSign
+                      embedUrl={signEmbedUrl}
+                      onComplete={() => {
+                        setSignEmbedUrl(null);
+                        setNotices((was) => [
+                          ...was,
+                          {
+                            key: 'sign-complete',
+                            tone: 'success',
+                            text: 'Document signed successfully.'
+                          }
+                        ]);
+                        setReloadKey((n) => n + 1);
+                      }}
+                      onDecline={() => {
+                        setSignEmbedUrl(null);
+                        setNotices((was) => [
+                          ...was,
+                          {
+                            key: 'sign-declined',
+                            tone: 'info',
+                            text: 'Signature request declined.'
+                          }
+                        ]);
+                      }}
+                      onError={(error) => {
+                        setNotices((was) => [
+                          ...was,
+                          {
+                            key: 'sign-error',
+                            tone: 'warning',
+                            text: `Signature error: ${error}`
+                          }
+                        ]);
+                      }}
+                    />
+                  </div>
                 ) : null}
                 {collecting && !boxError ? (
                   <RequiredDocuments

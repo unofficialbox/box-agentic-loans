@@ -561,3 +561,23 @@ h1, h2, h3 { font-family: var(--ab-serif); font-weight: 400; letter-spacing: -0.
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+.signature-panel {
+  background: var(--ab-surface);
+  border: 1px solid var(--ab-line);
+  border-radius: var(--ab-radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.signature-panel h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--ab-text);
+}
+
+.signature-panel p {
+  margin: 0 0 1rem 0;
+  color: var(--ab-text-dim);
+}
