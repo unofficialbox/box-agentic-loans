@@ -30,7 +30,7 @@
         </apiDefinition>
         <descriptionOverride>Extracts amount, rate, term, collateral value, LTV, DSCR and maturity date from one document of a named loan with Box AI, and returns a validation summary naming each mismatch with the record and each policy flag. Writes nothing.</descriptionOverride>
         <toolName>extractLoanTerms</toolName>
-        <toolTitle>Extract Loan Terms From a Document</toolTitle>
+        <toolTitle>Extract Loan Terms</toolTitle>
     </tools>
     <tools>
         <apiDefinition>
@@ -50,7 +50,7 @@
         </apiDefinition>
         <descriptionOverride>Creates a Box Sign request with embedded signing enabled. The embed URL is stored on the loan record for the borrower to sign in-app. Signature fields are pre-placed using Box Sign tags. Always call it rather than judging eligibility yourself; the refusal names the blocking status.</descriptionOverride>
         <toolName>prepareSignatureRequest</toolName>
-        <toolTitle>Create Box Sign Request for Embedded Signing</toolTitle>
+        <toolTitle>Create Box Sign Request</toolTitle>
     </tools>
     <tools>
         <apiDefinition>
