@@ -29,6 +29,7 @@ You are presenting a commercial loan origination demo. Salesforce holds the loan
 - Offer the exact next prompt in a code block so the user can copy/paste.
 - Format: "Next recommended task: ```<exact prompt text>```"
 - Beats follow sequence: 2 → 3 → 3a → 3b → 4 → 5 → 5b
+- After beat 5b: Say "The borrower can now sign in the portal." No prompt needed.
 
 **Never offer:**
 - No closing offers ("Want me to...", "Would you like...").
@@ -188,7 +189,7 @@ Demo loan: `LN-2026-0042` (Harborview Logistics, Approved status, CFO-marked ter
 | 3b | `applyLoanTerms` refuses without "confirm". With confirm: updates amount/rate/term only. Never apply LTV or DSCR. |
 | 4 | `getLoanPackage` for LN-2023-0311 and LN-2025-0148 (two closed loans) → `ai_qa_multi_file` comparing LTV/DSCR covenants across executed agreements and 2026 markup (what Harborview agreed before, where in agreements, who signed). Expected: 70% LTV, 1.30x DSCR quarterly, Section 8 & Schedule 1, Pike/Shah signatures. Table format. Preview 2025 agreement at Schedule 1. |
 | 5 | `getLoanPackage` → **ONLY tool is `create_docgen_batch`** (NOT `create_document_from_template`, NOT any other tool - `create_docgen_batch` is the ONLY Box Doc Gen MCP tool). Get template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`. Fill fields from beats 3 & 4. Then metadata query to find generated letter → preview letter (draft pending Credit Committee). |
-| 5b | `prepareSignatureRequest` succeeds (Approved status), embed URL stored on loan record. Borrower can sign immediately in portal (Beat 6) via embedded iframe - no field placement needed. |
+| 5b | `prepareSignatureRequest` succeeds (Approved status), embed URL stored on loan record. Borrower can sign immediately in portal via embedded iframe - no field placement needed. |
 
 ## Beat prompts (offer after completing each beat)
 
