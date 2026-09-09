@@ -4,5 +4,5 @@
     <description>Non-secret Box settings for the LOS token service and governed loan actions: CCG subject, folder allowlist, credit policy Hub, loans root and commitment-letter template. The Box client id and secret live in the LOS_Box external credential.</description>
     <enableFeeds>false</enableFeeds>
     <label>LOS Box Config</label>
-    <visibility>Protected</visibility>
+    <visibility>Public</visibility>
 </CustomObject>

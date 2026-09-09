@@ -55,7 +55,7 @@ config:
 access:
     # Bound per org at publish time: the agent user is created when the agent is first
     # published and its username carries the org id, so the value here is a placeholder.
-    default_agent_user: "loan_assistant@your-org-agent-user.ext"
+    default_agent_user: "loan_assistant@box-agent-user.ext"
 
 language:
     default_locale: "en_US"
@@ -185,36 +185,30 @@ subagent document_answers:
                     description: "The loan ID the person used, for example LN-2026-0042, the loan name, or a LOS_Loan__c record ID."
                     label: "Loan ID"
                     is_required: True
-                    complex_data_type_name: "lightning__textType"
             outputs:
                 outputSummary: string
                     label: "Loan Package"
                     description: "The loan record, its Box folder, and each document with its Box file ID."
-                    complex_data_type_name: "lightning__textType"
                     is_displayable: False
                     filter_from_agent: False
                 outputLoanReference: string
                     label: "Resolved Loan ID"
                     description: "The loan ID of the loan this resolved to, which may differ from the one the person typed. Anything that must stay bounded to the same loan uses this."
-                    complex_data_type_name: "lightning__textType"
                     is_displayable: False
                     filter_from_agent: False
                 outputRecordId: string
                     label: "Salesforce Record ID"
                     description: "The Salesforce LOS_Loan__c record ID."
-                    complex_data_type_name: "lightning__textType"
                     is_displayable: False
                     filter_from_agent: False
                 outputFolderId: string
                     label: "Box Folder ID"
                     description: "The governed Box folder ID for this loan file."
-                    complex_data_type_name: "lightning__textType"
                     is_displayable: False
                     filter_from_agent: False
                 outputFound: boolean
                     label: "Documents Found"
                     description: "Whether a loan and at least one document were found."
-                    complex_data_type_name: "lightning__booleanType"
                     is_displayable: False
                     filter_from_agent: False
 
@@ -229,28 +223,23 @@ subagent document_answers:
                     description: "The loan the document belongs to. A file outside that loan is refused, so this must match the loan get_loan_package was called with."
                     label: "Loan ID"
                     is_required: True
-                    complex_data_type_name: "lightning__textType"
                 itemId: string
                     description: "A Box file ID copied from the get_loan_package listing. Never invent one and never ask the person for one."
                     label: "Item ID"
                     is_required: True
-                    complex_data_type_name: "lightning__textType"
                 prompt: string
                     description: "The question to ask about that file. Name exactly what is wanted -- figures, rates, ratios, dates, covenant text."
                     label: "Prompt"
                     is_required: True
-                    complex_data_type_name: "lightning__textType"
             outputs:
                 answer: string
                     label: "Answer"
                     description: "Box AI's answer, grounded in that file, or a plain statement that it could not be read."
-                    complex_data_type_name: "lightning__textType"
                     is_displayable: False
                     filter_from_agent: False
                 answered: boolean
                     label: "Answered"
                     description: "Whether Box AI actually answered. When false, say so rather than filling the gap."
-                    complex_data_type_name: "lightning__booleanType"
                     is_displayable: False
                     filter_from_agent: False
 
@@ -265,34 +254,28 @@ subagent document_answers:
                     description: "The loan the document belongs to. A file outside that loan is refused, so this must match the loan get_loan_package was called with."
                     label: "Loan ID"
                     is_required: True
-                    complex_data_type_name: "lightning__textType"
                 itemId: string
                     description: "A Box file ID copied from the get_loan_package listing. Never invent one and never ask the person for one."
                     label: "Item ID"
                     is_required: True
-                    complex_data_type_name: "lightning__textType"
                 prompt: string
                     description: "Optional guidance for the extraction, for example which value to prefer. The field list is fixed."
                     label: "Prompt"
                     is_required: False
-                    complex_data_type_name: "lightning__textType"
             outputs:
                 extractedJson: string
                     label: "Extracted Terms"
                     description: "The extracted values as JSON, keyed loanAmount, interestRate, termMonths, collateralValue, ltv, dscr, maturityDate."
-                    complex_data_type_name: "lightning__textType"
                     is_displayable: False
                     filter_from_agent: False
                 validationSummary: string
                     label: "Validation Summary"
                     description: "One line per term saying whether the document and the record agree, then any credit policy flags. Read this back to the person."
-                    complex_data_type_name: "lightning__textType"
                     is_displayable: False
                     filter_from_agent: False
                 extracted: boolean
                     label: "Extracted"
                     description: "Whether Box AI actually returned terms. When false, say so rather than filling the gap."
-                    complex_data_type_name: "lightning__booleanType"
                     is_displayable: False
                     filter_from_agent: False
 

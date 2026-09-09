@@ -1,17 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <McpServerDefinition xmlns="http://soap.sforce.com/2006/04/metadata">
-    <description>Governed Apex over the LOS loan book: list loans, resolve one and its Box documents, ask Box AI, classify a document, extract and apply terms, draft a commitment letter, prepare a signature request. Box credentials stay in Apex; clients hold none.</description>
+    <description>Governed Apex: list loans, get loan package, classify documents, extract and apply terms, prepare signature requests. Use Box MCP for metadata search, AI, and Doc Gen.</description>
     <masterLabel>LOS Loan Tools</masterLabel>
-    <tools>
-        <apiDefinition>
-            <apiIdentifier>aa:apex-LosPortfolioSearch</apiIdentifier>
-            <apiSource>API_CATALOG</apiSource>
-            <operation>LosPortfolioSearch</operation>
-        </apiDefinition>
-        <descriptionOverride>Finds documents across every governed loan carrying a given credit policy risk (Critical, High, Medium, Low), with a link to each. Bounded to the loans root by configuration; a caller never supplies a folder id.</descriptionOverride>
-        <toolName>findDocumentsByRisk</toolName>
-        <toolTitle>Find Loan Documents by Policy Risk</toolTitle>
-    </tools>
     <tools>
         <apiDefinition>
             <apiIdentifier>aa:apex-LosLoanList</apiIdentifier>
@@ -34,16 +24,6 @@
     </tools>
     <tools>
         <apiDefinition>
-            <apiIdentifier>aa:apex-LosBoxAskDocument</apiIdentifier>
-            <apiSource>API_CATALOG</apiSource>
-            <operation>LosBoxAskDocument</operation>
-        </apiDefinition>
-        <descriptionOverride>Asks Box AI about one document of a named loan, by a Box file ID from that loan&apos;s package. A file outside that loan is refused. With itemType hub it reads the approved credit policy library instead.</descriptionOverride>
-        <toolName>askLoanDocument</toolName>
-        <toolTitle>Ask Box AI About a Loan Document</toolTitle>
-    </tools>
-    <tools>
-        <apiDefinition>
             <apiIdentifier>aa:apex-LosExtractLoanTerms</apiIdentifier>
             <apiSource>API_CATALOG</apiSource>
             <operation>LosExtractLoanTerms</operation>
@@ -61,16 +41,6 @@
         <descriptionOverride>Writes human-accepted loan terms to the named loan record: only the seven term fields, only the ones supplied, and only with confirmed = true after a person has accepted them. Refuses a Closed or Servicing loan. Never changes status or risk.</descriptionOverride>
         <toolName>applyLoanTerms</toolName>
         <toolTitle>Apply Accepted Loan Terms</toolTitle>
-    </tools>
-    <tools>
-        <apiDefinition>
-            <apiIdentifier>aa:apex-LosGenerateCommitmentLetter</apiIdentifier>
-            <apiSource>API_CATALOG</apiSource>
-            <operation>LosGenerateCommitmentLetter</operation>
-        </apiDefinition>
-        <descriptionOverride>Generates the draft commitment letter for a loan into its own Box folder, from the policy at issue, the approved position and exception, and the precedent the caller cites. Loan facts come from the record. The draft is pending Credit Committee approval.</descriptionOverride>
-        <toolName>generateCommitmentLetter</toolName>
-        <toolTitle>Generate a LOS Commitment Letter</toolTitle>
     </tools>
     <tools>
         <apiDefinition>
