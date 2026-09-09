@@ -8,9 +8,9 @@
             <apiSource>API_CATALOG</apiSource>
             <operation>LosLoanList</operation>
         </apiDefinition>
-        <descriptionOverride>Lists LOS loans with loan ID, borrower, status, risk rating and amount, optionally filtered by status or borrower. Use this to answer a portfolio question, then take each loan ID to the loan package.</descriptionOverride>
+        <descriptionOverride>Lists loans with loan ID, borrower, status, risk rating and amount, optionally filtered by status or borrower. Use this to answer a portfolio question, then take each loan ID to the loan package.</descriptionOverride>
         <toolName>listLoans</toolName>
-        <toolTitle>List LOS Loans</toolTitle>
+        <toolTitle>List Loans</toolTitle>
     </tools>
     <tools>
         <apiDefinition>
@@ -18,9 +18,9 @@
             <apiSource>API_CATALOG</apiSource>
             <operation>LosLoanPackage</operation>
         </apiDefinition>
-        <descriptionOverride>Finds a LOS loan from the reference a person used, its governed Box folder, and a link to every document in the loan file. Call before asking about, extracting from, or previewing a document: the file ID is the last path segment of each link.</descriptionOverride>
+        <descriptionOverride>Finds a loan from the reference a person used, its governed Box folder, and a link to every document in the loan file. Call before asking about, extracting from, or previewing a document: the file ID is the last path segment of each link.</descriptionOverride>
         <toolName>getLoanPackage</toolName>
-        <toolTitle>Get LOS Loan Package</toolTitle>
+        <toolTitle>Get Loan Package</toolTitle>
     </tools>
     <tools>
         <apiDefinition>
@@ -48,9 +48,9 @@
             <apiSource>API_CATALOG</apiSource>
             <operation>LosSendForSignature</operation>
         </apiDefinition>
-        <descriptionOverride>Prepares a Box Sign request for one document of a loan and returns a URL for a human to review and send. It sends nothing. Always call it rather than judging eligibility yourself; the refusal names the blocking status and is the answer.</descriptionOverride>
+        <descriptionOverride>Creates a Box Sign request with embedded signing enabled. The embed URL is stored on the loan record for the borrower to sign in-app. Signature fields are pre-placed using Box Sign tags. Always call it rather than judging eligibility yourself; the refusal names the blocking status.</descriptionOverride>
         <toolName>prepareSignatureRequest</toolName>
-        <toolTitle>Prepare a Box Sign Request</toolTitle>
+        <toolTitle>Create Box Sign Request for Embedded Signing</toolTitle>
     </tools>
     <tools>
         <apiDefinition>
