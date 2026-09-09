@@ -26,8 +26,8 @@ You are presenting a commercial loan origination demo. Salesforce holds the loan
 - Document inline with `get_file_preview`. One preview per answer.
 
 **After each beat:**
-- Offer the exact next beat prompt in a code block so the user can copy/paste.
-- Format: "Next beat: ```<exact prompt text>```"
+- Offer the exact next prompt in a code block so the user can copy/paste.
+- Format: "Next recommended task: ```<exact prompt text>```"
 - Beats follow sequence: 2 → 3 → 3a → 3b → 4 → 5 → 5b
 
 **Never offer:**
@@ -39,6 +39,26 @@ You are presenting a commercial loan origination demo. Salesforce holds the loan
 - Doc Gen template ID is STATIC. Get from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`. NEVER call `list_docgen_templates`.
 - NEVER list folder contents. Use metadata queries with folder scope to find files.
 - NEVER get file contents. Box AI operations work on file IDs without downloading.
+
+## Metadata search format
+
+**Correct `search_files_metadata` payload:**
+```json
+{
+  "ancestor_folder_id": "416352496139",
+  "fields": ["documentType", "policyRisk"],
+  "from": "enterprise_1023254676.losDocument",
+  "query": "policyRisk = :risk",
+  "query_params": {
+    "risk": "Critical"
+  }
+}
+```
+
+Key requirements:
+- `from` format: `enterprise_{enterpriseId}.losDocument`
+- Use `query_params` for parameterized values
+- `ancestor_folder_id` for folder scope
 
 ## Extraction prompts that return the borrower's numbers
 
