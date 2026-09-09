@@ -182,11 +182,11 @@ Demo loan: `LN-2026-0042` (Harborview Logistics, Approved status, CFO-marked ter
 | Beat | Tool behavior and expected evidence |
 |---|---|
 | 2 | `getLoanPackage('LN-2026-0042')` → get folder ID → `search_files_metadata` with template `losDocument`, folder scope, query `policyRisk = :risk`. One hit: borrower-marked term sheet, opened inline. "High or above" adds FY2025 financials and appraisal. |
-| 3 | `getLoanPackage` → Box AI extract: $4.8M, 6.85% bank / 6.50% requested, 120mo, 1.10x DSCR annual. Hub QA: LOS-LTV-001/002, LOS-DSCR-001/002 - outside exceptions. Preview markup inline. |
+| 3 | `getLoanPackage` → `ai_extract_structured_from_fields` on markup (loan amount, bank rate, borrower requested rate, term, DSCR as borrower proposes). Then `ai_qa_hub` on credit policy library (LTV/DSCR within policy or exception, cite IDs). Expected: $4.8M, 6.85% bank / 6.50% requested, 120mo, 1.10x DSCR annual. Hub: LOS-LTV-001/002, LOS-DSCR-001/002 - outside exceptions. Preview markup inline. |
 | 3a | `extractLoanTerms`: amount/rate/term match, LTV/DSCR mismatch, nothing written. |
 | 3b | `applyLoanTerms` refuses without "confirm". With confirm: updates amount/rate/term only. Never apply LTV or DSCR. |
-| 4 | `getLoanPackage` for two closed loans → Box AI multi-file: 70% LTV, 1.30x DSCR quarterly, Section 8 & Schedule 1, Pike/Shah signatures. Table format. Preview 2025 agreement at Schedule 1. |
-| 5 | `getLoanPackage` → `create_docgen_batch` (template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`) → metadata query to find generated letter → preview letter (draft pending Credit Committee). |
+| 4 | `getLoanPackage` for LN-2023-0311 and LN-2025-0148 (two closed loans) → `ai_qa_multi_file` comparing LTV/DSCR covenants across executed agreements and 2026 markup (what Harborview agreed before, where in agreements, who signed). Expected: 70% LTV, 1.30x DSCR quarterly, Section 8 & Schedule 1, Pike/Shah signatures. Table format. Preview 2025 agreement at Schedule 1. |
+| 5 | `getLoanPackage` → **ONLY tool is `create_docgen_batch`** (NOT `create_document_from_template`, NOT any other tool - `create_docgen_batch` is the ONLY Box Doc Gen MCP tool). Get template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`. Fill fields from beats 3 & 4. Then metadata query to find generated letter → preview letter (draft pending Credit Committee). |
 | 5b | `prepareSignatureRequest` succeeds (Approved status), returns prepare URL addressed to kadams@boxdemo.com. Nothing sent — person must place fields and send. |
 
 ## Beat prompts (offer after completing each beat)
@@ -198,7 +198,7 @@ Which loan documents for LN-2026-0042 are flagged critical policy risk?
 
 **Beat 3:**
 ```
-Open the LN-2026-0042 package. Using Box AI, extract from the marked-up term sheet the loan amount, the bank's rate, the rate the borrower requests, the term, and the DSCR (debt service coverage ratio) as the borrower proposes it. Then ask the Acme credit policy library whether the borrower's LTV (loan-to-value) and DSCR positions are within policy or an approved exception, citing policy IDs.
+Extract loan terms from the marked-up term sheet for LN-2026-0042 and check them against credit policy.
 ```
 
 **Beat 3a:**
@@ -213,12 +213,12 @@ apply the amount, rate and term to the record, confirm
 
 **Beat 4:**
 ```
-Using Box AI across the two executed Harborview loan agreements and the 2026 term sheet markup, compare the LTV (loan-to-value) and DSCR (debt service coverage ratio) covenants. What did Harborview actually agree before, where in each agreement, and who signed?
+Compare the covenant terms across Harborview's prior executed loans and the 2026 markup.
 ```
 
 **Beat 5:**
 ```
-Draft the commitment letter for this Harborview loan with Box Doc Gen, using the commitment-letter template, the approved terms, the policy exception and the precedent from the closed loans. Save it in the loan folder and show it to me.
+Generate the commitment letter for LN-2026-0042.
 ```
 
 **Beat 5b:**

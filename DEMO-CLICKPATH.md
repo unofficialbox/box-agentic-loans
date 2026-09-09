@@ -88,7 +88,7 @@ Expect `getLoanPackage('LN-2026-0042')` to get the folder ID, then Box metadata 
 Box reads; Salesforce compares and writes.
 
 ```text
-Open the LN-2026-0042 package. Using Box AI, extract from the marked-up term sheet the loan amount, the bank's rate, the rate the borrower requests, the term, and the DSCR (debt service coverage ratio) as the borrower proposes it. Then ask the Acme credit policy library whether the borrower's LTV (loan-to-value) and DSCR positions are within policy or an approved exception, citing policy IDs.
+Extract loan terms from the marked-up term sheet for LN-2026-0042 and check them against credit policy.
 ```
 
 Expect `getLoanPackage` to name the folder, then Box AI structured extraction on the markup: $4,800,000; 6.85% bank rate and 6.50% requested; 120 months; DSCR proposed at 1.10x tested annually. Then Box AI over the policy Hub: LOS-LTV-001 (75%) with exception LOS-LTV-002 (80%, interest reserve), LOS-DSCR-001 (1.25x) with exception LOS-DSCR-002 (1.15x, cash reserve); 85% and 1.10x are outside even the exceptions, Credit Risk owns the deviation. **The markup MUST preview inline** with `get_file_preview` showing the red interest and guaranty changes.
@@ -112,7 +112,7 @@ First request the same write without confirmation and verify the action refuses.
 Box does this beat across three files.
 
 ```text
-Using Box AI across the two executed Harborview loan agreements and the 2026 term sheet markup, compare the LTV (loan-to-value) and DSCR (debt service coverage ratio) covenants. What did Harborview actually agree before, where in each agreement, and who signed?
+Compare the covenant terms across Harborview's prior executed loans and the 2026 markup.
 ```
 
 Expect `getLoanPackage` for the two closed loans to hand over the executed agreements, then one Box AI multi-file answer: both closed loans at 70% LTV and 1.30x DSCR tested quarterly, Section 8 and Schedule 1 of each executed agreement, signed by Jordan Pike for Harborview and Priya Shah for Acme Bank; the 2026 markup asks 1.10x tested annually. One table, then the 2025 agreement previewed at Schedule 1.
@@ -124,7 +124,7 @@ Land it: Harborview's markup regresses two positions their own CFO agreed, in wr
 Box generates; Salesforce refuses.
 
 ```text
-Draft the commitment letter for this Harborview loan with Box Doc Gen, using the commitment-letter template, the approved terms, the policy exception and the precedent from the closed loans. Save it in the loan folder and show it to me.
+Generate the commitment letter for LN-2026-0042.
 ```
 
 Expect `getLoanPackage` for the record and folder, then `create_docgen_batch` with template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c` into the loan folder with the letter's fields filled from beats 3 and 4. Doc Gen is asynchronous: the batch is accepted and the PDF lands a few seconds later; the assistant uses metadata query to find the generated letter (query by folder + documentType or filename pattern) and opens it inline. Expect borrower and entity, amount, rate, term, the covenants at issue, the approved exceptions, Credit Risk as owner, the precedent, and on its face that it is a draft pending Credit Committee.

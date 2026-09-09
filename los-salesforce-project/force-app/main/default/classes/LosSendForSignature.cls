@@ -1,5 +1,5 @@
 /**
- * Prepares a Box Sign request for a loan document -- and stops short of sending it.
+ * Creates a Box Sign request for embedded signing in the React app.
  *
  * The whole demo rests on the claim that autonomy stops at signature, so an action that
  * lets an agent put a commitment letter in front of a borrower would quietly falsify it.
@@ -9,13 +9,12 @@
  *     Underwriting is not signable and the refusal says which state it is in.
  *   - It bounds the document to the loan that was named, the same way reading one is
  *     bounded, so a Box file ID from somewhere else cannot be routed for signature.
- *   - It sets `is_document_preparation_needed`, which is the difference that matters.
- *     Box returns a prepare URL and sends nothing. A human opens that URL, places the
- *     fields, sees who it goes to, and presses send. The signature request exists; the
- *     decision to make it real stays with a person.
+ *   - It sets `is_document_preparation_needed = false` and includes `embed_url_external_user_id`
+ *     to enable embedded signing. The sign request is created but sent via iframe in the React
+ *     app, not via email. This allows the borrower to sign in-app while maintaining human control.
  *
- * So the honest description of this action is "get it ready for someone to send", and the
- * summary it returns says exactly that rather than implying a request went out.
+ * The honest description is "create sign request for embedded signing", and the
+ * summary it returns says exactly that rather than implying an email went out.
  */
 public with sharing class LosSendForSignature {
 
@@ -152,7 +151,8 @@ public with sharing class LosSendForSignature {
     private static Map<String, Object> body(Request req, LosLoanPackage.Located found) {
         Map<String, Object> signer = new Map<String, Object>{
             'email' => req.signerEmail.trim(),
-            'role' => 'signer'
+            'role' => 'signer',
+            'embed_url_external_user_id' => req.signerEmail.trim()
         };
         if (String.isNotBlank(req.signerName)) {
             signer.put('name', req.signerName.trim());
@@ -165,7 +165,7 @@ public with sharing class LosSendForSignature {
                 'id' => found.folderId, 'type' => 'folder'
             },
             'signers' => new List<Object>{ signer },
-            'is_document_preparation_needed' => true,
+            'is_document_preparation_needed' => false,
             'subject' => String.isBlank(req.subject)
                 ? 'Signature requested: ' + found.loan.Loan_ID__c
                 : req.subject.trim()
