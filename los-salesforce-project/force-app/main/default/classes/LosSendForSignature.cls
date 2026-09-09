@@ -61,8 +61,8 @@ public with sharing class LosSendForSignature {
     }
 
     @InvocableMethod(
-        label='Prepare a Box Sign request for a LOS loan document'
-        description='Prepares -- but does not send -- a Box Sign request for one loan document. Returns a URL a named human opens to review and send it.'
+        label='Create Box Sign request for embedded signing'
+        description='Creates a Box Sign request with embedded signing enabled. The embed URL is stored on the loan record for the borrower to sign in-app. Signature fields are pre-placed using Box Sign tags in the template.'
     )
     public static List<Result> prepare(List<Request> requests) {
         List<Result> results = new List<Result>();
