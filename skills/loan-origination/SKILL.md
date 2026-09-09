@@ -188,7 +188,7 @@ Demo loan: `LN-2026-0042` (Harborview Logistics, Approved status, CFO-marked ter
 | 3b | `applyLoanTerms` refuses without "confirm". With confirm: updates amount/rate/term only. Never apply LTV or DSCR. |
 | 4 | `getLoanPackage` for LN-2023-0311 and LN-2025-0148 (two closed loans) → `ai_qa_multi_file` comparing LTV/DSCR covenants across executed agreements and 2026 markup (what Harborview agreed before, where in agreements, who signed). Expected: 70% LTV, 1.30x DSCR quarterly, Section 8 & Schedule 1, Pike/Shah signatures. Table format. Preview 2025 agreement at Schedule 1. |
 | 5 | `getLoanPackage` → **ONLY tool is `create_docgen_batch`** (NOT `create_document_from_template`, NOT any other tool - `create_docgen_batch` is the ONLY Box Doc Gen MCP tool). Get template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`. Fill fields from beats 3 & 4. Then metadata query to find generated letter → preview letter (draft pending Credit Committee). |
-| 5b | `prepareSignatureRequest` succeeds (Approved status), returns prepare URL addressed to kadams@boxdemo.com. Nothing sent — person must place fields and send. |
+| 5b | `prepareSignatureRequest` succeeds (Approved status), embed URL stored on loan record. Borrower can sign immediately in portal (Beat 6) via embedded iframe - no field placement needed. |
 
 ## Beat prompts (offer after completing each beat)
 

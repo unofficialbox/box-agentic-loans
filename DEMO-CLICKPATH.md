@@ -197,7 +197,12 @@ If the Box connector refuses Doc Gen: the Box Admin Console must have the Doc Ge
 Send the Harborview commitment letter for signature.
 ```
 
-Expect `prepareSignatureRequest` to be called and to succeed, returning a Box Sign prepare URL addressed to kadams@boxdemo.com. The loan's Approved status passes the state check (`SIGNABLE = Approved, Commitment`). Nothing has been sent — a person needs to open the prepare URL, place the signature fields, and send it themselves. That gate is intentional: the action prepares only, never sends.
+Expect `prepareSignatureRequest` to be called and succeed. The loan's Approved status passes the state check (`SIGNABLE = Approved, Commitment`). The sign request is created with:
+- `is_document_preparation_needed = false` (tags pre-placed in template)
+- `embed_url_external_user_id` = signer email (for embedded signing)
+- Embed URL stored on `LOS_Loan__c.Sign_Embed_URL__c`
+
+**What changed from old flow:** No prepare URL, no field placement. The borrower signs immediately in beat 6 via embedded iframe in their portal. Signature and date fields are pre-placed using Box Sign tags in the Doc Gen template.
 
 If the assistant declines without calling the action, the beat has not happened. Say "call it anyway and show me what it returns".
 
@@ -211,7 +216,15 @@ Sign in as Dana Whitfield with the password from P6. Use the login path: `/loans
 
 Expect the header to name her, Dana Whitfield · Harborview Logistics, above the three seeded Harborview loans plus the beat 1 application, and no Pinecrest. Same code, different identity, different rows: a Salesforce sharing set on the borrower account, with upload-only folder access and separately authorized per-file preview tokens.
 
-Open the 2026 loan. Compare the current inventory with the officer package: the server omits Internal and unclassified documents and grants preview access one authorized file at a time, and her LTV, DSCR and risk rating are not in the projection at all.
+Open the 2026 loan. **Expect to see the embedded Box Sign iframe** at the top of the workspace with the commitment letter ready to sign. The signature and date fields are interactive (converted from Box Sign tags). 
+
+**Optional: Complete the signature flow in the demo**
+- Click signature field → draw or type signature
+- Date auto-fills when signed
+- Click "Finish" → document signed
+- Expect success message, iframe disappears, workspace refreshes
+
+Compare the document inventory with the officer package: the server omits Internal and unclassified documents and grants preview access one authorized file at a time, and her LTV, DSCR and risk rating are not in the projection at all.
 
 There is no Copilot on this page. A Service Agent runs as its own user and takes the loan name from the conversation, so it could be asked about another borrower's loan; it was left off rather than left for someone to find.
 
