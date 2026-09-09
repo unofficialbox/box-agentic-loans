@@ -161,3 +161,4 @@ dist
 # source of truth; these are rebuilt on every publish.
 los-salesforce-project/force-app/main/default/bots/
 los-salesforce-project/force-app/main/default/genAiPlannerBundles/
+.venv/
