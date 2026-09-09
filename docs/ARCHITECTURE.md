@@ -15,7 +15,7 @@ Diagrams: [LOS architecture](diagrams/los-architecture.svg) ([source](diagrams/l
 │  │ (SOQL)   │  │(confirmed│                                                        │
 │  └──────────┘  └──────────┘                                                        │
 │                                                                                      │
-│  Box via CCG:                                                                       │
+│  Box for Salesforce:                                                                │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌───────────────┐                     │
 │  │ Loan     │  │ Extract  │  │ Classify │  │ Prepare       │                     │
 │  │ package  │  │ terms    │  │ document │  │ signature     │                     │
