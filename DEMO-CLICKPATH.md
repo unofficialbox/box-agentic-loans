@@ -75,17 +75,13 @@ Beats 2 to 5 pick up LN-2026-0042, the Harborview loan now in Approved status, w
 
 ### 2. The portfolio already knows what's risky (Claude Desktop, to 4:05)
 
-Box does this beat. The LOS tools are not called.
-
 ```text
-Which loan documents across the portfolio are flagged critical policy risk? Search the Box metadata under the LOS-2026-Harborview workspace.
+Which loan documents for LN-2026-0042 are flagged critical policy risk?
 ```
 
-Expect the assistant to find the workspace folder by name, run a Box metadata search for `policyRisk = Critical` bounded to that folder, name `harborview-term-sheet-2026-borrower-markup.pdf` as the one hit, and **MUST call `get_file_preview` to show the document inline**. The document should appear on screen, not just a filename or link. Ask for High or above and the FY2025 financial statements and the appraisal join it.
+Expect `getLoanPackage('LN-2026-0042')` to get the folder ID, then Box metadata search for `policyRisk = Critical` with folder scope. One hit: `harborview-term-sheet-2026-borrower-markup.pdf`. **MUST call `get_file_preview` to show the document inline**. The document should appear on screen, not just a filename or link. Ask for High or above and the FY2025 financial statements and the appraisal join it.
 
 **If the assistant only cites "Source: filename.pdf" without showing the document:** Say "show me the document" — P2 custom instructions require preview after citing. The beat is not complete until the document appears.
-
-If it returns another borrower's file: Box metadata search is enterprise-wide, and only the ancestor folder bounds it. The workspace name is what scopes it here.
 
 ### 3. Extract the terms, then read them against policy (to 6:30)
 

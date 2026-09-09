@@ -50,7 +50,7 @@ Demo loan: `LN-2026-0042` (Harborview Logistics, Approved status, CFO-marked ter
 
 | Beat | Tool behavior and expected evidence |
 |---|---|
-| 2 | `search_files_metadata` with template `losDocument`, query `policyRisk = :risk`, bounded to workspace folder. One hit: borrower-marked term sheet, opened inline. "High or above" adds FY2025 financials and appraisal. |
+| 2 | `getLoanPackage('LN-2026-0042')` → get folder ID → `search_files_metadata` with template `losDocument`, folder scope, query `policyRisk = :risk`. One hit: borrower-marked term sheet, opened inline. "High or above" adds FY2025 financials and appraisal. |
 | 3 | `getLoanPackage` → Box AI extract: $4.8M, 6.85% bank / 6.50% requested, 120mo, 1.10x DSCR annual. Hub QA: LOS-LTV-001/002, LOS-DSCR-001/002 - outside exceptions. Preview markup inline. |
 | 3a | `extractLoanTerms`: amount/rate/term match, LTV/DSCR mismatch, nothing written. |
 | 3b | `applyLoanTerms` refuses without "confirm". With confirm: updates amount/rate/term only. Never apply LTV or DSCR. |
@@ -62,7 +62,7 @@ Demo loan: `LN-2026-0042` (Harborview Logistics, Approved status, CFO-marked ter
 
 **Beat 2:**
 ```
-Which loan documents across the portfolio are flagged critical policy risk? Search the Box metadata under the LOS-2026-Harborview workspace.
+Which loan documents for LN-2026-0042 are flagged critical policy risk?
 ```
 
 **Beat 3:**
