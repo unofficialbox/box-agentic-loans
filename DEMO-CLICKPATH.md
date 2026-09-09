@@ -6,6 +6,11 @@ Headless, not branded: Box holds the file, Salesforce holds the record, and the 
 
 Replace `<your-site>`, `<alias>` and `<borrower-user-email>` with the environment you present from. Nothing else is environment-bound.
 
+## Key Terms
+
+- **LTV (Loan-to-Value)**: Loan amount as a percentage of collateral value. 85% LTV = borrowing $850K against $1M property.
+- **DSCR (Debt Service Coverage Ratio)**: Cash flow available to cover debt payments. 1.25x DSCR = $1.25 of income for every $1 of debt payment.
+
 ## Preflight
 
 Seven checks before anyone is watching. P5 to P7 are one-time setup; a rebuilt org needs them again.
@@ -85,7 +90,7 @@ If it returns another borrower's file: Box metadata search is enterprise-wide, a
 Box reads; Salesforce compares and writes.
 
 ```text
-Open the LN-2026-0042 package. Using Box AI, extract from the marked-up term sheet the loan amount, the bank's rate, the rate the borrower requests, the term, and the DSCR as the borrower proposes it. Then ask the Acme credit policy library whether the borrower's LTV and DSCR positions are within policy or an approved exception, citing policy IDs.
+Open the LN-2026-0042 package. Using Box AI, extract from the marked-up term sheet the loan amount, the bank's rate, the rate the borrower requests, the term, and the DSCR (debt service coverage ratio) as the borrower proposes it. Then ask the Acme credit policy library whether the borrower's LTV (loan-to-value) and DSCR positions are within policy or an approved exception, citing policy IDs.
 ```
 
 Expect `getLoanPackage` to name the folder, then Box AI structured extraction on the markup: $4,800,000; 6.85% bank rate and 6.50% requested; 120 months; DSCR proposed at 1.10x tested annually. Then Box AI over the policy Hub: LOS-LTV-001 (75%) with exception LOS-LTV-002 (80%, interest reserve), LOS-DSCR-001 (1.25x) with exception LOS-DSCR-002 (1.15x, cash reserve); 85% and 1.10x are outside even the exceptions, Credit Risk owns the deviation. The markup previews inline with the red interest and guaranty changes.
@@ -109,7 +114,7 @@ First request the same write without confirmation and verify the action refuses.
 Box does this beat across three files.
 
 ```text
-Using Box AI across the two executed Harborview loan agreements and the 2026 term sheet markup, compare the LTV and DSCR covenants. What did Harborview actually agree before, where in each agreement, and who signed?
+Using Box AI across the two executed Harborview loan agreements and the 2026 term sheet markup, compare the LTV (loan-to-value) and DSCR (debt service coverage ratio) covenants. What did Harborview actually agree before, where in each agreement, and who signed?
 ```
 
 Expect `getLoanPackage` for the two closed loans to hand over the executed agreements, then one Box AI multi-file answer: both closed loans at 70% LTV and 1.30x DSCR tested quarterly, Section 8 and Schedule 1 of each executed agreement, signed by Jordan Pike for Harborview and Priya Shah for Acme Bank; the 2026 markup asks 1.10x tested annually. One table, then the 2025 agreement previewed at Schedule 1.
@@ -159,7 +164,7 @@ Setup, Agentforce Agents: confirm Loan Copilot shows Active, open it, and click 
 | `What's in the loan package for LN-2026-0042?` | The record summary and the current document inventory, term-sheet markup included. No record or folder IDs. |
 | `What does the borrower's markup change about the rate and the guaranty?` | 6.50% requested against 6.85% fixed; limited guaranty capped at $1,000,000 each; cited to the markup PDF. |
 | `Extract the terms from the term sheet and validate them against the record.` | Seven fields. LTV 75 vs 85 and DSCR 1.25 vs 1.12 flagged as mismatches. States that nothing was written. |
-| `Does credit policy allow 85% LTV and 1.12x DSCR? Cite the policy IDs.` | LOS-LTV-001 and LOS-LTV-002, LOS-DSCR-001 and LOS-DSCR-002. Both requests outside the approved exceptions. |
+| `Does credit policy allow 85% LTV (loan-to-value) and 1.12x DSCR (debt service coverage ratio)? Cite the policy IDs.` | LOS-LTV-001 and LOS-LTV-002, LOS-DSCR-001 and LOS-DSCR-002. Both requests outside the approved exceptions. |
 | `What has Harborview submitted for LN-2026-0043 so far?` | The Equipment Finance application: Financial Statement and Tax Return classified, loan application still missing. |
 
 Expect five answers without a fallback. If one falls to the fallback or narrates tool names, note the message and send it to the maintainer: the fix is an edit to the `.agent` file and a republish. Never edit the agent in the builder; the next publish overwrites it.
