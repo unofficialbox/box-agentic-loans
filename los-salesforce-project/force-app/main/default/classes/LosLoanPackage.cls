@@ -263,25 +263,23 @@ public with sharing class LosLoanPackage {
             }
         }
 
-        // If root is empty but has folders, recurse into "02 - Borrower Documents" subfolder
+        // Always recurse into "02 - Borrower Documents" subfolder if present
         // This handles the common LOS workspace pattern where documents live in subfolders
-        if (docs.isEmpty()) {
-            for (box.Entry item : contents.entries) {
-                if (item.type == 'folder' && item.name == '02 - Borrower Documents') {
-                    try {
-                        box.Folder subfolder = new box.Toolkit().getFolderContents(item.id);
-                        if (subfolder != null && subfolder.entries != null) {
-                            for (box.Entry file : subfolder.entries) {
-                                if (file.type == 'file') {
-                                    docs.add(new Doc(file.name, file.id));
-                                }
+        for (box.Entry item : contents.entries) {
+            if (item.type == 'folder' && item.name == '02 - Borrower Documents') {
+                try {
+                    box.Folder subfolder = new box.Toolkit().getFolderContents(item.id);
+                    if (subfolder != null && subfolder.entries != null) {
+                        for (box.Entry file : subfolder.entries) {
+                            if (file.type == 'file') {
+                                docs.add(new Doc(file.name, file.id));
                             }
                         }
-                    } catch (Exception e) {
-                        System.debug(LoggingLevel.WARN, 'LOS Box: subfolder listing failed: ' + e.getMessage());
                     }
-                    break;
+                } catch (Exception e) {
+                    System.debug(LoggingLevel.WARN, 'LOS Box: subfolder listing failed: ' + e.getMessage());
                 }
+                break;
             }
         }
 
