@@ -114,6 +114,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>LOS_Loan__c.Sign_Embed_URL__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>box__FRUP__c.box__Folder_ID__c</field>
         <readable>true</readable>
     </fieldPermissions>

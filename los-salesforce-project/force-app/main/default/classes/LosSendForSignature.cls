@@ -54,6 +54,8 @@ public with sharing class LosSendForSignature {
         public Boolean prepared;
         @InvocableVariable(label='URL a human opens to review and send')
         public String prepareUrl;
+        @InvocableVariable(label='Embed URL for in-app signing')
+        public String embedUrl;
         @InvocableVariable(label='Box Sign request ID')
         public String requestId;
     }
@@ -131,11 +133,29 @@ public with sharing class LosSendForSignature {
                 result.requestId = String.valueOf(parsed.get('id'));
                 result.prepareUrl = parsed.get('prepare_url') == null
                     ? null : String.valueOf(parsed.get('prepare_url'));
+
+                // Extract embed URL from first signer
+                List<Object> signers = (List<Object>) parsed.get('signers');
+                if (signers != null && !signers.isEmpty()) {
+                    Map<String, Object> firstSigner = (Map<String, Object>) signers[0];
+                    result.embedUrl = firstSigner.get('embed_url') == null
+                        ? null : String.valueOf(firstSigner.get('embed_url'));
+
+                    // Store embed URL on the loan record for borrower portal access
+                    if (result.embedUrl != null) {
+                        try {
+                            found.loan.Sign_Embed_URL__c = result.embedUrl;
+                            update found.loan;
+                        } catch (Exception updateEx) {
+                            System.debug(LoggingLevel.WARN, 'Could not update embed URL: ' + updateEx.getMessage());
+                        }
+                    }
+                }
+
                 result.prepared = true;
                 result.summary = 'A Box Sign request is prepared for '
                     + found.loan.Loan_ID__c + ' and addressed to '
-                    + req.signerEmail.trim() + '. Nothing has been sent. Open the prepare URL'
-                    + ' to place the signature fields and send it.';
+                    + req.signerEmail.trim() + '. The document is ready for embedded signing.';
                 return result;
             }
             result.summary = 'Box Sign refused the request (' + res.getStatusCode()

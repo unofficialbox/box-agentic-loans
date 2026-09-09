@@ -35,6 +35,8 @@ export interface LosLoanSummary {
   maturityDate?: string;
   /** The Box workspace folder associated with this loan record. */
   boxFolderId?: string;
+  /** Box Sign embed URL for in-app signing. Present when a signature is pending. */
+  signEmbedUrl?: string;
 }
 
 /**

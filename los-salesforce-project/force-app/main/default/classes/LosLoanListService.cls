@@ -48,6 +48,8 @@ global with sharing class LosLoanListService {
         global String maturityDate;
         /** The Box workspace folder this loan file is associated with. */
         global String boxFolderId;
+        /** Box Sign embed URL for in-app signing. Present when signature is pending. */
+        global String signEmbedUrl;
     }
 
     @HttpGet
@@ -104,7 +106,7 @@ global with sharing class LosLoanListService {
             for (LOS_Loan__c record : [
                 SELECT Id, Name, Loan_ID__c, Borrower__c, Borrower_Entity__c, Loan_Type__c,
                        Status__c, Loan_Amount__c, Term_Months__c,
-                       Maturity_Date__c, Box_Workspace_Folder_ID__c
+                       Maturity_Date__c, Box_Workspace_Folder_ID__c, Sign_Embed_URL__c
                 FROM LOS_Loan__c
                 ORDER BY LastModifiedDate DESC
                 LIMIT :MAX_RECORDS
@@ -125,6 +127,7 @@ global with sharing class LosLoanListService {
                     ? null
                     : String.valueOf(record.Maturity_Date__c);
                 summary.boxFolderId = record.Box_Workspace_Folder_ID__c;
+                summary.signEmbedUrl = record.Sign_Embed_URL__c;
                 summaries.add(summary);
             }
             return summaries;
