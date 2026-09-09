@@ -17,7 +17,7 @@ class RepositoryNavigationTests(unittest.TestCase):
         targets = {target.split("#", 1)[0] for target in MARKDOWN_LINK.findall(readme)}
         expected = {
             "DEMO-CLICKPATH.md",
-            "skills/los-demo/SKILL.md",
+            "skills/loan-origination/SKILL.md",
             "docs/SETUP.md",
             "docs/ARCHITECTURE.md",
             "docs/HANDOFF.md",

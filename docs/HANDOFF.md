@@ -60,7 +60,7 @@ The story is in `DEMO-CLICKPATH.md`: Alex Bennett at Acme Bank works the Harborv
 | `.../losreactapp/vite.live-box.ts` | `npm run preview:live` serves a real downscoped token locally; `dev:live` cannot mount Box UI Elements |
 | `.../losreactapp/.npmrc`, `los-salesforce-project/.forceignore` | `legacy-peer-deps=true`; keep `node_modules` out of the deploy. Do not delete either |
 | `los-salesforce-project/scripts/` | `configure-los-box-*.sh`, `configure-los-oauth.sh`, `seed-los-*.sh` |
-| `skills/los-demo/SKILL.md` | Presenter skill for any AI harness |
+| `skills/loan-origination/SKILL.md` | Presenter skill for any AI harness |
 | `tests/` | BCL, required documents, operator, validator, setup, navigation and persona checks |
 
 ## 6. Constraints that will bite you

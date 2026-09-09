@@ -2,7 +2,7 @@
 
 A borrower starts an application in the Acme Borrower Portal; a term sheet marked up on the borrower's numbers is read against the credit policy library and the two loans Harborview already closed. Six beats, two windows, an 11-minute full walkthrough. The 6:30 shortened stage variant and reset procedure are in [docs/PRESENTING.md](docs/PRESENTING.md). Every prompt below is copy-paste.
 
-Headless, not branded: Box holds the file, Salesforce holds the record, and the harness is whatever the room uses. Beats 2 to 5 are written for Claude Desktop with the LOS and Box connectors; the same prompts work from ChatGPT, Slack, or the Loan Copilot inside Agentforce. `skills/los-demo/SKILL.md` carries the tool contracts and answer rules; this file is the canonical source of presenter prompts.
+Headless, not branded: Box holds the file, Salesforce holds the record, and the harness is whatever the room uses. Beats 2 to 5 are written for Claude Desktop with the LOS and Box connectors; the same prompts work from ChatGPT, Slack, or the Loan Copilot inside Agentforce. `skills/loan-origination/SKILL.md` carries the tool contracts and answer rules; this file is the canonical source of presenter prompts.
 
 Replace `<your-site>`, `<alias>` and `<borrower-user-email>` with the environment you present from. Nothing else is environment-bound.
 
