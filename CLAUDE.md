@@ -13,21 +13,25 @@ Metadata searches are:
 
 ### Available Metadata Templates
 
-1. **`losDocument`** - Document classification
+**CRITICAL: Template key is ALWAYS `losDocument`. NEVER call `list_metadata_templates` - it returns every enterprise template and swamps the session.**
+
+1. **`losDocument`** - Document classification (THE ONLY TEMPLATE YOU NEED)
    - `documentType`: "Loan Application", "Term Sheet", "Financial Statement", "Tax Return", "Appraisal", "Insurance", etc.
    - `policyRisk`: "Critical", "High", "Medium", "Low"
    - `reviewStatus`: "Pending", "Approved", "Rejected"
    - `borrowerEntity`: Borrower name
    - `loanReference`: Loan ID (e.g., "LN-2026-0042")
 
-2. **`losLoan`** - Loan folder metadata
+2. **`losLoan`** - Loan folder metadata (rarely used)
    - Applied to workspace folders
    - Contains loan-level attributes
 
-3. **`losPolicy`** - Credit policy documents
+3. **`losPolicy`** - Credit policy documents (rarely used)
    - Used in Box Hubs for policy library
 
 ### Metadata Query Examples
+
+**Template key is STATIC: Always use `template="losDocument"` - never list templates.**
 
 **Find critical risk documents:**
 ```
@@ -47,6 +51,11 @@ Box connector → query_metadata(template="losDocument", query="reviewStatus='Pe
 **Find all documents for a borrower:**
 ```
 Box connector → query_metadata(template="losDocument", query="borrowerEntity='Harborview Logistics'")
+```
+
+**NEVER DO THIS:**
+```
+❌ Box connector → list_metadata_templates  // Returns thousands of templates, kills session
 ```
 
 ### When NOT to Use Metadata
@@ -121,7 +130,7 @@ After answering with information from a Box document, immediately call `get_file
 
 **✅ CORRECT Tool Sequence (Metadata):**
 1. Box connector → `query_metadata` 
-   - Template: `losDocument`
+   - Template: `losDocument` (STATIC - hardcode this, never list templates)
    - Query: `policyRisk = "Critical"`
    - Scope: enterprise (searches all folders)
 2. Box connector → `get_file_preview` for found file(s)
@@ -129,8 +138,9 @@ After answering with information from a Box document, immediately call `get_file
 **Why:** Metadata search is precise, fast, and returns only classified documents.
 
 **❌ DON'T:**
-- Box connector → `search_files` with keyword "critical" (fuzzy, returns unrelated files)
-- LOS connector → `getLoanPackage` + filter in prompt (inefficient, searches one loan at a time)
+- ❌ `list_metadata_templates` - returns thousands of enterprise templates, kills session
+- ❌ `search_files` with keyword "critical" (fuzzy, returns unrelated files)
+- ❌ `getLoanPackage` + filter in prompt (inefficient, searches one loan at a time)
 
 **More Metadata Search Examples:**
 
