@@ -54,8 +54,8 @@ public with sharing class LosLoanPackage {
     }
 
     @InvocableMethod(
-        label='Get LOS loan package'
-        description='Finds a LOS loan, its governed Box folder, and every document in that folder with its Box file ID.'
+        label='Get loan package'
+        description='Finds a loan, its governed Box folder, and every document in that folder with its Box file ID.'
     )
     public static List<Result> get(List<Request> requests) {
         List<Result> results = new List<Result>();

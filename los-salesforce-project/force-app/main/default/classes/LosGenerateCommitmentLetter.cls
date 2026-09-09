@@ -67,7 +67,7 @@ public with sharing class LosGenerateCommitmentLetter {
     }
 
     @InvocableMethod(
-        label='Generate a LOS commitment letter'
+        label='Generate a commitment letter'
         description='Generates the draft commitment letter for a loan into its governed Box folder, from the credit policy position and prior executed loan agreements. The draft is pending Credit Committee approval and authorises nothing.'
     )
     public static List<Result> generate(List<Request> requests) {

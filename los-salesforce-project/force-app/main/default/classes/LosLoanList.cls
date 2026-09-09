@@ -42,8 +42,8 @@ public with sharing class LosLoanList {
     }
 
     @InvocableMethod(
-        label='List LOS loans'
-        description='Lists LOS loans with their loan ID, borrower, status, risk rating and amount, so a portfolio question can be answered. Use the loan ID from here to get a loan package.'
+        label='List loans'
+        description='Lists loans with their loan ID, borrower, status, risk rating and amount, so a portfolio question can be answered. Use the loan ID from here to get a loan package.'
     )
     public static List<Result> listLoans(List<Request> requests) {
         List<Result> results = new List<Result>();
