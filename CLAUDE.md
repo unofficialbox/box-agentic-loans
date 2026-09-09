@@ -80,9 +80,11 @@ Which loan documents are flagged critical policy risk?
 - Term extraction → Box connector's `box_ai_extract`
 - Hub/policy search → Box connector's Hub QA tools
 
+**NEVER get file contents.** Box AI operations work on file IDs - they do not download files. Getting file contents is heavy and unnecessary.
+
 **For Box Doc Gen:**
 - Commitment letter generation → Box connector's `create_document_from_template`
-- Template ID: Get from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`
+- Template ID: Get from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c` (STATIC - never list templates)
 - Destination folder: Get from `getLoanPackage` output
 
 **For File Operations:**
@@ -290,6 +292,8 @@ query_metadata(template="losDocument", query="borrowerEntity='Harborview Logisti
 
 **For Doc Gen:**
 - ✅ Use Box MCP `create_document_from_template` (direct API, MCP-first)
+- ✅ Get template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`
+- ❌ NEVER call `list_docgen_templates` - template ID is static
 - Must provide complete analysis data to fill all placeholders
 
 ## Summary

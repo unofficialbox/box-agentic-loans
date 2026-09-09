@@ -129,7 +129,7 @@ Box generates; Salesforce refuses.
 Draft the commitment letter for this Harborview loan with Box Doc Gen, using the commitment-letter template, the approved terms, the policy exception and the precedent from the closed loans. Save it in the loan folder and show it to me.
 ```
 
-Expect `getLoanPackage` for the record and folder, Box `list_docgen_templates` to find `los-commitment-letter-template.docx`, then `create_docgen_batch` into the loan folder with the letter's fields filled from beats 3 and 4. Doc Gen is asynchronous: the batch is accepted and the PDF lands a few seconds later; the assistant lists the folder through Box and opens the letter inline. Expect borrower and entity, amount, rate, term, the covenants at issue, the approved exceptions, Credit Risk as owner, the precedent, and on its face that it is a draft pending Credit Committee.
+Expect `getLoanPackage` for the record and folder, then `create_docgen_batch` with template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c` into the loan folder with the letter's fields filled from beats 3 and 4. Doc Gen is asynchronous: the batch is accepted and the PDF lands a few seconds later; the assistant lists the folder through Box and opens the letter inline. Expect borrower and entity, amount, rate, term, the covenants at issue, the approved exceptions, Credit Risk as owner, the precedent, and on its face that it is a draft pending Credit Committee.
 
 If the Box connector refuses Doc Gen: the Box Admin Console must have the Doc Gen MCP tools enabled and the connector reconnected afterwards (docs/SETUP.md §5a).
 
