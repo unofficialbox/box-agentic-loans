@@ -51,14 +51,17 @@ A borrower applies through the Acme Borrower Portal. Documents uploaded to Box a
 
 Run the demo beats with Claude Desktop (or any AI harness):
 - **Prompts & walkthrough:** [DEMO-CLICKPATH.md](DEMO-CLICKPATH.md)
+- **Presenter skill:** [skills/loan-origination/SKILL.md](skills/loan-origination/SKILL.md)
 - **Presenter guide:** [docs/PRESENTING.md](docs/PRESENTING.md)
 
 ## Documentation
 
 - **[docs/SETUP.md](docs/SETUP.md)** - Complete deployment guide
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System design and governance
+- **[docs/HANDOFF.md](docs/HANDOFF.md)** - Developer handoff guide
 - **[CLAUDE.md](CLAUDE.md)** - AI connector strategy (metadata-first, Box MCP vs LOS tools)
 - **[docs/SECURITY.md](docs/SECURITY.md)** - Borrower authorization and token scoping
+- **[docs/paved-path.md](docs/paved-path.md)** - MCP deployment guidance
 
 ## Repository Structure
 
