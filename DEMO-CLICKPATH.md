@@ -23,6 +23,11 @@ Before starting:
 
 **Beat 1 (Browser):** `https://<your-site>.my.site.com/loansvforcesite/login?startURL=%2Floans%2F`
 
+**Beat 1.5 (Claude Desktop):**
+```
+Approve all pending documents for this loan
+```
+
 **Beat 2 (Claude Desktop):**
 ```
 What's the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?
@@ -141,6 +146,20 @@ Then the lender's side: open the new record in Salesforce. Expect Status Applica
 If asked: creating the record and provisioning its folder are two requests, because Apex cannot make a callout after DML. If the folder step fails the workspace says so; retry from the workspace, not the form. A borrower who emails the package instead is captured onto the Opportunity's Box folder, and `losLoan` metadata in `01 - Application Intake` starts the alternate Automate path. Say it in one sentence; do not show it.
 
 **Beats 2 to 5 work with the loan just created in Beat 1.** Query for the latest Harborview loan to get its ID, then use that for subsequent operations.
+
+### 1.5. Approve the submitted documents (Claude Desktop, to 3:30)
+
+After the borrower uploads their documents, the bank reviews and approves them. Once all 6 required documents are approved, the term sheet is automatically released for review.
+
+```text
+Approve all pending documents for this loan
+```
+
+Expect `approveDocuments` to update all documents with `reviewStatus="Pending"` to `reviewStatus="Approved"`. The tool counts approved required documents (Financial Statement, Tax Return, Bank Statement, Appraisal, Insurance, Environmental Report). When the count reaches 6, it automatically finds the term sheet with `reviewStatus="Held"` and updates it to `reviewStatus="Pending"`, making it visible in Beat 2's critical risk search.
+
+**Response should confirm:** "Approved 6 documents. Term sheet released for review."
+
+**Why this step exists:** The term sheet contains borrower markup requesting aggressive terms. It's held back until supporting documents are reviewed so Beat 2's critical risk search only finds it after document collection is complete.
 
 ### 2. The portfolio already knows what's risky (Claude Desktop, to 4:05)
 
