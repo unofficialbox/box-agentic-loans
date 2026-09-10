@@ -211,7 +211,7 @@ Demo uses the latest Harborview loan (created in Beat 1). Query with `listLoans(
 
 | Beat | Tool behavior and expected evidence |
 |---|---|
-| 1.5 | `listLoans(borrower='Harborview Logistics')` → get latest loan ID → `approveDocuments`. Updates `approvalStatus="Pending"` to "Approved". When 6 required docs approved → changes term sheet `versionStatus="Internal"` to "Draft". Returns: "Approved 6 documents. Term sheet released for review." DO NOT call getLoanPackage or search - just listLoans + approveDocuments. |
+| 1.5 | `listLoans(borrower='Harborview Logistics')` → get latest loan ID → `approveDocuments`. Updates `approvalStatus="Pending"` to "Approved". DO NOT call getLoanPackage or search - just listLoans + approveDocuments. |
 | 2 | `getLoanPackage` (using loan context from 1.5) → get folder ID → `search_files_metadata` with template `losDocument`, folder scope, query `policyRisk = :risk`. One hit: borrower-marked term sheet (now visible after 1.5), opened inline. "High or above" adds FY2025 financials and appraisal. |
 | 3 | `getLoanPackage` → `ai_extract_structured_from_fields` on markup (loan amount, bank rate, borrower requested rate, term, DSCR as borrower proposes). Then `ai_qa_hub` on credit policy library (LTV/DSCR within policy or exception, cite IDs). Expected: $4.8M, 6.85% bank / 6.50% requested, 120mo, 1.10x DSCR annual. Hub: LOS-LTV-001/002, LOS-DSCR-001/002 - outside exceptions. Preview markup inline. |
 | 3a | `extractLoanTerms`: amount/rate/term match, LTV/DSCR mismatch, nothing written. |

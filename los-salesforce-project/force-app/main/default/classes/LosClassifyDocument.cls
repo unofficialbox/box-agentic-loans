@@ -201,12 +201,8 @@ global with sharing class LosClassifyDocument {
         }
         String policyRisk = canonical(valueFor(values, 'policyRisk'), POLICY_RISKS);
 
-        // Term sheets start as Internal (hidden) until required docs are approved
-        String versionStatus = 'Term Sheet'.equals(documentType) ? 'Internal' : 'Draft';
-
         Map<String, Object> instance = new Map<String, Object>{
             'documentType' => documentType,
-            'versionStatus' => versionStatus,
             'aiSummaryStatus' => 'Complete',
             'approvalStatus' => 'Pending',
             'signatureStatus' => 'Not Required'

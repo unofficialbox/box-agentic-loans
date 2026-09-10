@@ -19,12 +19,12 @@ export interface DocumentFacts {
 
 export function documentFacts(file: BoxFolderItem): DocumentFacts {
   const los = file.metadata?.enterprise?.losDocument;
-  const status = los?.versionStatus;
+  const status = los?.approvalStatus;
   return {
     changedAt: file.content_modified_at || file.modified_at,
     changedBy: file.modified_by?.name,
     status,
-    approved: status === "Approved" || status === "Executed",
+    approved: status === "Approved",
   };
 }
 
@@ -64,15 +64,10 @@ export interface DocumentTotals {
 }
 
 export function documentTotals(files: BoxFolderItem[]): DocumentTotals {
-  // Exclude Internal documents (hidden until released) from review progress count
-  const visibleFiles = files.filter((f) => {
-    const versionStatus = f.metadata?.enterprise?.losDocument?.versionStatus;
-    return versionStatus !== 'Internal';
-  });
-  const facts = visibleFiles.map(documentFacts);
+  const facts = files.map(documentFacts);
   const dates = facts.map((f) => f.changedAt).filter((d): d is string => Boolean(d));
   return {
-    documents: visibleFiles.length,
+    documents: files.length,
     approved: facts.filter((f) => f.approved).length,
     open: facts.filter((f) => !f.approved).length,
     lastChangedAt: dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0],

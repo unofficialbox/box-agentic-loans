@@ -149,17 +149,17 @@ If asked: creating the record and provisioning its folder are two requests, beca
 
 ### 1.5. Approve the submitted documents (Claude Desktop, to 3:30)
 
-After the borrower uploads their documents, the bank reviews and approves them. Once all 6 required documents are approved, the term sheet is automatically released for review.
+After the borrower uploads their documents, the bank reviews and approves them.
 
 ```text
 Approve all pending documents for the latest Harborview Logistics loan
 ```
 
-Expect `listLoans(borrower='Harborview Logistics')` to find the most recent loan, then `approveDocuments` with that loan ID. Tool updates all documents with `approvalStatus="Pending"` to `approvalStatus="Approved"`. The tool counts approved required documents (Financial Statement, Tax Return, Bank Statement, Appraisal, Insurance, Environmental Report). When the count reaches 6, it automatically finds the term sheet with `versionStatus="Internal"` and updates it to `versionStatus="Draft"`, making it visible in Beat 2's critical risk search.
+Expect `listLoans(borrower='Harborview Logistics')` to find the most recent loan, then `approveDocuments` with that loan ID. Tool updates all documents with `approvalStatus="Pending"` to `approvalStatus="Approved"`.
 
-**Response should confirm:** "Approved 6 documents. Term sheet released for review."
+**Response should confirm:** "Approved 7 documents" (all uploaded documents including the term sheet).
 
-**Why this step exists:** The term sheet contains borrower markup requesting aggressive terms. It starts with `versionStatus="Internal"` (hidden from searches) until supporting documents are reviewed. When 6 required docs are approved, it's automatically changed to `versionStatus="Draft"` so Beat 2's critical risk search finds it.
+**Why this step exists:** Demonstrates governed approval workflow where the AI updates document metadata via Apex callout. All borrower-uploaded documents start with `approvalStatus="Pending"` and are bulk-approved in one call. The UI displays `approvalStatus` in the STATUS column, so status pills change from "Pending" to "Approved" after this beat.
 
 ### 2. The portfolio already knows what's risky (Claude Desktop, to 4:05)
 

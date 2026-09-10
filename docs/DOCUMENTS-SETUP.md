@@ -37,13 +37,10 @@
   "documentType": "Term Sheet",
   "policyRisk": "Critical",
   "approvalStatus": "Pending",
-  "versionStatus": "Internal",
   "borrowerEntity": "Harborview Logistics",
   "loanReference": "LN-2026-0042"
 }
 ```
-
-**Note:** `versionStatus="Internal"` hides the term sheet from Beat 2's critical risk search. Beat 1.5 (approve documents) changes it to `"Draft"` when 6 required docs are approved.
 
 **How to Apply Metadata:**
 1. Upload the file to Box folder 416352496139
@@ -64,9 +61,9 @@
 {
   "documentType": "Financial Statement",
   "policyRisk": "High",
+  "approvalStatus": "Pending",
   "borrowerEntity": "Harborview Logistics",
-  "loanReference": "LN-2026-0042",
-  "versionStatus": "Draft"
+  "loanReference": "LN-2026-0042"
 }
 ```
 
@@ -82,9 +79,9 @@
 {
   "documentType": "Appraisal",
   "policyRisk": "High",
+  "approvalStatus": "Pending",
   "borrowerEntity": "Harborview Logistics",
-  "loanReference": "LN-2026-0042",
-  "versionStatus": "Draft"
+  "loanReference": "LN-2026-0042"
 }
 ```
 
@@ -124,10 +121,9 @@
 {
   "documentType": "Loan Agreement",
   "policyRisk": "Low",
-  "reviewStatus": "Approved",
+  "approvalStatus": "Approved",
   "borrowerEntity": "Harborview Logistics",
-  "loanReference": "LN-2023-0311",
-  "versionStatus": "Executed"
+  "loanReference": "LN-2023-0311"
 }
 ```
 
@@ -166,10 +162,9 @@
 {
   "documentType": "Loan Agreement",
   "policyRisk": "Low",
-  "reviewStatus": "Approved",
+  "approvalStatus": "Approved",
   "borrowerEntity": "Harborview Logistics",
-  "loanReference": "LN-2025-0148",
-  "versionStatus": "Executed"
+  "loanReference": "LN-2025-0148"
 }
 ```
 
@@ -272,12 +267,11 @@ The `losDocument` template (enterprise_1023254676.losDocument) has these fields:
 |-------|------|----------------|----------|
 | documentType | enum | "Loan Application", "Term Sheet", "Financial Statement", "Tax Return", "Appraisal", "Insurance", "Loan Agreement" | Yes |
 | policyRisk | enum | "Critical", "High", "Medium", "Low" | Yes |
-| reviewStatus | enum | "Pending", "Approved", "Rejected" | No |
+| approvalStatus | enum | "Not Required", "Pending", "Approved", "Rejected" | Yes (use "Pending" for borrower-uploaded docs) |
 | borrowerEntity | string | Borrower legal name | Yes |
 | loanReference | string | Loan ID (e.g., "LN-2026-0042") | Yes |
-| versionStatus | enum | "Draft", "Approved", "Executed" | No |
 
-All fields are case-sensitive.
+All fields are case-sensitive. The UI displays `approvalStatus` in document status pills.
 
 ---
 

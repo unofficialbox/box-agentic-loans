@@ -1,30 +1,18 @@
 /**
- * Approves pending loan documents and auto-releases held term sheet when prerequisites met.
+ * Approves pending loan documents.
  *
- * The demo workflow is: borrower uploads 7 documents (6 required + 1 term sheet marked-up).
- * All documents start with approvalStatus="Pending". The term sheet additionally has
- * versionStatus="Internal" to hide it from the borrower and from Beat 2's critical risk search.
+ * Simple workflow: update all documents with approvalStatus="Pending" to
+ * approvalStatus="Approved". No hiding mechanism - all uploaded documents are
+ * visible from the start.
  *
- * When this action approves the 6 required documents, it automatically releases the term
- * sheet by updating it from versionStatus="Internal" to versionStatus="Draft", making it
- * visible in Beat 2's critical risk document search.
- *
- * Bounded like classify and extract: the loan must exist and the caller must be able to
- * read it. The Box credential stays in Apex.
+ * Bounded like classify and extract: the loan must exist and the caller must be
+ * able to read it. The Box credential stays in Apex.
  */
 global with sharing class LosApproveDocuments {
 
     private static final String METADATA_ENDPOINT = 'callout:LOS_Box/2.0/files/';
-    private static final String SEARCH_ENDPOINT = 'callout:LOS_Box/2.0/metadata_queries/execute_read';
     private static final String TEMPLATE_SCOPE = 'enterprise';
     private static final String TEMPLATE_KEY = 'losDocument';
-
-    /** Document types that are required (not the term sheet) */
-    @TestVisible
-    private static final Set<String> REQUIRED_DOC_TYPES = new Set<String>{
-        'Financial Statement', 'Tax Return', 'Bank Statement',
-        'Appraisal', 'Insurance', 'Environmental Report'
-    };
 
     global class Request {
         @InvocableVariable(
@@ -38,15 +26,13 @@ global with sharing class LosApproveDocuments {
     global class Result {
         @InvocableVariable(label='Number of documents approved')
         global Integer approvedCount;
-        @InvocableVariable(label='Whether term sheet was released')
-        global Boolean termSheetReleased;
         @InvocableVariable(label='What happened, in a sentence')
         global String summary;
     }
 
     @InvocableMethod(
         label='Approve pending loan documents'
-        description='Approves all pending documents for a loan. When 6 required documents are approved, automatically releases the held term sheet for review.'
+        description='Approves all pending documents for a loan by updating approvalStatus from Pending to Approved.'
     )
     global static List<Result> approve(List<Request> requests) {
         List<Result> results = new List<Result>();
@@ -71,17 +57,15 @@ global with sharing class LosApproveDocuments {
         outcome.error = error;
         outcome.result = new Result();
         outcome.result.approvedCount = 0;
-        outcome.result.termSheetReleased = false;
         outcome.result.summary = detail;
         return outcome;
     }
 
-    private static Outcome resolved(Integer approvedCount, Boolean termSheetReleased, String summary) {
+    private static Outcome resolved(Integer approvedCount, String summary) {
         Outcome outcome = new Outcome();
         outcome.status = 200;
         outcome.result = new Result();
         outcome.result.approvedCount = approvedCount;
-        outcome.result.termSheetReleased = termSheetReleased;
         outcome.result.summary = summary;
         return outcome;
     }
@@ -104,15 +88,14 @@ global with sharing class LosApproveDocuments {
             return refuse(500, 'box_not_configured', 'Box did not issue a token; this is a configuration problem, not something to retry.');
         }
 
-        // Use folder listing instead of metadata query to avoid MDQL complexity
+        // Get all documents in the loan folder
         Set<String> documentIds = LosLoanPackage.documentIdsFor(String.valueOf(found.loan.Id));
         if (documentIds == null || documentIds.isEmpty()) {
-            return resolved(0, false, 'No documents found to approve.');
+            return resolved(0, 'No documents found to approve.');
         }
 
         // Approve all documents with approvalStatus="Pending"
         Integer approvedCount = 0;
-        Integer requiredApprovedCount = 0;
 
         for (String fileId : documentIds) {
             FileMetadata meta = getFileMetadata(token, fileId);
@@ -124,41 +107,12 @@ global with sharing class LosApproveDocuments {
             if ('Pending'.equalsIgnoreCase(meta.approvalStatus)) {
                 if (updateApprovalStatus(token, fileId, 'Approved')) {
                     approvedCount++;
-                    if (REQUIRED_DOC_TYPES.contains(meta.documentType)) {
-                        requiredApprovedCount++;
-                    }
-                }
-            } else if ('Approved'.equalsIgnoreCase(meta.approvalStatus)) {
-                // Count already-approved required docs
-                if (REQUIRED_DOC_TYPES.contains(meta.documentType)) {
-                    requiredApprovedCount++;
-                }
-            }
-        }
-
-        // Check if we should release the term sheet
-        Boolean termSheetReleased = false;
-
-        if (requiredApprovedCount >= 6) {
-            // Find and release Internal term sheet
-            for (String fileId : documentIds) {
-                FileMetadata meta = getFileMetadata(token, fileId);
-                if (meta != null &&
-                    'Term Sheet'.equalsIgnoreCase(meta.documentType) &&
-                    'Internal'.equalsIgnoreCase(meta.versionStatus)) {
-                    if (updateVersionStatus(token, fileId, 'Draft')) {
-                        termSheetReleased = true;
-                    }
                 }
             }
         }
 
         String summary = 'Approved ' + approvedCount + ' document' + (approvedCount == 1 ? '' : 's') + '.';
-        if (termSheetReleased) {
-            summary += ' Term sheet released for review.';
-        }
-
-        return resolved(approvedCount, termSheetReleased, summary);
+        return resolved(approvedCount, summary);
     }
 
     private static Boolean canRead(Id loanId) {
@@ -170,7 +124,6 @@ global with sharing class LosApproveDocuments {
         String fileId;
         String documentType;
         String approvalStatus;
-        String versionStatus;
     }
 
     /**
@@ -194,7 +147,6 @@ global with sharing class LosApproveDocuments {
             meta.fileId = fileId;
             meta.documentType = (String) metadata.get('documentType');
             meta.approvalStatus = (String) metadata.get('approvalStatus');
-            meta.versionStatus = (String) metadata.get('versionStatus');
             return meta;
         } catch (Exception e) {
             System.debug(LoggingLevel.WARN, 'LOS approve: failed to parse metadata for ' + fileId + ': ' + e.getMessage());
@@ -206,20 +158,6 @@ global with sharing class LosApproveDocuments {
      * Update the approvalStatus field on a file's metadata.
      */
     private static Boolean updateApprovalStatus(String token, String fileId, String newStatus) {
-        return updateMetadataField(token, fileId, 'approvalStatus', newStatus);
-    }
-
-    /**
-     * Update the versionStatus field on a file's metadata.
-     */
-    private static Boolean updateVersionStatus(String token, String fileId, String newStatus) {
-        return updateMetadataField(token, fileId, 'versionStatus', newStatus);
-    }
-
-    /**
-     * Update a single metadata field using JSON Patch.
-     */
-    private static Boolean updateMetadataField(String token, String fileId, String fieldName, String newValue) {
         HttpRequest req = new HttpRequest();
         req.setEndpoint(METADATA_ENDPOINT + fileId + '/metadata/' + TEMPLATE_SCOPE + '/' + TEMPLATE_KEY);
         req.setMethod('PUT');
@@ -230,15 +168,15 @@ global with sharing class LosApproveDocuments {
         List<Object> operations = new List<Object>{
             new Map<String, Object>{
                 'op' => 'add',
-                'path' => '/' + fieldName,
-                'value' => newValue
+                'path' => '/approvalStatus',
+                'value' => newStatus
             }
         };
         req.setBody(JSON.serialize(operations));
 
         HttpResponse res = send(req);
         if (res == null || res.getStatusCode() != 200) {
-            System.debug(LoggingLevel.WARN, 'LOS approve: metadata update for ' + fileId + ' field ' + fieldName + ' returned ' +
+            System.debug(LoggingLevel.WARN, 'LOS approve: metadata update for ' + fileId + ' returned ' +
                 (res == null ? 'no response' : res.getStatusCode() + ' ' + res.getBody()));
             return false;
         }
