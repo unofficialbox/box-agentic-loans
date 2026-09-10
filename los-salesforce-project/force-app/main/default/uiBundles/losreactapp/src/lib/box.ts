@@ -32,7 +32,7 @@ export interface BoxFolderItem {
    * `metadata.enterprise.losDocument` -- the shorthand for the caller's own enterprise,
    * which saves shipping an enterprise ID to the browser.
    */
-  metadata?: { enterprise?: { losDocument?: { versionStatus?: string; documentType?: string } } };
+  metadata?: { enterprise?: { losDocument?: { versionStatus?: string; documentType?: string; approvalStatus?: string } } };
 }
 
 /**
