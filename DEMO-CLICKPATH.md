@@ -25,7 +25,7 @@ Before starting:
 
 **Beat 1.5 (Claude Desktop):**
 ```
-Approve all pending documents for this loan
+Approve all pending documents for the latest Harborview Logistics loan
 ```
 
 **Beat 2 (Claude Desktop):**
@@ -152,10 +152,10 @@ If asked: creating the record and provisioning its folder are two requests, beca
 After the borrower uploads their documents, the bank reviews and approves them. Once all 6 required documents are approved, the term sheet is automatically released for review.
 
 ```text
-Approve all pending documents for this loan
+Approve all pending documents for the latest Harborview Logistics loan
 ```
 
-Expect `approveDocuments` to update all documents with `approvalStatus="Pending"` to `approvalStatus="Approved"`. The tool counts approved required documents (Financial Statement, Tax Return, Bank Statement, Appraisal, Insurance, Environmental Report). When the count reaches 6, it automatically finds the term sheet with `versionStatus="Internal"` and updates it to `versionStatus="Draft"`, making it visible in Beat 2's critical risk search.
+Expect `listLoans(borrower='Harborview Logistics')` to find the most recent loan, then `approveDocuments` with that loan ID. Tool updates all documents with `approvalStatus="Pending"` to `approvalStatus="Approved"`. The tool counts approved required documents (Financial Statement, Tax Return, Bank Statement, Appraisal, Insurance, Environmental Report). When the count reaches 6, it automatically finds the term sheet with `versionStatus="Internal"` and updates it to `versionStatus="Draft"`, making it visible in Beat 2's critical risk search.
 
 **Response should confirm:** "Approved 6 documents. Term sheet released for review."
 

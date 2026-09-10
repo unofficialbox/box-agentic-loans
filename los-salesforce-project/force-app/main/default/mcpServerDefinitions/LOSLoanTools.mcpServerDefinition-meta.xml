@@ -68,7 +68,7 @@
             <apiSource>API_CATALOG</apiSource>
             <operation>LosApproveDocuments</operation>
         </apiDefinition>
-        <descriptionOverride>Approves all pending documents for a loan by updating reviewStatus from Pending to Approved. When 6 required documents are approved, automatically releases the held term sheet for review by changing it from Held to Pending.</descriptionOverride>
+        <descriptionOverride>Approves all pending documents for a loan by updating approvalStatus from Pending to Approved. When 6 required documents are approved, automatically releases the term sheet by changing versionStatus from Internal to Draft. Returns approved count and whether term sheet was released.</descriptionOverride>
         <toolName>approveDocuments</toolName>
         <toolTitle>Approve Loan Documents</toolTitle>
     </tools>
