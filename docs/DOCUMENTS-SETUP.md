@@ -36,12 +36,14 @@
 {
   "documentType": "Term Sheet",
   "policyRisk": "Critical",
-  "reviewStatus": "Pending",
+  "approvalStatus": "Pending",
+  "versionStatus": "Internal",
   "borrowerEntity": "Harborview Logistics",
-  "loanReference": "LN-2026-0042",
-  "versionStatus": "Draft"
+  "loanReference": "LN-2026-0042"
 }
 ```
+
+**Note:** `versionStatus="Internal"` hides the term sheet from Beat 2's critical risk search. Beat 1.5 (approve documents) changes it to `"Draft"` when 6 required docs are approved.
 
 **How to Apply Metadata:**
 1. Upload the file to Box folder 416352496139

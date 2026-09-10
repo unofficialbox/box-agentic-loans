@@ -155,11 +155,11 @@ After the borrower uploads their documents, the bank reviews and approves them. 
 Approve all pending documents for this loan
 ```
 
-Expect `approveDocuments` to update all documents with `reviewStatus="Pending"` to `reviewStatus="Approved"`. The tool counts approved required documents (Financial Statement, Tax Return, Bank Statement, Appraisal, Insurance, Environmental Report). When the count reaches 6, it automatically finds the term sheet with `reviewStatus="Held"` and updates it to `reviewStatus="Pending"`, making it visible in Beat 2's critical risk search.
+Expect `approveDocuments` to update all documents with `approvalStatus="Pending"` to `approvalStatus="Approved"`. The tool counts approved required documents (Financial Statement, Tax Return, Bank Statement, Appraisal, Insurance, Environmental Report). When the count reaches 6, it automatically finds the term sheet with `versionStatus="Internal"` and updates it to `versionStatus="Draft"`, making it visible in Beat 2's critical risk search.
 
 **Response should confirm:** "Approved 6 documents. Term sheet released for review."
 
-**Why this step exists:** The term sheet contains borrower markup requesting aggressive terms. It's held back until supporting documents are reviewed so Beat 2's critical risk search only finds it after document collection is complete.
+**Why this step exists:** The term sheet contains borrower markup requesting aggressive terms. It starts with `versionStatus="Internal"` (hidden from searches) until supporting documents are reviewed. When 6 required docs are approved, it's automatically changed to `versionStatus="Draft"` so Beat 2's critical risk search finds it.
 
 ### 2. The portfolio already knows what's risky (Claude Desktop, to 4:05)
 

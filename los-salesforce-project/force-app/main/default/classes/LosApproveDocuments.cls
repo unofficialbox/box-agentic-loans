@@ -2,11 +2,11 @@
  * Approves pending loan documents and auto-releases held term sheet when prerequisites met.
  *
  * The demo workflow is: borrower uploads 7 documents (6 required + 1 term sheet marked-up).
- * All 6 required docs start with reviewStatus="Pending". The term sheet starts with
- * reviewStatus="Held" to hide it from critical risk searches until review is complete.
+ * All documents start with approvalStatus="Pending". The term sheet additionally has
+ * versionStatus="Internal" to hide it from the borrower and from Beat 2's critical risk search.
  *
  * When this action approves the 6 required documents, it automatically releases the term
- * sheet by updating it from reviewStatus="Held" to reviewStatus="Pending", making it
+ * sheet by updating it from versionStatus="Internal" to versionStatus="Draft", making it
  * visible in Beat 2's critical risk document search.
  *
  * Bounded like classify and extract: the loan must exist and the caller must be able to
@@ -104,39 +104,49 @@ global with sharing class LosApproveDocuments {
             return refuse(500, 'box_not_configured', 'Box did not issue a token; this is a configuration problem, not something to retry.');
         }
 
-        // Query for all pending documents in this folder
-        List<FileMetadata> pendingDocs = queryMetadata(token, found.folderId, 'reviewStatus=\'Pending\'');
-        if (pendingDocs == null) {
-            return refuse(500, 'query_failed', 'Could not query documents for this loan.');
+        // Use folder listing instead of metadata query to avoid MDQL complexity
+        Set<String> documentIds = LosLoanPackage.documentIdsFor(String.valueOf(found.loan.Id));
+        if (documentIds == null || documentIds.isEmpty()) {
+            return resolved(0, false, 'No documents found to approve.');
         }
 
-        if (pendingDocs.isEmpty()) {
-            return resolved(0, false, 'No pending documents found to approve.');
-        }
-
-        // Approve all pending documents
+        // Approve all documents with approvalStatus="Pending"
         Integer approvedCount = 0;
-        for (FileMetadata doc : pendingDocs) {
-            if (updateReviewStatus(token, doc.fileId, 'Approved')) {
-                approvedCount++;
+        Integer requiredApprovedCount = 0;
+
+        for (String fileId : documentIds) {
+            FileMetadata meta = getFileMetadata(token, fileId);
+            if (meta == null) {
+                continue;
+            }
+
+            // Approve if currently pending
+            if ('Pending'.equalsIgnoreCase(meta.approvalStatus)) {
+                if (updateApprovalStatus(token, fileId, 'Approved')) {
+                    approvedCount++;
+                    if (REQUIRED_DOC_TYPES.contains(meta.documentType)) {
+                        requiredApprovedCount++;
+                    }
+                }
+            } else if ('Approved'.equalsIgnoreCase(meta.approvalStatus)) {
+                // Count already-approved required docs
+                if (REQUIRED_DOC_TYPES.contains(meta.documentType)) {
+                    requiredApprovedCount++;
+                }
             }
         }
 
         // Check if we should release the term sheet
         Boolean termSheetReleased = false;
-        Integer requiredApprovedCount = countRequiredApproved(token, found.folderId);
 
         if (requiredApprovedCount >= 6) {
-            // Find and release held term sheet
-            List<FileMetadata> heldTermSheets = queryMetadata(
-                token,
-                found.folderId,
-                'documentType=\'Term Sheet\' AND reviewStatus=\'Held\''
-            );
-
-            if (heldTermSheets != null && !heldTermSheets.isEmpty()) {
-                for (FileMetadata termSheet : heldTermSheets) {
-                    if (updateReviewStatus(token, termSheet.fileId, 'Pending')) {
+            // Find and release Internal term sheet
+            for (String fileId : documentIds) {
+                FileMetadata meta = getFileMetadata(token, fileId);
+                if (meta != null &&
+                    'Term Sheet'.equalsIgnoreCase(meta.documentType) &&
+                    'Internal'.equalsIgnoreCase(meta.versionStatus)) {
+                    if (updateVersionStatus(token, fileId, 'Draft')) {
                         termSheetReleased = true;
                     }
                 }
@@ -156,57 +166,60 @@ global with sharing class LosApproveDocuments {
         return !visible.isEmpty();
     }
 
-    /**
-     * Query Box metadata for files matching the MDQL query in the given folder.
-     */
-    private static List<FileMetadata> queryMetadata(String token, String folderId, String query) {
-        HttpRequest req = new HttpRequest();
-        req.setEndpoint(SEARCH_ENDPOINT);
-        req.setMethod('POST');
-        req.setHeader('Authorization', 'Bearer ' + token);
-        req.setHeader('Content-Type', 'application/json');
-        req.setTimeout(30000);
+    private class FileMetadata {
+        String fileId;
+        String documentType;
+        String approvalStatus;
+        String versionStatus;
+    }
 
-        String mdql = 'from=' + TEMPLATE_SCOPE + '_' + TEMPLATE_KEY + ' AND ' + query;
-        req.setBody(JSON.serialize(new Map<String, Object>{
-            'from' => TEMPLATE_SCOPE + '_' + TEMPLATE_KEY,
-            'ancestor_folder_id' => folderId,
-            'query' => query,
-            'fields' => new List<String>{ 'documentType', 'reviewStatus' }
-        }));
+    /**
+     * Get metadata for a single file.
+     */
+    private static FileMetadata getFileMetadata(String token, String fileId) {
+        HttpRequest req = new HttpRequest();
+        req.setEndpoint(METADATA_ENDPOINT + fileId + '/metadata/' + TEMPLATE_SCOPE + '/' + TEMPLATE_KEY);
+        req.setMethod('GET');
+        req.setHeader('Authorization', 'Bearer ' + token);
+        req.setTimeout(30000);
 
         HttpResponse res = send(req);
         if (res == null || res.getStatusCode() != 200) {
-            System.debug(LoggingLevel.WARN, 'LOS approve: metadata query returned ' +
-                (res == null ? 'no response' : res.getStatusCode() + ' ' + res.getBody()));
             return null;
         }
 
-        return parseMetadataResults(res.getBody());
+        try {
+            Map<String, Object> metadata = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+            FileMetadata meta = new FileMetadata();
+            meta.fileId = fileId;
+            meta.documentType = (String) metadata.get('documentType');
+            meta.approvalStatus = (String) metadata.get('approvalStatus');
+            meta.versionStatus = (String) metadata.get('versionStatus');
+            return meta;
+        } catch (Exception e) {
+            System.debug(LoggingLevel.WARN, 'LOS approve: failed to parse metadata for ' + fileId + ': ' + e.getMessage());
+            return null;
+        }
     }
 
     /**
-     * Count how many required documents (not term sheets) are approved.
+     * Update the approvalStatus field on a file's metadata.
      */
-    private static Integer countRequiredApproved(String token, String folderId) {
-        List<FileMetadata> approvedDocs = queryMetadata(token, folderId, 'reviewStatus=\'Approved\'');
-        if (approvedDocs == null) {
-            return 0;
-        }
-
-        Integer count = 0;
-        for (FileMetadata doc : approvedDocs) {
-            if (REQUIRED_DOC_TYPES.contains(doc.documentType)) {
-                count++;
-            }
-        }
-        return count;
+    private static Boolean updateApprovalStatus(String token, String fileId, String newStatus) {
+        return updateMetadataField(token, fileId, 'approvalStatus', newStatus);
     }
 
     /**
-     * Update the reviewStatus field on a file's metadata.
+     * Update the versionStatus field on a file's metadata.
      */
-    private static Boolean updateReviewStatus(String token, String fileId, String newStatus) {
+    private static Boolean updateVersionStatus(String token, String fileId, String newStatus) {
+        return updateMetadataField(token, fileId, 'versionStatus', newStatus);
+    }
+
+    /**
+     * Update a single metadata field using JSON Patch.
+     */
+    private static Boolean updateMetadataField(String token, String fileId, String fieldName, String newValue) {
         HttpRequest req = new HttpRequest();
         req.setEndpoint(METADATA_ENDPOINT + fileId + '/metadata/' + TEMPLATE_SCOPE + '/' + TEMPLATE_KEY);
         req.setMethod('PUT');
@@ -217,15 +230,15 @@ global with sharing class LosApproveDocuments {
         List<Object> operations = new List<Object>{
             new Map<String, Object>{
                 'op' => 'add',
-                'path' => '/reviewStatus',
-                'value' => newStatus
+                'path' => '/' + fieldName,
+                'value' => newValue
             }
         };
         req.setBody(JSON.serialize(operations));
 
         HttpResponse res = send(req);
         if (res == null || res.getStatusCode() != 200) {
-            System.debug(LoggingLevel.WARN, 'LOS approve: metadata update for ' + fileId + ' returned ' +
+            System.debug(LoggingLevel.WARN, 'LOS approve: metadata update for ' + fileId + ' field ' + fieldName + ' returned ' +
                 (res == null ? 'no response' : res.getStatusCode() + ' ' + res.getBody()));
             return false;
         }
@@ -240,48 +253,5 @@ global with sharing class LosApproveDocuments {
             System.debug(LoggingLevel.WARN, 'LOS approve: request to ' + req.getEndpoint() + ' failed: ' + e.getMessage());
             return null;
         }
-    }
-
-    private class FileMetadata {
-        String fileId;
-        String documentType;
-        String reviewStatus;
-    }
-
-    /**
-     * Parse Box metadata query results into FileMetadata objects.
-     */
-    private static List<FileMetadata> parseMetadataResults(String responseBody) {
-        List<FileMetadata> results = new List<FileMetadata>();
-
-        try {
-            Map<String, Object> parsed = (Map<String, Object>) JSON.deserializeUntyped(responseBody);
-            List<Object> entries = (List<Object>) parsed.get('entries');
-
-            if (entries == null) {
-                return results;
-            }
-
-            for (Object entry : entries) {
-                Map<String, Object> entryMap = (Map<String, Object>) entry;
-                Map<String, Object> item = (Map<String, Object>) entryMap.get('item');
-                Map<String, Object> metadata = (Map<String, Object>) entryMap.get('metadata');
-
-                if (item == null || metadata == null) {
-                    continue;
-                }
-
-                FileMetadata fileMeta = new FileMetadata();
-                fileMeta.fileId = (String) item.get('id');
-                fileMeta.documentType = (String) metadata.get('documentType');
-                fileMeta.reviewStatus = (String) metadata.get('reviewStatus');
-                results.add(fileMeta);
-            }
-        } catch (Exception e) {
-            System.debug(LoggingLevel.WARN, 'LOS approve: failed to parse metadata results: ' + e.getMessage());
-            return null;
-        }
-
-        return results;
     }
 }
