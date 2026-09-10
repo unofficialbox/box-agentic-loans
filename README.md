@@ -47,6 +47,27 @@ A borrower applies through the Acme Borrower Portal. Documents uploaded to Box a
 3. **Configure Box preview, Loan Copilot, and MCP connectors**  
    See [docs/SETUP.md](docs/SETUP.md) for detailed instructions.
 
+### Cleanup
+
+Remove demo loans and their Box folders between presentations:
+
+```bash
+# Preview what would be deleted
+python3 scripts/cleanup_demo.py --status Application --dry-run
+
+# Delete all Application status loans
+python3 scripts/cleanup_demo.py --status Application --yes
+
+# Delete loans created today
+python3 scripts/cleanup_demo.py --today --yes
+
+# Delete specific loan
+python3 scripts/cleanup_demo.py --loan-id LN-2026-0042 --yes
+
+# Interactive mode (prompts for each)
+python3 scripts/cleanup_demo.py --status Application --interactive
+```
+
 ### Demo
 
 Run the demo beats with Claude Desktop (or any AI harness):

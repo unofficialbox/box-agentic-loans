@@ -1,6 +1,8 @@
 /** Server-side borrower projection. No folder read token is exposed to the browser. */
 public with sharing class LosBorrowerDocuments {
-    private static final Set<String> BORROWER_VERSION_STATUSES = new Set<String>{'Draft', 'Approved', 'Executed'};
+    // Files visible to borrowers - excludes only "Internal" bank documents
+    // Null versionStatus is allowed (shows files before Box Extract completes)
+    private static final Set<String> INTERNAL_ONLY_STATUSES = new Set<String>{'Internal', 'Bank Only'};
     public class ListingException extends Exception {}
 
     public static List<Object> listFiles(String folderId, String token) {
@@ -23,7 +25,9 @@ public with sharing class LosBorrowerDocuments {
                 Map<String,Object> metadata = objectMap(file.get('metadata'));
                 Map<String,Object> enterprise = objectMap(metadata.get('enterprise'));
                 Map<String,Object> document = objectMap(enterprise.get('losDocument'));
-                if ((String)file.get('type') != 'file' || !BORROWER_VERSION_STATUSES.contains((String)document.get('versionStatus'))) continue;
+                String versionStatus = (String)document.get('versionStatus');
+                // Show files unless explicitly marked as internal-only
+                if ((String)file.get('type') != 'file' || INTERNAL_ONLY_STATUSES.contains(versionStatus)) continue;
                 // Never return bank risk/approval metadata, even on borrower-visible files.
                 Map<String,Object> safe = new Map<String,Object>();
                 for (String key : new List<String>{'id','name','type','size','extension','modified_at'}) safe.put(key,file.get(key));

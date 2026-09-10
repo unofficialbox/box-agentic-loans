@@ -25,31 +25,6 @@ locals {
               ]
               "outputSchema" = "config/los/underwriting-finding.schema.bcl"
             }
-            "draft_box_docgen_credit_memo" = {
-              "confirmationRequired" = true
-              "input" = [
-                "loanId"
-                "templateFileId"
-              ]
-              "mutates" = true
-              "output" = [
-                "draftFileId"
-                "sourceCitations"
-              ]
-              "templateFileId" = "${box.files.docgenCreditMemo}"
-            }
-            "draft_box_docgen_maturity_notice" = {
-              "confirmationRequired" = true
-              "input" = [
-                "loanId"
-                "templateFileId"
-              ]
-              "mutates" = true
-              "output" = [
-                "draftFileId"
-              ]
-              "templateFileId" = "${box.files.docgenMaturityNotice}"
-            }
             "explain_closing_blockers" = {
               "input" = [
                 "loanId"
@@ -170,14 +145,12 @@ locals {
               "actions" = [
                 "get_box_review_tasks"
                 "explain_closing_blockers"
-                "draft_box_docgen_credit_memo"
               ]
               "name" = "Credit approval readiness"
             }
             {
               "actions" = [
                 "extract_candidate_covenants"
-                "draft_box_docgen_maturity_notice"
               ]
               "name" = "Covenants and servicing"
             }

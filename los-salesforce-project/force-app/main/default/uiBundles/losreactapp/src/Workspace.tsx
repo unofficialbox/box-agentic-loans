@@ -11,7 +11,6 @@ import { ProfileMenu } from "./components/ProfileMenu";
 import { EmbeddedSign } from "./components/EmbeddedSign";
 import { fetchIdentity, type LosIdentity } from "./lib/identity";
 import type { BoxFolderItem } from "./lib/box";
-import { classifyDocument } from "./lib/classify";
 import { formatLoanAmount, type LosLoanSummary } from "./lib/loans";
 import { getLosPageContext } from "./lib/box";
 import { COLLECTING_STATUSES } from "./lib/requiredDocuments";
@@ -117,6 +116,8 @@ export function Workspace() {
   const [notices, setNotices] = useState<Notice[]>([]);
   /** Embed URL for pending signature request */
   const [signEmbedUrl, setSignEmbedUrl] = useState<string | null>(null);
+  /** File selected for preview from RequiredDocuments table */
+  const [previewFile, setPreviewFile] = useState<BoxFolderItem | null>(null);
   const loans = useLoans();
   /**
    * A record in the URL means the page was opened with context -- a Lightning or
@@ -188,6 +189,7 @@ export function Workspace() {
     setFiles(null);
     setBoxError("");
     setNotices([]);
+    setPreviewFile(null);
     setSignEmbedUrl(loan.signEmbedUrl || null);
     window.history.pushState({}, "", search ? `?${search}` : window.location.pathname);
     setSelected(loan);
@@ -206,6 +208,7 @@ export function Workspace() {
   const showView = useCallback((next: View) => {
     window.history.pushState({}, "", searchForView(next));
     setView(next);
+    setPreviewFile(null);
     setUrlChosen(true);
   }, []);
 
@@ -249,32 +252,34 @@ export function Workspace() {
     [selected, loans.loans, context.salesforceRecordId],
   );
   const collecting = Boolean(current?.status && COLLECTING_STATUSES.has(current.status));
+  /** Whether the current user is a borrower (has an accountName) vs a bank user */
+  const isBorrower = Boolean(identity?.accountName);
 
   /**
-   * Ask Salesforce what each upload is, one file at a time, and say so.
+   * Handle uploaded files - Box Extract automatically classifies and applies metadata.
    *
-   * Not awaited by the dialog or the listing: the borrower can keep working while Box AI
-   * reads the document. Each answer re-lists the folder so the checklist ticks from the
-   * metadata that was actually written, not from the answer alone. "Could not name a
-   * type" is a real outcome and is shown as the sentence the endpoint sent, not as an
-   * error.
+   * Box Extract runs server-side on upload and applies the losDocument metadata template
+   * with documentType, versionStatus, and other fields automatically extracted. No Apex
+   * classification call needed.
+   *
+   * Since Box Extract jobs may take a few seconds to process, we reload the folder
+   * immediately and again after a short delay to catch newly classified files.
+   *
+   * No notices shown - the upload dialog already confirms success, and the folder will
+   * refresh automatically once Box Extract completes.
    */
-  const classifyUploads = useCallback((uploaded: UploadedFile[]) => {
-    const recordId = selected?.recordId ?? context.salesforceRecordId;
-    if (!recordId || uploaded.length === 0) return;
-    (async () => {
-      for (const file of uploaded) {
-        const result = await classifyDocument(recordId, file.id);
-        const notice: Notice = !result.ok
-          ? { key: file.id, tone: "warning", text: `${file.name}: ${result.error}` }
-          : result.value.classified && result.value.documentType
-            ? { key: file.id, tone: "success", text: `${file.name}: classified as ${result.value.documentType} by Box AI.` }
-            : { key: file.id, tone: "info", text: `${file.name}: ${result.value.summary}` };
-        setNotices((was) => [...was.filter((n) => n.key !== notice.key), notice]);
-        setReloadKey((n) => n + 1);
-      }
-    })();
-  }, [selected, context.salesforceRecordId]);
+  const handleUploaded = useCallback((uploaded: UploadedFile[]) => {
+    if (uploaded.length === 0) return;
+
+    // Reload immediately to show upload completed
+    setReloadKey((n) => n + 1);
+
+    // Reload again after Box Extract job has time to process (typically 2-5 seconds)
+    // This catches newly classified files without showing intrusive notices
+    setTimeout(() => {
+      setReloadKey((n) => n + 1);
+    }, 3000); // 3 second delay for Box Extract to process
+  }, []);
 
   const navItem = (target: View, label: string, icon: ReactNode) => (
     <button
@@ -295,10 +300,10 @@ export function Workspace() {
         sit down the left; the bar across the top says where they are and who they are.
       */}
       <aside className="cb-rail">
-        <div className="brand">
+        <button type="button" className="brand" onClick={() => showView("apply")} aria-label="Return to home">
           <span className="brand-mark" aria-hidden="true">AB</span>
           <span className="brand-copy"><strong>Acme Bank</strong><small>Borrower Portal</small></span>
-        </div>
+        </button>
         <nav aria-label="Primary">
           {navItem("apply", "Start an application", <FilePlus2 size={17} aria-hidden="true" />)}
           {navItem("loans", "Your loans", <FileStack size={17} aria-hidden="true" />)}
@@ -346,13 +351,13 @@ export function Workspace() {
           </div>
         ) : null}
 
-        {view === "workspace" && !boxError ? (
+        {view === "workspace" && !boxError && !previewFile ? (
           <div className="workspace-metrics-row">
             <WorkspaceMetrics files={files} />
           </div>
         ) : null}
 
-        <div className={`content-grid${view === "workspace" && !boxError ? " content-grid-aside" : ""}`}>
+        <div className={`content-grid${view === "workspace" && !boxError && !previewFile ? " content-grid-aside" : ""}`}>
           <main>
             {view === "apply" ? (
               <ApplicationForm identity={identity} onCreated={onCreated} />
@@ -423,32 +428,64 @@ export function Workspace() {
                     />
                   </div>
                 ) : null}
-                {collecting && !boxError ? (
-                  <RequiredDocuments
-                    loanType={current?.loanType}
-                    files={files}
-                    canUpload={Boolean(box)}
-                    onUpload={() => setUploading(true)}
-                  />
-                ) : null}
-                <BoxWorkspace
-                  context={workspaceContext}
-                  onFilesLoaded={setFiles}
-                  onBoxReady={setBox}
-                  reloadKey={reloadKey}
-                  onUpload={() => setUploading(true)}
-                  onFailed={setBoxError}
-                />
+                {isBorrower ? (
+                  <>
+                    {!previewFile && collecting && !boxError ? (
+                      <RequiredDocuments
+                        loanType={current?.loanType}
+                        files={files}
+                        canUpload={Boolean(box)}
+                        onUpload={() => setUploading(true)}
+                        onPreview={setPreviewFile}
+                      />
+                    ) : null}
+                    {/* BoxWorkspace for borrowers - always mounted for data loading, but only shown for preview */}
+                    <div className={previewFile ? undefined : "visually-hidden"}>
+                      <BoxWorkspace
+                        context={workspaceContext}
+                        onFilesLoaded={setFiles}
+                        onBoxReady={setBox}
+                        reloadKey={reloadKey}
+                        onUpload={() => setUploading(true)}
+                        onFailed={setBoxError}
+                        previewFile={previewFile}
+                        onClosePreview={() => setPreviewFile(null)}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {collecting && !boxError ? (
+                      <RequiredDocuments
+                        loanType={current?.loanType}
+                        files={files}
+                        canUpload={Boolean(box)}
+                        onUpload={() => setUploading(true)}
+                        onPreview={setPreviewFile}
+                      />
+                    ) : null}
+                    <BoxWorkspace
+                      context={workspaceContext}
+                      onFilesLoaded={setFiles}
+                      onBoxReady={setBox}
+                      reloadKey={reloadKey}
+                      onUpload={() => setUploading(true)}
+                      onFailed={setBoxError}
+                      previewFile={previewFile}
+                      onClosePreview={() => setPreviewFile(null)}
+                    />
+                  </>
+                )}
               </>
             )}
           </main>
-          {view === "workspace" && !boxError ? <DocumentTimeline files={files} /> : null}
+          {view === "workspace" && !boxError && !previewFile ? <DocumentTimeline files={files} /> : null}
         </div>
         {uploading && box ? (
           <UploadDialog
             folderId={box.folderId}
             tokenProvider={() => box.token}
-            onUploaded={classifyUploads}
+            onUploaded={handleUploaded}
             onClose={() => {
               setUploading(false);
               setReloadKey((n) => n + 1);

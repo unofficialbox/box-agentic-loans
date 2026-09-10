@@ -19,6 +19,34 @@ Metadata searches are:
 - **Doc Gen template ID:** Get from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c` (NEVER call `list_docgen_templates`)
 - **Credit Policy Hub ID:** `1488378748` "Acme Credit Policy Library" (NEVER call `list_hubs`)
 
+### Loan Identification
+
+**LOS tools accept EITHER loan ID or Salesforce record ID:**
+
+All LOS connector tools (`getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `prepareSignatureRequest`, etc.) accept:
+- **Loan ID**: `"LN-2026-0042"` - human-readable identifier
+- **Salesforce Record ID**: `"a0bxx000000XXXXX"` - 15 or 18 character Salesforce ID
+
+**When to use which:**
+- **Demo/hardcoded scenarios**: Use loan ID (`LN-2026-0042`)
+- **Borrower portal (React app)**: Use `recordId` from URL params - the app passes this dynamically
+- **Dynamic workflows**: Use `recordId` from Salesforce context, NOT hardcoded loan IDs
+
+**Example - Borrower portal flow:**
+```javascript
+// React app URL: ?recordId=a0bxx000000ABC123
+// Tool call should use the recordId, NOT hardcoded LN-2026-0042:
+getLoanPackage({ inputLoan: "a0bxx000000ABC123" })  // ✅ Dynamic
+getLoanPackage({ inputLoan: "LN-2026-0042" })       // ❌ Hardcoded demo loan
+```
+
+**How to get recordId in borrower portal:**
+- React app: Available in URL params (`?recordId=...`) and passed via `salesforceRecordId` in context
+- Agentforce: Available in conversation context from the Salesforce record the user is viewing
+- The recordId is the Salesforce object ID for the `LOS_Loan__c` record
+
+This ensures Doc Gen, Sign, and all operations work on the loan the borrower is actually viewing, not a hardcoded demo loan.
+
 ### Available Metadata Templates
 
 1. **`losDocument`** - Document classification (THE ONLY TEMPLATE YOU NEED)
@@ -196,8 +224,10 @@ query_metadata(template="losDocument", query="borrowerEntity='Harborview Logisti
 
 **Prompt:** Generate the commitment letter for this loan.
 
+**NOTE:** This example uses demo values (`LN-2026-0042`). In production/borrower portal, use the dynamic `recordId` from context, not hardcoded loan IDs.
+
 **✅ CORRECT Tool Sequence (Box MCP):**
-1. LOS connector → `getLoanPackage('LN-2026-0042')` - get folder ID
+1. LOS connector → `getLoanPackage(<recordId or loan ID>)` - get folder ID
 2. LOS connector → `extractLoanTerms` - get extracted terms & policy validation
 3. LOS connector → `listLoans(borrower='Harborview Logistics', status='Closed')` - get precedent
 4. Query Salesforce for template ID:
@@ -208,7 +238,7 @@ query_metadata(template="losDocument", query="borrowerEntity='Harborview Logisti
    ```javascript
    {
      template_id: "2454763922014",  // From step 4
-     destination_folder_id: "416352496139",  // From step 1
+     destination_folder_id: "<folderId from getLoanPackage>",  // From step 1 - use loan's folder ID
      output_name: "commitment-letter-LN-2026-0042",
      fields: {
        loan: {
@@ -223,7 +253,7 @@ query_metadata(template="losDocument", query="borrowerEntity='Harborview Logisti
          requestedPosition: "Borrower requested: $4.8M at 6.85% for 120 months, 85% LTV, 1.10 DSCR",
          approvedPosition: "Standard policy: 80% LTV maximum (LOS-LTV-001), 1.25 DSCR minimum (LOS-DSCR-001)",
          exceptionPosition: "Exception approved: Up to 85% LTV for collateral values exceeding $5M (LOS-LTV-002), DSCR as low as 1.15 with compensating factors (LOS-DSCR-002)",
-         owner: "Credit Risk Committee",
+         owner: "Credit Risk Committee",  // REQUIRED: Who owns the exception decision (e.g., "Credit Risk Committee", "Senior Credit Officer", "Credit Administration")
          risk: "High",  // From loan record
          proposedTerms: "$4.8M at 6.85% for 120 months, subject to 82% LTV, 1.15 DSCR minimum, enhanced monitoring"
        },
@@ -243,10 +273,21 @@ query_metadata(template="losDocument", query="borrowerEntity='Harborview Logisti
 - Faster than going through Salesforce
 - Consistent with metadata-first approach
 
-**Critical:** All `fields` values must come from prior analysis (steps 2-3), NOT placeholder text. Empty fields result in unfilled `{{placeholders}}` in the PDF.
+**Critical:** All `fields` values must come from prior analysis (steps 2-3), NOT placeholder text. Empty/missing fields result in unfilled `{{placeholders}}` appearing in red in the PDF.
+
+**REQUIRED fields that MUST be populated:**
+- `terms.owner` - Who owns the exception decision (e.g., "Credit Risk Committee", "Senior Credit Officer")
+- `terms.policyAtIssue` - Which policy sections apply
+- `terms.requestedPosition` - What the borrower requested
+- `terms.approvedPosition` - Standard policy position
+- `terms.exceptionPosition` - Exception policy (if applicable)
+- `terms.proposedTerms` - Final proposed terms
+- `precedent.summary` - Prior loan precedent
+- `loan.*` - Loan facts from the record
 
 **❌ DON'T:**
-- Call Doc Gen without complete analysis data (results in empty placeholders)
+- Call Doc Gen without complete analysis data (results in red `{{placeholders}}` in PDF)
+- Omit `terms.owner` - it appears 3 times in the letter and is critical for approval workflow
 
 ## Performance Tips
 

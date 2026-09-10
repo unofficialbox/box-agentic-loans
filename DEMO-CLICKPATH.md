@@ -12,8 +12,8 @@ Before starting:
 - [ ] **P1:** Loan Copilot has active version
 - [ ] **P2:** Claude Desktop custom instructions set (bullets/tables, 60 words, preview files)
 - [ ] **P3:** Both connectors loaded (Box + LOS), LOS refreshed
-- [ ] **P4:** Loan statuses: LN-2023-0311 Closed, LN-2025-0148 Closed, LN-2026-0042 Approved
-- [ ] **P5:** No duplicate files in Box folders
+- [ ] **P4:** Loan statuses: LN-2023-0311 Closed, LN-2025-0148 Closed, latest Harborview loan in Approved status
+- [ ] **P5:** Required documents uploaded with metadata (see [docs/DOCUMENTS-SETUP.md](docs/DOCUMENTS-SETUP.md))
 - [ ] **P6:** Dana Whitfield borrower login ready
 - [ ] **P7:** Test sign in once as Dana
 
@@ -25,12 +25,12 @@ Before starting:
 
 **Beat 2 (Claude Desktop):**
 ```
-Which loan documents for LN-2026-0042 are flagged critical policy risk?
+What's the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?
 ```
 
 **Beat 3 (Claude Desktop):**
 ```
-Extract loan terms from the marked-up term sheet for LN-2026-0042 and check them against credit policy.
+Extract loan terms from the marked-up term sheet for that loan and check them against credit policy.
 ```
 
 **Beat 3a (Claude Desktop):**
@@ -45,17 +45,17 @@ apply the amount, rate and term to the record, confirm
 
 **Beat 4 (Claude Desktop):**
 ```
-Compare the covenant terms across Harborview's prior executed loans and the 2026 markup.
+Compare the covenant terms across Harborview's prior executed loans and this 2026 markup.
 ```
 
 **Beat 5 (Claude Desktop):**
 ```
-Generate the commitment letter for LN-2026-0042.
+Generate the commitment letter for this loan.
 ```
 
 **Beat 5b (Claude Desktop):**
 ```
-Send the Harborview commitment letter for signature.
+Send the commitment letter for signature.
 ```
 
 **Beat 6 (Browser):** `https://<your-site>.my.site.com/loansvforcesite/login?startURL=%2Floans%2F`
@@ -97,15 +97,20 @@ Expect beat 4 to answer in bullets and one table, and every beat to end with the
 
 Expect both connectors listed under Context in the session. Box must offer folder search, metadata search, Box AI extract, single- and multi-file QA, Hub QA, Doc Gen (templates and batch), folder listing and file preview; the Doc Gen tools are off by default in the Box Admin Console. LOS offers six tools: `listLoans`, `getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `classifyDocument`, `prepareSignatureRequest`. Use Box MCP directly for metadata search, Box AI, and Doc Gen.
 
-**P4. Terminal: the loan statuses.** Beat 5's signature preparation needs the 2026 loan in Approved; beat 4 needs the two earlier loans Closed.
+**P4. Terminal: the loan statuses.** Beat 5's signature preparation needs the latest Harborview loan in Approved status; beat 4 needs the two earlier loans Closed.
 
 ```bash
 sf data query -o <alias> -q "SELECT Loan_ID__c, Status__c FROM LOS_Loan__c WHERE Borrower__c='Harborview Logistics' ORDER BY Loan_ID__c"
 ```
 
-Expect LN-2023-0311 Closed, LN-2025-0148 Closed, LN-2026-0042 Approved.
+Expect LN-2023-0311 Closed, LN-2025-0148 Closed, and the most recent loan (e.g., LN-2026-0042 or higher) in Approved status. After running Beat 1, you'll have a new Application-status loan - manually update its status to Approved before running Beats 2-5.
 
-**P5. Box: no stray duplicates.** Inventory `LOS-2026-Harborview / 02 - Borrower Documents` for `(1)` copies left by earlier seeds. Unclassified duplicates are excluded from the borrower listing. Queue them for the cleanup owner to review; deletion requires a separate explicit decision. Confirm `Loans_Root_Folder_Id__c` in `LOS_Box_Config__c` points at the loans root so beat 2 is scoped.
+**P5. Box: required documents with metadata.** See [docs/DOCUMENTS-SETUP.md](docs/DOCUMENTS-SETUP.md) for explicit upload instructions:
+- **Latest Harborview loan** needs: Term sheet with borrower markup (policyRisk="Critical"), optional financials/appraisal
+- **LN-2023-0311** needs: Executed loan agreement ($1.5M, 70% LTV, 1.30 DSCR, Pike/Shah signatures)
+- **LN-2025-0148** needs: Executed loan agreement ($2.15M, 78% LTV, 1.28 DSCR, Pike/Shah signatures)
+
+After Beat 1 creates a new loan, upload `harborview-term-sheet-2026-borrower-markup.pdf` to its folder and ensure it has `policyRisk="Critical"` metadata. Check for duplicates: inventory each loan's `02 - Borrower Documents` subfolder for `(1)` copies left by earlier seeds. Unclassified duplicates are excluded from the borrower listing.
 
 **P6. Salesforce Setup: the borrower's login.** Dana Whitfield needs either a real password (Setup, Users, Dana Whitfield, Reset Password; the mail goes to `<borrower-user-email>`) or an admin who opens the site as her with Log in to Experience as User from her user record, which needs no password. Confirm she is a site member with a `NetworkMember` query first; a non-member's login failure looks like bad credentials.
 
@@ -114,6 +119,8 @@ Expect LN-2023-0311 Closed, LN-2025-0148 Closed, LN-2026-0042 Approved.
 Expect the portal to open on Your loans with the three Harborview loans and a Start a new application button under the Acme Bank mark. A borrower with no loans lands on Start an application; a signed-out visitor gets the sign-in prompt, never an error card.
 
 ## The six beats
+
+**Note on loan identification:** Beats 2-5 query for the latest Harborview loan (the one just created in Beat 1) instead of using a hardcoded ID. The LOS `listLoans` tool finds it, then subsequent operations use that loan's ID or record ID. This ensures the demo works with freshly created loans after cleanup.
 
 ### 1. Their paper arrives (private window, 0:00 to 3:10)
 
@@ -133,15 +140,15 @@ Then the lender's side: open the new record in Salesforce. Expect Status Applica
 
 If asked: creating the record and provisioning its folder are two requests, because Apex cannot make a callout after DML. If the folder step fails the workspace says so; retry from the workspace, not the form. A borrower who emails the package instead is captured onto the Opportunity's Box folder, and `losLoan` metadata in `01 - Application Intake` starts the alternate Automate path. Say it in one sentence; do not show it.
 
-Beats 2 to 5 pick up LN-2026-0042, the Harborview loan now in Approved status, with the term sheet the CFO sent back on her numbers.
+**Beats 2 to 5 work with the loan just created in Beat 1.** Query for the latest Harborview loan to get its ID, then use that for subsequent operations.
 
 ### 2. The portfolio already knows what's risky (Claude Desktop, to 4:05)
 
 ```text
-Which loan documents for LN-2026-0042 are flagged critical policy risk?
+What's the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?
 ```
 
-Expect `getLoanPackage('LN-2026-0042')` to get the folder ID, then Box metadata search for `policyRisk = Critical` with folder scope. One hit: `harborview-term-sheet-2026-borrower-markup.pdf`. **MUST call `get_file_preview` to show the document inline**. The document should appear on screen, not just a filename or link. Ask for High or above and the FY2025 financial statements and the appraisal join it.
+Expect `listLoans` with borrower filter to find the latest Harborview loan, then `getLoanPackage` to get the folder ID, then Box metadata search for `policyRisk = Critical` with folder scope. One hit: `harborview-term-sheet-2026-borrower-markup.pdf`. **MUST call `get_file_preview` to show the document inline**. The document should appear on screen, not just a filename or link. Ask for High or above and the FY2025 financial statements and the appraisal join it.
 
 **If the assistant only cites "Source: filename.pdf" without showing the document:** Say "show me the document" — P2 custom instructions require preview after citing. The beat is not complete until the document appears.
 
@@ -150,7 +157,7 @@ Expect `getLoanPackage('LN-2026-0042')` to get the folder ID, then Box metadata 
 Box reads; Salesforce compares and writes.
 
 ```text
-Extract loan terms from the marked-up term sheet for LN-2026-0042 and check them against credit policy.
+Extract loan terms from the marked-up term sheet for that loan and check them against credit policy.
 ```
 
 Expect `getLoanPackage` to name the folder, then Box AI structured extraction on the markup: $4,800,000; 6.85% bank rate and 6.50% requested; 120 months; DSCR proposed at 1.10x tested annually. Then Box AI over the policy Hub: LOS-LTV-001 (75%) with exception LOS-LTV-002 (80%, interest reserve), LOS-DSCR-001 (1.25x) with exception LOS-DSCR-002 (1.15x, cash reserve); 85% and 1.10x are outside even the exceptions, Credit Risk owns the deviation. **The markup MUST preview inline** with `get_file_preview` showing the red interest and guaranty changes.
@@ -174,10 +181,10 @@ First request the same write without confirmation and verify the action refuses.
 Box does this beat across three files.
 
 ```text
-Compare the covenant terms across Harborview's prior executed loans and the 2026 markup.
+Compare the covenant terms across Harborview's prior executed loans and this 2026 markup.
 ```
 
-Expect `getLoanPackage` for the two closed loans to hand over the executed agreements, then one Box AI multi-file answer: both closed loans at 70% LTV and 1.30x DSCR tested quarterly, Section 8 and Schedule 1 of each executed agreement, signed by Jordan Pike for Harborview and Priya Shah for Acme Bank; the 2026 markup asks 1.10x tested annually. One table, then the 2025 agreement previewed at Schedule 1.
+Expect `listLoans` or `getLoanPackage` for the two closed loans (LN-2023-0311, LN-2025-0148) to hand over the executed agreements, then one Box AI multi-file answer: both closed loans at 70% LTV and 1.30x DSCR tested quarterly, Section 8 and Schedule 1 of each executed agreement, signed by Jordan Pike for Harborview and Priya Shah for Acme Bank; the 2026 markup asks 1.10x tested annually. One table, then the 2025 agreement previewed at Schedule 1.
 
 Land it: Harborview's markup regresses two positions their own CFO agreed, in writing, twice.
 
@@ -186,7 +193,7 @@ Land it: Harborview's markup regresses two positions their own CFO agreed, in wr
 Box generates; Salesforce refuses.
 
 ```text
-Generate the commitment letter for LN-2026-0042.
+Generate the commitment letter for this loan.
 ```
 
 Expect `getLoanPackage` for the record and folder, then `create_docgen_batch` with template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c` into the loan folder with the letter's fields filled from beats 3 and 4. Doc Gen is asynchronous: the batch is accepted and the PDF lands a few seconds later; the assistant uses metadata query to find the generated letter (query by folder + documentType or filename pattern) and opens it inline. Expect borrower and entity, amount, rate, term, the covenants at issue, the approved exceptions, Credit Risk as owner, the precedent, and on its face that it is a draft pending Credit Committee.
@@ -194,7 +201,7 @@ Expect `getLoanPackage` for the record and folder, then `create_docgen_batch` wi
 If the Box connector refuses Doc Gen: the Box Admin Console must have the Doc Gen MCP tools enabled and the connector reconnected afterwards (docs/SETUP.md §5a).
 
 ```text
-Send the Harborview commitment letter for signature.
+Send the commitment letter for signature.
 ```
 
 Expect `prepareSignatureRequest` to be called and succeed. The loan's Approved status passes the state check (`SIGNABLE = Approved, Commitment`). The sign request is created with:
@@ -234,11 +241,11 @@ Setup, Agentforce Agents: confirm Loan Copilot shows Active, open it, and click 
 
 | Send | Expect |
 |---|---|
-| `What's in the loan package for LN-2026-0042?` | The record summary and the current document inventory, term-sheet markup included. No record or folder IDs. |
+| `What's the latest loan for Harborview Logistics?` | The most recent loan ID and status (the one created in Beat 1). |
+| `What's in that loan package?` | The record summary and the current document inventory, term-sheet markup included. No record or folder IDs. |
 | `What does the borrower's markup change about the rate and the guaranty?` | 6.50% requested against 6.85% fixed; limited guaranty capped at $1,000,000 each; cited to the markup PDF. |
 | `Extract the terms from the term sheet and validate them against the record.` | Seven fields. LTV 75 vs 85 and DSCR 1.25 vs 1.12 flagged as mismatches. States that nothing was written. |
 | `Does credit policy allow 85% LTV (loan-to-value) and 1.12x DSCR (debt service coverage ratio)? Cite the policy IDs.` | LOS-LTV-001 and LOS-LTV-002, LOS-DSCR-001 and LOS-DSCR-002. Both requests outside the approved exceptions. |
-| `What has Harborview submitted for LN-2026-0043 so far?` | The Equipment Finance application: Financial Statement and Tax Return classified, loan application still missing. |
 
 Expect five answers without a fallback. If one falls to the fallback or narrates tool names, note the message and send it to the maintainer: the fix is an edit to the `.agent` file and a republish. Never edit the agent in the builder; the next publish overwrites it.
 
@@ -246,7 +253,7 @@ Expect five answers without a fallback. If one falls to the fallback or narrates
 
 Portal applications arrive in Application status with Record Source "Borrower Portal". The **New applications** list view ships with the metadata (`objects/LOS_Loan__c/listViews/New_applications`). Pin it once per org: App Launcher, Loan Origination, Loans tab, pick New applications, then Pin list.
 
-Expect one row, LN-2026-0043 with Record Source "Borrower Portal", until the next rehearsal of beat 1 adds another. If the view is missing, run `python3 scripts/demo_operator.py salesforce-deploy`.
+Expect the loan created in Beat 1 with Record Source "Borrower Portal". Each rehearsal of beat 1 adds another. If the view is missing, run `python3 scripts/demo_operator.py salesforce-deploy`.
 
 ## What a rehearsal leaves behind
 
@@ -261,4 +268,4 @@ Every run of beat 1 creates a real `LOS_Loan__c` in Application status and a rea
 - **Why no Copilot on the borrower site?** A Service Agent runs as its assigned agent user and cannot inherit Dana's access. An Employee Agent inherits the signed-in user's permissions; that is where the internal Loan Copilot runs.
 - **The tagging on seeded files is manual.** Portal uploads are classified by Box AI as they land; the seeded Harborview files were tagged by the seed script and by hand. A metadata cascade policy on the loan folder is what would make it survive the next loan.
 
-Loans: LN-2023-0311, LN-2025-0148, LN-2026-0042, Pinecrest LN-2026-0088, plus each rehearsal's application.
+**Pre-seeded loans:** LN-2023-0311 (Harborview, Closed), LN-2025-0148 (Harborview, Closed), Pinecrest LN-2026-0088 (different borrower). Each rehearsal of Beat 1 creates a new Harborview loan in Application status that becomes the demo loan for Beats 2-5. Use `python3 scripts/cleanup_demo.py` to remove test loans between presentations.
