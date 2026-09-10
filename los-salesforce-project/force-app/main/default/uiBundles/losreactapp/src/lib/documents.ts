@@ -64,10 +64,15 @@ export interface DocumentTotals {
 }
 
 export function documentTotals(files: BoxFolderItem[]): DocumentTotals {
-  const facts = files.map(documentFacts);
+  // Exclude Internal documents (hidden until released) from review progress count
+  const visibleFiles = files.filter((f) => {
+    const versionStatus = f.metadata?.enterprise?.losDocument?.versionStatus;
+    return versionStatus !== 'Internal';
+  });
+  const facts = visibleFiles.map(documentFacts);
   const dates = facts.map((f) => f.changedAt).filter((d): d is string => Boolean(d));
   return {
-    documents: files.length,
+    documents: visibleFiles.length,
     approved: facts.filter((f) => f.approved).length,
     open: facts.filter((f) => !f.approved).length,
     lastChangedAt: dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0],
