@@ -124,6 +124,10 @@ public with sharing class LosApplyLoanTerms {
         stage(changes, updated, skipped, 'Maturity_Date__c', req.maturityDate,
             Schema.sObjectType.LOS_Loan__c.fields.Maturity_Date__c.isUpdateable());
 
+        // Update status to Approved when terms are applied - required before signature
+        stage(changes, updated, skipped, 'Status__c', 'Approved',
+            Schema.sObjectType.LOS_Loan__c.fields.Status__c.isUpdateable());
+
         if (updated.isEmpty() && skipped.isEmpty()) {
             result.summary = 'No terms were supplied for ' + found.loan.Loan_ID__c + '. Nothing was written.';
             return result;
@@ -149,8 +153,7 @@ public with sharing class LosApplyLoanTerms {
         result.applied = true;
         result.fieldsUpdated = String.join(updated, ', ');
         result.summary = 'Updated ' + found.loan.Loan_ID__c + ': ' + result.fieldsUpdated + '.'
-            + (skipped.isEmpty() ? '' : ' Skipped (not updateable by this user): ' + String.join(skipped, ', ') + '.')
-            + ' Status and risk rating are unchanged; credit approval is still a Credit Committee decision.';
+            + (skipped.isEmpty() ? '' : ' Skipped (not updateable by this user): ' + String.join(skipped, ', ') + '.');
         return result;
     }
 
