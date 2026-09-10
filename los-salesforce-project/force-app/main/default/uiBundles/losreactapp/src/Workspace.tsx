@@ -430,7 +430,7 @@ export function Workspace() {
                 ) : null}
                 {isBorrower ? (
                   <>
-                    {!previewFile && collecting && !boxError ? (
+                    {!previewFile && !boxError ? (
                       <RequiredDocuments
                         loanType={current?.loanType}
                         files={files}
@@ -455,7 +455,7 @@ export function Workspace() {
                   </>
                 ) : (
                   <>
-                    {collecting && !boxError ? (
+                    {!boxError ? (
                       <RequiredDocuments
                         loanType={current?.loanType}
                         files={files}
