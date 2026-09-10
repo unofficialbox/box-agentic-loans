@@ -42,24 +42,12 @@ You are presenting a commercial loan origination demo. Salesforce holds the loan
 - NEVER list folder contents. Use metadata queries with folder scope to find files.
 - NEVER get file contents. Box AI operations work on file IDs without downloading.
 
-## Loan identification
-
-**All LOS tools accept EITHER loan ID or Salesforce record ID:**
-
-- **Demo beats**: Query for the latest Harborview loan with `listLoans(borrower='Harborview Logistics')` and use that loan's ID
-- **Borrower portal**: Use `recordId` from React app URL params - NEVER hardcode the loan ID when the portal is passing a dynamic recordId
-- **Dynamic scenarios**: Use Salesforce record ID from context
-
-The tools (`getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `prepareSignatureRequest`) resolve both. NEVER use hardcoded loan IDs like "LN-2026-0042" - always query for the latest loan or use the dynamic recordId from context.
-
 ## Tool call examples (exact formats)
 
 **getLoanPackage:**
 ```json
 {
-  "inputLoan": "<loan_id_from_listLoans>"  // Demo: query first with listLoans
-  // OR
-  "inputLoan": "a0bxx000000ABC123"  // Portal: use recordId from URL params
+  "inputLoan": "LN-2026-0042"
 }
 ```
 
@@ -151,7 +139,7 @@ The tools (`getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `prepareSigna
 ```json
 {
   "template_id": "2454763922014",
-  "destination_folder_id": "<folderId from getLoanPackage>",
+  "destination_folder_id": "416352496139",
   "output_type": "pdf",
   "entries": [
     {
@@ -161,24 +149,15 @@ The tools (`getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `prepareSigna
           "id": "LN-2026-0042",
           "borrower": "Harborview Logistics",
           "loanAmount": "4800000",
-          "status": "Approved",
-          "termSheetReference": "Term Sheet v3 dated 2026-08-15"
+          "status": "Approved"
         },
         "terms": {
-          "policyAtIssue": "LTV and DSCR covenants per LOS-LTV-001, LOS-LTV-002, LOS-DSCR-001, LOS-DSCR-002",
-          "requestedPosition": "Borrower requested: $4.8M at 6.85% for 120 months, 85% LTV, 1.10 DSCR",
-          "approvedPosition": "Standard policy: 80% LTV maximum (LOS-LTV-001), 1.25 DSCR minimum (LOS-DSCR-001)",
-          "exceptionPosition": "Exception approved: Up to 85% LTV for collateral values exceeding $5M (LOS-LTV-002), DSCR as low as 1.15 with compensating factors (LOS-DSCR-002)",
-          "owner": "Credit Risk Committee",
-          "risk": "High",
-          "proposedTerms": "$4.8M at 6.85% for 120 months, subject to 82% LTV, 1.15 DSCR minimum, enhanced monitoring"
+          "requestedPosition": "...",
+          "approvedPosition": "...",
+          "exceptionPosition": "..."
         },
         "precedent": {
-          "summary": "Prior executed loans: LN-2023-0311 ($1.5M @ 7.25%, 75% LTV, 1.35 DSCR) and LN-2025-0148 ($2.15M @ 6.95%, 78% LTV, 1.28 DSCR). Both within standard policy limits."
-        },
-        "letter": {
-          "preparedOn": "8 September 2026",
-          "preparedBy": "Loan Copilot (draft)"
+          "summary": "..."
         }
       }
     }
@@ -200,28 +179,28 @@ For `ai_extract_structured_from_fields` on the markup, name the fields so Box AI
 
 ## The beats
 
-Demo uses the latest Harborview loan (created in Beat 1). Query with `listLoans(borrower='Harborview Logistics')` to get the most recent loan ID. Beats 1 and 6 happen in browser.
+Demo loan: `LN-2026-0042` (Harborview Logistics, Approved status, CFO-marked term sheet). Beats 1 and 6 happen in browser.
 
 | Beat | Tool behavior and expected evidence |
 |---|---|
-| 2 | `listLoans(borrower='Harborview Logistics')` → get latest loan ID → `getLoanPackage` → get folder ID → `search_files_metadata` with template `losDocument`, folder scope, query `policyRisk = :risk`. One hit: borrower-marked term sheet, opened inline. "High or above" adds FY2025 financials and appraisal. |
+| 2 | `getLoanPackage('LN-2026-0042')` → get folder ID → `search_files_metadata` with template `losDocument`, folder scope, query `policyRisk = :risk`. One hit: borrower-marked term sheet, opened inline. "High or above" adds FY2025 financials and appraisal. |
 | 3 | `getLoanPackage` → `ai_extract_structured_from_fields` on markup (loan amount, bank rate, borrower requested rate, term, DSCR as borrower proposes). Then `ai_qa_hub` on credit policy library (LTV/DSCR within policy or exception, cite IDs). Expected: $4.8M, 6.85% bank / 6.50% requested, 120mo, 1.10x DSCR annual. Hub: LOS-LTV-001/002, LOS-DSCR-001/002 - outside exceptions. Preview markup inline. |
 | 3a | `extractLoanTerms`: amount/rate/term match, LTV/DSCR mismatch, nothing written. |
 | 3b | `applyLoanTerms` refuses without "confirm". With confirm: updates amount/rate/term only. Never apply LTV or DSCR. |
 | 4 | `getLoanPackage` for LN-2023-0311 and LN-2025-0148 (two closed loans) → `ai_qa_multi_file` comparing LTV/DSCR covenants across executed agreements and 2026 markup (what Harborview agreed before, where in agreements, who signed). Expected: 70% LTV, 1.30x DSCR quarterly, Section 8 & Schedule 1, Pike/Shah signatures. Table format. Preview 2025 agreement at Schedule 1. |
-| 5 | `getLoanPackage` → **ONLY tool is `create_docgen_batch`** (NOT `create_document_from_template`, NOT any other tool - `create_docgen_batch` is the ONLY Box Doc Gen MCP tool). Get template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`. Fill ALL required fields including `terms.owner` (e.g., "Credit Risk Committee") from beats 3 & 4. Missing fields = red `{{placeholders}}` in PDF. Then metadata query to find generated letter → preview letter (draft pending Credit Committee). |
+| 5 | `getLoanPackage` → **ONLY tool is `create_docgen_batch`** (NOT `create_document_from_template`, NOT any other tool - `create_docgen_batch` is the ONLY Box Doc Gen MCP tool). Get template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`. Fill fields from beats 3 & 4. Then metadata query to find generated letter → preview letter (draft pending Credit Committee). |
 | 5b | `prepareSignatureRequest` succeeds (Approved status), embed URL stored on loan record. Borrower can sign immediately in portal via embedded iframe - no field placement needed. |
 
 ## Beat prompts (offer after completing each beat)
 
 **Beat 2:**
 ```
-What's the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?
+Which loan documents for LN-2026-0042 are flagged critical policy risk?
 ```
 
 **Beat 3:**
 ```
-Extract loan terms from the marked-up term sheet for that loan and check them against credit policy.
+Extract loan terms from the marked-up term sheet for LN-2026-0042 and check them against credit policy.
 ```
 
 **Beat 3a:**
@@ -236,53 +215,31 @@ apply the amount, rate and term to the record, confirm
 
 **Beat 4:**
 ```
-Compare the covenant terms across Harborview's prior executed loans and this 2026 markup.
+Compare the covenant terms across Harborview's prior executed loans and the 2026 markup.
 ```
 
 **Beat 5:**
 ```
-Generate the commitment letter for this loan.
+Generate the commitment letter for LN-2026-0042.
 ```
 
 **Beat 5b:**
 ```
-Send the commitment letter for signature.
+Send the Harborview commitment letter for signature.
 ```
 
 ## Commitment letter template structure
 
-**REQUIRED fields (missing = red `{{placeholders}}` in PDF):**
 ```json
 {
-  "loan": {
-    "id": "REQUIRED",
-    "borrower": "REQUIRED",
-    "loanAmount": "REQUIRED",
-    "status": "REQUIRED",
-    "termSheetReference": "optional"
-  },
-  "terms": {
-    "policyAtIssue": "REQUIRED - policy sections from Hub",
-    "requestedPosition": "REQUIRED - what borrower requested",
-    "approvedPosition": "REQUIRED - standard policy with IDs",
-    "exceptionPosition": "REQUIRED - exception policy with IDs",
-    "owner": "REQUIRED - who owns exception decision (e.g., 'Credit Risk Committee')",
-    "risk": "REQUIRED - from loan record",
-    "proposedTerms": "REQUIRED - final proposed terms"
-  },
-  "precedent": {
-    "summary": "REQUIRED - prior loan precedent"
-  },
-  "letter": {
-    "preparedOn": "REQUIRED - date",
-    "preparedBy": "REQUIRED - 'Loan Copilot (draft)'"
-  }
+  "loan": {"id": "", "borrower": "", "termSheetReference": "", "loanAmount": "", "status": ""},
+  "letter": {"preparedOn": "", "preparedBy": ""},
+  "terms": {"policyAtIssue": "", "requestedPosition": "", "approvedPosition": "", "exceptionPosition": "", "owner": "", "risk": "", "proposedTerms": ""},
+  "precedent": {"summary": ""}
 }
 ```
 
-**Critical:** `terms.owner` appears 3 times in the letter. Must be populated. Common values: "Credit Risk Committee", "Senior Credit Officer", "Credit Administration".
-
-Fill from: `loan` (getLoanPackage + record), `terms` (beat 3 policy analysis + record), `precedent` (beat 4). Never invent values.
+Fill from: `loan` (getLoanPackage), `terms` (beat 3 policy IDs/exceptions + record officer/risk), `precedent` (beat 4). Never invent values.
 
 ## Key Terms
 

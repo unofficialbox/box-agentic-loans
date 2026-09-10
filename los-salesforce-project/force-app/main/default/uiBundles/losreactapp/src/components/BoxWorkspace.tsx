@@ -21,14 +21,8 @@ export function BoxWorkspace({
   reloadKey,
   onUpload,
   onFailed,
-  previewFile,
-  onClosePreview,
 }: {
   context: LosPageContext;
-  /** File to preview - when set, opens preview immediately */
-  previewFile?: BoxFolderItem | null;
-  /** Called when preview is closed */
-  onClosePreview?: () => void;
   /**
    * Hands the loaded listing up so the timeline beside this panel is built from the same
    * array, already filtered. A second fetch could disagree with what the table shows.
@@ -56,7 +50,6 @@ export function BoxWorkspace({
   const [folderName, setFolderName] = useState("");
   const [files, setFiles] = useState<BoxFolderItem[] | null>(null);
   const [loading, setLoading] = useState(true);
-  const [provisioning, setProvisioning] = useState(false);
   /**
    * Held in a ref, not a dependency. The prop is optional, so a caller passing an inline
    * function would otherwise change identity every render and refetch the folder in a
@@ -93,23 +86,15 @@ export function BoxWorkspace({
     let active = true;
     (async () => {
       setLoading(true);
-      setProvisioning(false);
       const fail = (reason: string) => {
         setError(reason);
         setFiles(null);
         setLoading(false);
-        setProvisioning(false);
         notifyFailed.current?.(reason);
         notifyBox.current?.(null);
       };
 
-      // Show provisioning message if we're about to auto-provision
-      if (context.salesforceRecordId) {
-        setProvisioning(true);
-      }
-
       const granted = await fetchDownscopedBoxToken(context);
-      setProvisioning(false);
       if (!active) return;
       if (!granted.ok) return fail(granted.error);
 
@@ -152,19 +137,7 @@ export function BoxWorkspace({
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
   if (loading) {
-    return (
-      <section className="box-live" data-testid="box-loading">
-        <div className="panel-head">
-          <div>
-            <h2>{provisioning ? "Setting up your workspace..." : "Loading workspace..."}</h2>
-            {provisioning ? (
-              <p style={{ marginTop: "8px", color: "var(--ab-muted)", fontSize: "13px" }}>Creating your loan's Box folder. This will only take a moment.</p>
-            ) : null}
-          </div>
-        </div>
-        <TableSkeleton />
-      </section>
-    );
+    return <WorkspaceSkeleton />;
   }
 
   if (error) {
@@ -208,16 +181,7 @@ export function BoxWorkspace({
         </div>
       </div>
       <Suspense fallback={<TableSkeleton />}>
-        <BoxElements
-          key={folderId}
-          folderId={folderId}
-          token={token}
-          files={files ?? []}
-          borrower={borrower}
-          recordId={context.salesforceRecordId}
-          previewFile={previewFile}
-          onClosePreview={onClosePreview}
-        />
+        <BoxElements key={folderId} folderId={folderId} token={token} files={files ?? []} borrower={borrower} recordId={context.salesforceRecordId} />
       </Suspense>
     </section>
   );

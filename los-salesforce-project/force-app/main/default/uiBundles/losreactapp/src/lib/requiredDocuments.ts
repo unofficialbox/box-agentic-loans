@@ -20,19 +20,23 @@ export interface RequiredDocument {
 
 export const REQUIRED_DOCUMENTS: Record<string, RequiredDocument[]> = {
   "Term Loan": [
+    { "documentType": "Application", "label": "Loan application", "why": "The signed application that says who is borrowing and what for." },
     { "documentType": "Financial Statement", "label": "Financial statements", "why": "Your latest balance sheet and income statement, so we can see how the business is performing." },
     { "documentType": "Tax Return", "label": "Business tax returns", "why": "Filed returns that confirm the income your financial statements report." },
     { "documentType": "Bank Statement", "label": "Bank statements", "why": "Recent statements showing the cash flow that will service the loan." }
   ],
   "Line of Credit": [
+    { "documentType": "Application", "label": "Loan application", "why": "The signed application that says who is borrowing and what for." },
     { "documentType": "Financial Statement", "label": "Financial statements", "why": "Your latest balance sheet and income statement, so we can see how the business is performing." },
     { "documentType": "Bank Statement", "label": "Bank statements", "why": "Recent statements showing the cash flow that will service the loan." }
   ],
   "Equipment Finance": [
+    { "documentType": "Application", "label": "Loan application", "why": "The signed application that says who is borrowing and what for." },
     { "documentType": "Financial Statement", "label": "Financial statements", "why": "Your latest balance sheet and income statement, so we can see how the business is performing." },
     { "documentType": "Tax Return", "label": "Business tax returns", "why": "Filed returns that confirm the income your financial statements report." }
   ],
   "Commercial Real Estate": [
+    { "documentType": "Application", "label": "Loan application", "why": "The signed application that says who is borrowing and what for." },
     { "documentType": "Financial Statement", "label": "Financial statements", "why": "Your latest balance sheet and income statement, so we can see how the business is performing." },
     { "documentType": "Tax Return", "label": "Business tax returns", "why": "Filed returns that confirm the income your financial statements report." },
     { "documentType": "Bank Statement", "label": "Bank statements", "why": "Recent statements showing the cash flow that will service the loan." },
@@ -41,6 +45,7 @@ export const REQUIRED_DOCUMENTS: Record<string, RequiredDocument[]> = {
     { "documentType": "Environmental Report", "label": "Environmental report", "why": "An assessment confirming the property carries no environmental liability." }
   ],
   "SBA 7(a)": [
+    { "documentType": "Application", "label": "Loan application", "why": "The signed application that says who is borrowing and what for." },
     { "documentType": "Financial Statement", "label": "Financial statements", "why": "Your latest balance sheet and income statement, so we can see how the business is performing." },
     { "documentType": "Tax Return", "label": "Business tax returns", "why": "Filed returns that confirm the income your financial statements report." },
     { "documentType": "Bank Statement", "label": "Bank statements", "why": "Recent statements showing the cash flow that will service the loan." },

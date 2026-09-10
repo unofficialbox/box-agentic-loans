@@ -44,7 +44,7 @@ def add_sign_tags_to_template(template_path: str, output_path: str = None):
 
     # Add the Box Sign tag for signature
     sig_tag = sig_para.add_run("[[s:email:signer]]")
-    sig_tag.font.color.rgb = RGBColor(255, 255, 255)  # White - hidden until Box Sign converts to field
+    sig_tag.font.color.rgb = RGBColor(0, 102, 204)  # Blue to make it visible
     sig_tag.font.size = Pt(10)
 
     doc.add_paragraph()
@@ -55,7 +55,7 @@ def add_sign_tags_to_template(template_path: str, output_path: str = None):
 
     # Add the Box Sign tag for date
     date_tag = date_para.add_run("[[d:email:signer]]")
-    date_tag.font.color.rgb = RGBColor(255, 255, 255)  # White - hidden until Box Sign converts to field
+    date_tag.font.color.rgb = RGBColor(0, 102, 204)  # Blue
     date_tag.font.size = Pt(10)
 
     doc.add_paragraph()

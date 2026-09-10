@@ -36,10 +36,11 @@ DOCUMENT_TYPES = {
 }
 # The lists the intake contract fixes; both copies must carry exactly these, in this order.
 CONTRACT = {
-    "Term Loan": ["Financial Statement", "Tax Return", "Bank Statement"],
-    "Line of Credit": ["Financial Statement", "Bank Statement"],
-    "Equipment Finance": ["Financial Statement", "Tax Return"],
+    "Term Loan": ["Application", "Financial Statement", "Tax Return", "Bank Statement"],
+    "Line of Credit": ["Application", "Financial Statement", "Bank Statement"],
+    "Equipment Finance": ["Application", "Financial Statement", "Tax Return"],
     "Commercial Real Estate": [
+        "Application",
         "Financial Statement",
         "Tax Return",
         "Bank Statement",
@@ -47,7 +48,7 @@ CONTRACT = {
         "Insurance",
         "Environmental Report",
     ],
-    "SBA 7(a)": ["Financial Statement", "Tax Return", "Bank Statement", "Insurance"],
+    "SBA 7(a)": ["Application", "Financial Statement", "Tax Return", "Bank Statement", "Insurance"],
 }
 
 

@@ -37,13 +37,13 @@ export function ApplicationForm({
   onCreated: (loan: LosLoanSummary) => void;
 }) {
   const ids = useId();
-  const [loanType, setLoanType] = useState("Commercial Real Estate");
-  const [amount, setAmount] = useState("4,800,000");
-  const [term, setTerm] = useState("120");
-  const [purpose, setPurpose] = useState("Acquisition and renovation of commercial warehouse property at 1200 Harbor Way to support expanded logistics operations.");
+  const [loanType, setLoanType] = useState("");
+  const [amount, setAmount] = useState("");
+  const [term, setTerm] = useState("");
+  const [purpose, setPurpose] = useState("");
   /** What the borrower typed for the entity; null until they touch the field. */
   const [entityTyped, setEntityTyped] = useState<string | null>(null);
-  const [collateral, setCollateral] = useState<string>("Real Estate");
+  const [collateral, setCollateral] = useState<string>("None");
   const [errors, setErrors] = useState<ApplicationErrors>({});
   const [failure, setFailure] = useState("");
   const [busy, setBusy] = useState<"" | "creating" | "provisioning">("");

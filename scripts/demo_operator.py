@@ -74,7 +74,10 @@ FILE_BINDINGS = {
     "taxReturns": "harborview-tax-return-summary-2025.pdf",
     "appraisal": "harborview-appraisal-2026.pdf",
     "insurance": "harborview-insurance-certificate.pdf",
+    "docgenCreditMemo": "los-credit-memo-template.docx",
     "docgenCommitmentLetter": "los-commitment-letter-template.docx",
+    "docgenClosingSummary": "los-closing-summary-template.docx",
+    "docgenMaturityNotice": "los-maturity-notice-template.docx",
 }
 PORTABLE_SPECS = [
     "config/box/automate-workflows.bcl",
@@ -94,7 +97,10 @@ UPLOADS = {
         "output/pdf/harborview-insurance-certificate.pdf",
     ],
     "08 - DocGen Templates": [
+        "output/docgen/los-credit-memo-template.docx",
         "output/docgen/los-commitment-letter-template.docx",
+        "output/docgen/los-closing-summary-template.docx",
+        "output/docgen/los-maturity-notice-template.docx",
     ],
     "Credit Policies": [
         "sample-data/policies/README.md",

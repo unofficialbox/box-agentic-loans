@@ -98,23 +98,14 @@ export function BoxElements({
   files,
   borrower = false,
   recordId,
-  previewFile,
-  onClosePreview,
 }: {
   folderId: string;
   token: string;
   files: BoxFolderItem[];
   borrower?: boolean;
   recordId?: string;
-  /** File to preview - when set, opens preview immediately */
-  previewFile?: BoxFolderItem | null;
-  /** Called when preview is closed */
-  onClosePreview?: () => void;
 }) {
   const [selected, setSelected] = useState<BoxFolderItem | null>(null);
-
-  // Use previewFile if provided, otherwise use internal selected state
-  const activeFile = previewFile ?? selected;
 
   /**
    * Preview gets the token as a function, not the string.
@@ -129,39 +120,33 @@ export function BoxElements({
   const [previewError, setPreviewError] = useState("");
   const tokenProvider = useCallback(async () => {
     if (!borrower) return token;
-    if (!recordId || !activeFile) throw new Error("Choose an accessible loan document.");
-    const granted = await fetchBoxPreviewToken(recordId, activeFile.id);
+    if (!recordId || !selected) throw new Error("Choose an accessible loan document.");
+    const granted = await fetchBoxPreviewToken(recordId, selected.id);
     if (!granted.ok) {
       setPreviewError(granted.error);
       throw new Error(granted.error);
     }
     setPreviewError("");
     return granted.value;
-  }, [borrower, recordId, activeFile, token]);
+  }, [borrower, recordId, selected, token]);
   const library = usePreviewLibrary();
 
   if (!token || !folderId) {
     return null;
   }
 
-  const handleClosePreview = () => {
-    setSelected(null);
-    setPreviewError("");
-    onClosePreview?.();
-  };
-
   return (
     // box-ui-elements reads from react-intl context and throws "Could not find required
     // `intl` object" without a provider above it.
     <IntlProvider locale="en" messages={{}}>
       <section className="box-elements" data-testid="box-elements">
-        {activeFile ? (
+        {selected ? (
           <div className="box-preview-pane" data-testid="box-preview-pane">
             <div className="box-preview-bar">
-              <button type="button" className="secondary-button" onClick={handleClosePreview}>
+              <button type="button" className="secondary-button" onClick={() => { setSelected(null); setPreviewError(""); }}>
                 <ArrowLeft size={15} /> All documents
               </button>
-              <span className="box-preview-name">{activeFile.name}</span>
+              <span className="box-preview-name">{selected.name}</span>
             </div>
             <div className="box-element-host">
               {previewError ? <div role="alert">{previewError}</div> : null}
@@ -183,7 +168,7 @@ export function BoxElements({
                 <MemoryRouter>
                   <ContentPreview
                     token={tokenProvider}
-                    fileId={activeFile.id}
+                    fileId={selected.id}
                     boxAnnotations={boxAnnotations}
                     previewLibraryVersion={PREVIEW_STYLESHEET_VERSION}
                     hasHeader={false}
