@@ -39,7 +39,7 @@ EXCLUDED_PARTS = {
 }
 MAX_TEXT_BYTES = 5_000_000
 DETERMINISTIC_DATA_FIXTURES = (
-    "json/harborview-los-records.json",
+    "json/dockwright-los-records.json",
     "json/credit-policy-playbook.json",
 )
 RUNTIME_ID_SUFFIXES = {".md", ".json", ".py", ".ts", ".tsx", ".js", ".xml", ".sh", ".yml", ".yaml", ".toml", ".env", ".properties"}
@@ -280,7 +280,7 @@ def check_generated_fixtures(root: Path = ROOT) -> str:
             module.OUTPUT = temporary / f"docgen-{index}"
             module.main()
             docgen_runs.append(module.OUTPUT)
-        expected_docx = {path.name for path in (root / "output" / "docgen").glob("*.docx")}
+        expected_docx = {path.name for path in (root / "output" / "docgen").glob("*.docx") if ".backup." not in path.name}
         generated_docx = {path.name for path in docgen_runs[0].glob("*.docx")}
         if generated_docx != expected_docx:
             raise ValidationError(

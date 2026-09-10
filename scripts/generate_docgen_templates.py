@@ -83,7 +83,7 @@ def set_table_geometry(table, widths_dxa):
             set_cell_margins(cell)
 
 
-def configure(doc, running_label, footer_label="Acme Bank | LOS-2026-Harborview"):
+def configure(doc, running_label, footer_label="Acme Bank | LOS-2026-Dockwright"):
     section = doc.sections[0]
     section.page_width = Inches(8.5)
     section.page_height = Inches(11)
@@ -162,7 +162,7 @@ def add_section_text(doc, heading, value):
 def credit_memo():
     doc = Document()
     configure(doc, "LOS Credit Memo")
-    add_title(doc, "Decision required", "Credit Memo", "Harborview Logistics loan package")
+    add_title(doc, "Decision required", "Credit Memo", "Dockwright Logistics loan package")
     add_key_values(doc, [
         ("Loan ID", "{{loan.id}}"),
         ("Borrower", "{{loan.borrower}}"),
@@ -243,14 +243,14 @@ def term_sheet_markup():
         doc,
         "In negotiation",
         "Term Sheet - Commercial Real Estate Loan - Borrower Markup",
-        "Acme Bank and Harborview Logistics Holdings LLC | LOS-2026-Harborview | Draft, with borrower markup",
+        "Acme Bank and Dockwright Logistics Holdings LLC | LOS-2026-Dockwright | Draft, with borrower markup",
     )
 
     def term(heading, body, proposed):
         doc.add_heading(heading, level=2)
         set_font(doc.add_paragraph().add_run(body), 11)
         rp = doc.add_paragraph()
-        set_font(rp.add_run("HARBORVIEW MARKUP: " + proposed), 11, bold=True, color="B91C1C")
+        set_font(rp.add_run("DOCKWRIGHT MARKUP: " + proposed), 11, bold=True, color="B91C1C")
 
     term(
         "3. Interest rate",
@@ -260,7 +260,7 @@ def term_sheet_markup():
     term(
         "6. Guaranty",
         "Unlimited personal guaranty from each owner of twenty percent or more of the Borrower.",
-        "Borrower proposes a limited guaranty from Jordan Pike and Renata Voss capped at $1,000,000 each, and no guaranty from Harborview Employee Holdings LP.",
+        "Borrower proposes a limited guaranty from Jordan Pike and Renata Voss capped at $1,000,000 each, and no guaranty from Dockwright Employee Holdings LP.",
     )
     doc.add_heading("8. Financial covenants", level=2)
     set_font(
@@ -352,11 +352,11 @@ def main():
         "los-commitment-letter-template.docx": commitment_letter(),
         "los-closing-summary-template.docx": closing_summary(),
         "los-maturity-notice-template.docx": maturity_notice(),
-        "harborview-term-sheet-2026-markup.docx": term_sheet_markup(),
+        "dockwright-term-sheet-2026-markup.docx": term_sheet_markup(),
     }
     for name, document in templates.items():
         document.core_properties.title = name.removesuffix(".docx").replace("-", " ").title()
-        document.core_properties.subject = "Box DocGen template for the Harborview LOS demo"
+        document.core_properties.subject = "Box DocGen template for the Dockwright LOS demo"
         document.core_properties.author = "Acme Bank LOS Demo"
         document.save(OUTPUT / name)
         print(OUTPUT / name)

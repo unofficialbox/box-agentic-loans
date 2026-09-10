@@ -73,7 +73,7 @@ private class LosBoxTokenServiceTest {
 
     /** A record-to-folder association as the Box for Salesforce package stores it. */
     private static Id mapRecordToFolder(String folderId) {
-        LOS_Loan__c loan = new LOS_Loan__c(Name = 'Harborview Logistics Distribution Facility Loan 2026');
+        LOS_Loan__c loan = new LOS_Loan__c(Name = 'Dockwright Logistics Distribution Facility Loan 2026');
         insert loan;
         insert new box__FRUP__c(
             box__Record_ID__c = loan.Id,

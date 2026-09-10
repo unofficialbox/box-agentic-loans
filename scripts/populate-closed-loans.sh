@@ -10,7 +10,7 @@ echo ""
 # LN-2023-0311: Harbor Expansion Loan (Closed)
 # Folder: 416383268715
 echo "=== LN-2023-0311 (Harbor Expansion 2023) ==="
-UPLOAD_RESULT=$(box files:upload output/pdf/harborview-loan-agreement-2023-executed.pdf \
+UPLOAD_RESULT=$(box files:upload output/pdf/dockwright-loan-agreement-2023-executed.pdf \
   --parent-id 416383268715 \
   --name "Loan Agreement - Executed.pdf" \
   --json)
@@ -46,7 +46,7 @@ echo ""
 # LN-2025-0148: Equipment Finance Loan (Closed)
 # Folder: 416381677501
 echo "=== LN-2025-0148 (Equipment Finance 2025) ==="
-UPLOAD_RESULT=$(box files:upload output/pdf/harborview-loan-agreement-2025-executed.pdf \
+UPLOAD_RESULT=$(box files:upload output/pdf/dockwright-loan-agreement-2025-executed.pdf \
   --parent-id 416381677501 \
   --name "Loan Agreement - Executed.pdf" \
   --json)

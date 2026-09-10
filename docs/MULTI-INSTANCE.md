@@ -6,7 +6,7 @@ This guide explains how to create and manage multiple demo workspace instances f
 
 **Single Org, Multiple Workspaces:**
 - One Salesforce org with multiple Box workspace folders
-- Each workspace is a complete `LOS-2026-Harborview` demo environment
+- Each workspace is a complete `LOS-2026-Dockwright` demo environment
 - Each loan record points to its specific workspace folder
 - All workspaces are registered in `LOS_Box_Config__c.Allowed_Folder_Ids__c`
 
@@ -26,7 +26,7 @@ python3 scripts/demo_operator.py box-foundation --dry-run
 python3 scripts/demo_operator.py box-foundation --yes
 
 # Option B: Manually copy existing workspace in Box UI
-# Copy "LOS-2026-Harborview" folder, rename to "LOS-2026-Harborview-Demo2"
+# Copy "LOS-2026-Dockwright" folder, rename to "LOS-2026-Dockwright-Demo2"
 # Note the new folder ID
 ```
 

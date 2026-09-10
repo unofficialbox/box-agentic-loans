@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { ApplicationForm } from "./ApplicationForm";
 
-const borrower = { isGuest: false, name: "Dana Whitfield", accountName: "Harborview Logistics" };
+const borrower = { isGuest: false, name: "Dana Whitfield", accountName: "Dockwright Logistics" };
 
 function fill(overrides: Partial<Record<string, string>> = {}) {
   const values = {
@@ -24,14 +24,14 @@ describe("ApplicationForm", () => {
     render(<ApplicationForm identity={borrower} onCreated={() => {}} />);
     const options = [...screen.getByLabelText("Loan type").querySelectorAll("option")].map((o) => o.textContent);
     expect(options).toEqual(["Choose one", "Term Loan", "Line of Credit", "Equipment Finance", "Commercial Real Estate", "SBA 7(a)"]);
-    expect(screen.getByLabelText("Borrowing entity")).toHaveValue("Harborview Logistics");
+    expect(screen.getByLabelText("Borrowing entity")).toHaveValue("Dockwright Logistics");
   });
 
   test("keeps what the borrower typed for the entity when identity arrives later", () => {
     const { rerender } = render(<ApplicationForm identity={null} onCreated={() => {}} />);
-    fireEvent.change(screen.getByLabelText("Borrowing entity"), { target: { value: "Harborview Holdings LLC" } });
+    fireEvent.change(screen.getByLabelText("Borrowing entity"), { target: { value: "Dockwright Holdings LLC" } });
     rerender(<ApplicationForm identity={borrower} onCreated={() => {}} />);
-    expect(screen.getByLabelText("Borrowing entity")).toHaveValue("Harborview Holdings LLC");
+    expect(screen.getByLabelText("Borrowing entity")).toHaveValue("Dockwright Holdings LLC");
   });
 
   test("refuses before the round trip and says which field", async () => {
@@ -53,7 +53,7 @@ describe("ApplicationForm", () => {
     vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
       calls.push(`${init?.method} ${url}`);
       if (url.includes("/los/applications")) {
-        return { ok: true, status: 201, json: async () => ({ recordId: "a01xx0000009abcAAA", loanId: "LN-2026-0089", name: "Harborview Logistics Commercial Real Estate 2026", status: "Application", loanType: "Commercial Real Estate" }) };
+        return { ok: true, status: 201, json: async () => ({ recordId: "a01xx0000009abcAAA", loanId: "LN-2026-0089", name: "Dockwright Logistics Commercial Real Estate 2026", status: "Application", loanType: "Commercial Real Estate" }) };
       }
       if (url.includes("/los/box-folder")) {
         return { ok: true, json: async () => ({ recordId: "a01xx0000009abcAAA", folderId: "987654321" }) };

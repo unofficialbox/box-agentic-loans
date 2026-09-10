@@ -60,7 +60,7 @@ locals {
               "path" = "output/screenshots/box-automate-loan-orchestration/box-workspace-live.png"
               "readiness" = "real-demo"
               "scenario" = "box-salesforce-los"
-              "sourceSurface" = "Box workspace LOS-2026-Harborview"
+              "sourceSurface" = "Box workspace LOS-2026-Dockwright"
             }
             {
               "capturedOn" = "2026-09-03"

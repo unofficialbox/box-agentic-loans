@@ -33,7 +33,7 @@ Credit_Policy_Hub_Id__c: 1488378748
 
 ## Loan Portfolio (4 loans)
 
-### Harborview Logistics Portfolio (3 loans)
+### Dockwright Logistics Portfolio (3 loans)
 
 **LN-2023-0311** - Harbor Expansion Loan  
 - Status: **Closed**
@@ -52,12 +52,12 @@ Credit_Policy_Hub_Id__c: 1488378748
 - Amount: $4,800,000 @ 6.85%
 - Box Folder: 416352496139 (primary workspace)
 - Documents: ✅ 6 documents with full metadata
-  - harborview-loan-application-2026.pdf (Application, Medium)
-  - harborview-term-sheet-2026-borrower-markup.pdf (Term Sheet, **Critical**)
-  - harborview-financial-statements-fy2025.pdf (Financial Statement, High)
-  - harborview-tax-return-summary-2025.pdf (Tax Return, Low)
-  - harborview-appraisal-2026.pdf (Appraisal, High)
-  - harborview-insurance-certificate.pdf (Insurance, Low)
+  - dockwright-loan-application-2026.pdf (Application, Medium)
+  - dockwright-term-sheet-2026-borrower-markup.pdf (Term Sheet, **Critical**)
+  - dockwright-financial-statements-fy2025.pdf (Financial Statement, High)
+  - dockwright-tax-return-summary-2025.pdf (Tax Return, Low)
+  - dockwright-appraisal-2026.pdf (Appraisal, High)
+  - dockwright-insurance-certificate.pdf (Insurance, Low)
 
 ### Other Borrowers
 
@@ -116,7 +116,7 @@ All beats tested and working in Claude Desktop with both connectors loaded.
 **Status:** ✅ Working
 
 ### Beat 4: Portfolio Search (Claude Desktop - LOS connector)
-**Prompt:** `What closed loans does Harborview Logistics have with us?`  
+**Prompt:** `What closed loans does Dockwright Logistics have with us?`  
 **Expected:** Returns LN-2023-0311 and LN-2025-0148  
 **Status:** ✅ Working
 
@@ -216,7 +216,7 @@ See `docs/MULTI-INSTANCE.md` for details on creating additional instances.
 4. OR test Salesforce Copilot (Beats 1, 3, 5) in the org
 
 ### For Additional Presenters
-- Create new Box workspace (copy LOS-2026-Harborview folder)
+- Create new Box workspace (copy LOS-2026-Dockwright folder)
 - Run `./scripts/add-demo-instance.sh` to link to a loan
 - OR use separate Salesforce orgs per presenter
 

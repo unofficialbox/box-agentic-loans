@@ -59,7 +59,7 @@ Validate these terms against our credit policy
 
 **Step 3: Research Precedent**
 ```
-What closed loans does Harborview Logistics have with us?
+What closed loans does Dockwright Logistics have with us?
 ```
 → Returns: LN-2023-0311 and LN-2025-0148 with their terms
 
@@ -82,7 +82,7 @@ box_create_document_from_template({
   fields: {
     loan: {
       id: "LN-2026-0042",
-      borrower: "Harborview Logistics",
+      borrower: "Dockwright Logistics",
       loanAmount: "4800000",
       status: "Approved"
     },
@@ -112,7 +112,7 @@ The Box Doc Gen template uses these placeholders:
 | Template Tag | Data Source | Example Value |
 |--------------|-------------|---------------|
 | `{{loan.id}}` | Salesforce record | "LN-2026-0042" |
-| `{{loan.borrower}}` | Salesforce record | "Harborview Logistics" |
+| `{{loan.borrower}}` | Salesforce record | "Dockwright Logistics" |
 | `{{loan.loanAmount}}` | Salesforce record | "4800000" |
 | `{{loan.status}}` | Salesforce record | "Approved" |
 | `{{loan.termSheetReference}}` | Caller analysis | "Term Sheet v3 dated 2026-08-15" |

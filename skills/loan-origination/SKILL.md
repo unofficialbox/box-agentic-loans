@@ -1,6 +1,6 @@
 ---
 name: loan-origination
-description: Present the Acme Bank loan origination demo from an AI harness (Claude Desktop first; the same rules apply in ChatGPT or Slack) with the LOS and Box MCP connectors. Use when asked to run, rehearse, or answer questions during the Harborview demo.
+description: Present the Acme Bank loan origination demo from an AI harness (Claude Desktop first; the same rules apply in ChatGPT or Slack) with the LOS and Box MCP connectors. Use when asked to run, rehearse, or answer questions during the Dockwright demo.
 ---
 
 # LOS demo presenter
@@ -86,7 +86,7 @@ You are presenting a commercial loan origination demo. Salesforce holds the loan
     },
     {
       "key": "borrowerRequestedRate",
-      "prompt": "the rate the borrower requests in its HARBORVIEW MARKUP notes"
+      "prompt": "the rate the borrower requests in its DOCKWRIGHT MARKUP notes"
     },
     {
       "key": "termMonths",
@@ -112,7 +112,7 @@ You are presenting a commercial loan origination demo. Salesforce holds the loan
 ```json
 {
   "file_ids": ["2454764583960", "2454755709301", "2454751761412"],
-  "prompt": "Compare the LTV and DSCR covenants across these three loan agreements. What did Harborview actually agree before, where in each agreement, and who signed?"
+  "prompt": "Compare the LTV and DSCR covenants across these three loan agreements. What did Dockwright actually agree before, where in each agreement, and who signed?"
 }
 ```
 
@@ -147,7 +147,7 @@ You are presenting a commercial loan origination demo. Salesforce holds the loan
       "user_input": {
         "loan": {
           "id": "LN-2026-0042",
-          "borrower": "Harborview Logistics",
+          "borrower": "Dockwright Logistics",
           "loanAmount": "4800000",
           "status": "Approved"
         },
@@ -175,11 +175,11 @@ You are presenting a commercial loan origination demo. Salesforce holds the loan
 
 ## Extraction prompts that return the borrower's numbers
 
-For `ai_extract_structured_from_fields` on the markup, name the fields so Box AI distinguishes the bank's terms from the borrower's markup: "the fixed interest rate the bank states", "the rate the borrower requests in its HARBORVIEW MARKUP notes", "the debt service coverage ratio the borrower proposes in its markup", "how often the borrower proposes the DSCR be tested". Without that wording the extract returns the policy thresholds the term sheet quotes (75%, 1.25x) instead of the borrower's positions.
+For `ai_extract_structured_from_fields` on the markup, name the fields so Box AI distinguishes the bank's terms from the borrower's markup: "the fixed interest rate the bank states", "the rate the borrower requests in its DOCKWRIGHT MARKUP notes", "the debt service coverage ratio the borrower proposes in its markup", "how often the borrower proposes the DSCR be tested". Without that wording the extract returns the policy thresholds the term sheet quotes (75%, 1.25x) instead of the borrower's positions.
 
 ## The beats
 
-Demo loan: `LN-2026-0042` (Harborview Logistics, Approved status, CFO-marked term sheet). Beats 1 and 6 happen in browser.
+Demo loan: `LN-2026-0042` (Dockwright Logistics, Approved status, CFO-marked term sheet). Beats 1 and 6 happen in browser.
 
 | Beat | Tool behavior and expected evidence |
 |---|---|
@@ -187,7 +187,7 @@ Demo loan: `LN-2026-0042` (Harborview Logistics, Approved status, CFO-marked ter
 | 3 | `getLoanPackage` → `ai_extract_structured_from_fields` on markup (loan amount, bank rate, borrower requested rate, term, DSCR as borrower proposes). Then `ai_qa_hub` on credit policy library (LTV/DSCR within policy or exception, cite IDs). Expected: $4.8M, 6.85% bank / 6.50% requested, 120mo, 1.10x DSCR annual. Hub: LOS-LTV-001/002, LOS-DSCR-001/002 - outside exceptions. Preview markup inline. |
 | 3a | `extractLoanTerms`: amount/rate/term match, LTV/DSCR mismatch, nothing written. |
 | 3b | `applyLoanTerms` refuses without "confirm". With confirm: updates amount/rate/term only. Never apply LTV or DSCR. |
-| 4 | `getLoanPackage` for LN-2023-0311 and LN-2025-0148 (two closed loans) → `ai_qa_multi_file` comparing LTV/DSCR covenants across executed agreements and 2026 markup (what Harborview agreed before, where in agreements, who signed). Expected: 70% LTV, 1.30x DSCR quarterly, Section 8 & Schedule 1, Pike/Shah signatures. Table format. Preview 2025 agreement at Schedule 1. |
+| 4 | `getLoanPackage` for LN-2023-0311 and LN-2025-0148 (two closed loans) → `ai_qa_multi_file` comparing LTV/DSCR covenants across executed agreements and 2026 markup (what Dockwright agreed before, where in agreements, who signed). Expected: 70% LTV, 1.30x DSCR quarterly, Section 8 & Schedule 1, Pike/Shah signatures. Table format. Preview 2025 agreement at Schedule 1. |
 | 5 | `getLoanPackage` → **ONLY tool is `create_docgen_batch`** (NOT `create_document_from_template`, NOT any other tool - `create_docgen_batch` is the ONLY Box Doc Gen MCP tool). Get template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`. Fill fields from beats 3 & 4. Then metadata query to find generated letter → preview letter (draft pending Credit Committee). |
 | 5b | `prepareSignatureRequest` succeeds (Approved status), embed URL stored on loan record. Borrower can sign immediately in portal via embedded iframe - no field placement needed. |
 
@@ -215,7 +215,7 @@ apply the amount, rate and term to the record, confirm
 
 **Beat 4:**
 ```
-Compare the covenant terms across Harborview's prior executed loans and the 2026 markup.
+Compare the covenant terms across Dockwright's prior executed loans and the 2026 markup.
 ```
 
 **Beat 5:**
@@ -225,7 +225,7 @@ Generate the commitment letter for LN-2026-0042.
 
 **Beat 5b:**
 ```
-Send the Harborview commitment letter for signature.
+Send the Dockwright commitment letter for signature.
 ```
 
 ## Commitment letter template structure

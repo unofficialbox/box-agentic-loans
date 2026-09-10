@@ -4,7 +4,7 @@ This guide shows the complete demo workflow including status transitions.
 
 ## Demo Loan States
 
-**LN-2026-0042** (Harborview Distribution Facility)
+**LN-2026-0042** (Dockwright Distribution Facility)
 - **Starting Status:** Underwriting
 - **After Beat 5:** Approved (ready for signature)
 - **Final Status:** Commitment (after signature sent)
@@ -36,7 +36,7 @@ Which loan documents are flagged critical policy risk?
 2. Box MCP → `get_file_preview` for found file(s)
 
 **Expected Result:**
-- Returns 1 file: harborview-term-sheet-2026-borrower-markup.pdf
+- Returns 1 file: dockwright-term-sheet-2026-borrower-markup.pdf
 - Shows inline preview
 - **Uses metadata search** (precise, fast, indexed)
 - **NOT** file listing + keyword filtering (imprecise)
@@ -68,7 +68,7 @@ Apply the amount, rate and term to the record, confirm
 **Status Required:** Any  
 **Prompt:**
 ```
-What closed loans does Harborview Logistics have with us?
+What closed loans does Dockwright Logistics have with us?
 ```
 
 **Expected Result:**
@@ -127,7 +127,7 @@ Or manually in Salesforce UI:
 **Status Required:** Approved  
 **Prompt:**
 ```
-Send the Harborview commitment letter for signature.
+Send the Dockwright commitment letter for signature.
 ```
 
 **Expected Result:**
@@ -156,7 +156,7 @@ To reset for another demo run:
 ./scripts/advance-loan-status.sh agentforce LN-2026-0042 Underwriting
 
 # 2. Clear generated commitment letter (optional)
-# Delete file from Box: 04 - Credit Approval/harborview-commitment-letter-2026-DRAFT.pdf
+# Delete file from Box: 04 - Credit Approval/dockwright-commitment-letter-2026-DRAFT.pdf
 
 # 3. Reset loan terms to original values (optional)
 sf data update record --sobject LOS_Loan__c \

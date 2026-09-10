@@ -15,9 +15,9 @@ locals {
           "accounts" = [
             {
               "industry" = "Transportation"
-              "name" = "Harborview Logistics"
+              "name" = "Dockwright Logistics"
               "phone" = "(617) 555-0101"
-              "website" = "https://www.harborviewlogistics.example"
+              "website" = "https://www.dockwrightlogistics.example"
             }
             {
               "industry" = "Healthcare"
@@ -30,7 +30,7 @@ locals {
           "artifact_type" = "config"
           "contacts" = [
             {
-              "account" = "Harborview Logistics"
+              "account" = "Dockwright Logistics"
               "email" = "kadams@boxdemo.com"
               "firstName" = "Jordan"
               "lastName" = "Pike"
@@ -47,22 +47,22 @@ locals {
             {
               "applicantEmail" = "kadams@boxdemo.com"
               "applicantName" = "Jordan Pike"
-              "borrower" = "Harborview Logistics"
-              "borrowerAccount" = "Harborview Logistics"
+              "borrower" = "Dockwright Logistics"
+              "borrowerAccount" = "Dockwright Logistics"
               "collateralType" = "Receivables"
               "collateralValue" = 2150000
               "dscr" = 1.34
               "interestRate" = 7.25
               "loanAmount" = 1500000
-              "loanFile" = "harborview-loan-agreement-2023-executed.pdf"
+              "loanFile" = "dockwright-loan-agreement-2023-executed.pdf"
               "loanId" = "LN-2023-0311"
               "loanOfficer" = "Alex Bennett"
               "loanType" = "Line of Credit"
               "ltv" = 70
               "market" = "Northeast"
               "maturityDate" = "2026-09-30"
-              "name" = "Harborview Logistics Revolving Line of Credit 2023"
-              "opportunity" = "Harborview Working Capital Line 2023"
+              "name" = "Dockwright Logistics Revolving Line of Credit 2023"
+              "opportunity" = "Dockwright Working Capital Line 2023"
               "recordSource" = "Manual"
               "riskRating" = "Low"
               "status" = "Closed"
@@ -73,22 +73,22 @@ locals {
             {
               "applicantEmail" = "kadams@boxdemo.com"
               "applicantName" = "Jordan Pike"
-              "borrower" = "Harborview Logistics"
-              "borrowerAccount" = "Harborview Logistics"
+              "borrower" = "Dockwright Logistics"
+              "borrowerAccount" = "Dockwright Logistics"
               "collateralType" = "Equipment"
               "collateralValue" = 3075000
               "dscr" = 1.31
               "interestRate" = 6.95
               "loanAmount" = 2150000
-              "loanFile" = "harborview-loan-agreement-2025-executed.pdf"
+              "loanFile" = "dockwright-loan-agreement-2025-executed.pdf"
               "loanId" = "LN-2025-0148"
               "loanOfficer" = "Alex Bennett"
               "loanType" = "Equipment Finance"
               "ltv" = 70
               "market" = "Northeast"
               "maturityDate" = "2030-05-31"
-              "name" = "Harborview Logistics Equipment Term Loan 2025"
-              "opportunity" = "Harborview Fleet Expansion 2025"
+              "name" = "Dockwright Logistics Equipment Term Loan 2025"
+              "opportunity" = "Dockwright Fleet Expansion 2025"
               "recordSource" = "Manual"
               "riskRating" = "Low"
               "status" = "Closed"
@@ -99,22 +99,22 @@ locals {
             {
               "applicantEmail" = "kadams@boxdemo.com"
               "applicantName" = "Jordan Pike"
-              "borrower" = "Harborview Logistics"
-              "borrowerAccount" = "Harborview Logistics"
-              "borrowerEntity" = "Harborview Logistics Holdings LLC"
+              "borrower" = "Dockwright Logistics"
+              "borrowerAccount" = "Dockwright Logistics"
+              "borrowerEntity" = "Dockwright Logistics Holdings LLC"
               "collateralType" = "Real Estate"
               "collateralValue" = 5650000
               "dscr" = 1.12
               "interestRate" = 6.85
               "loanAmount" = 4800000
-              "loanFile" = "harborview-term-sheet-2026-markup.docx"
+              "loanFile" = "dockwright-term-sheet-2026-markup.docx"
               "loanId" = "LN-2026-0042"
               "loanOfficer" = "Alex Bennett"
               "loanType" = "Commercial Real Estate"
               "ltv" = 85
               "market" = "Northeast"
-              "name" = "Harborview Logistics Distribution Facility Loan 2026"
-              "opportunity" = "Harborview Logistics - Distribution Facility Acquisition"
+              "name" = "Dockwright Logistics Distribution Facility Loan 2026"
+              "opportunity" = "Dockwright Logistics - Distribution Facility Acquisition"
               "recordSource" = "Manual"
               "riskRating" = "High"
               "status" = "Approved"
@@ -148,24 +148,24 @@ locals {
           "enterprise_id" = ""
           "opportunities" = [
             {
-              "account" = "Harborview Logistics"
+              "account" = "Dockwright Logistics"
               "amount" = 1500000
               "closeDate" = "2023-09-15"
-              "name" = "Harborview Working Capital Line 2023"
+              "name" = "Dockwright Working Capital Line 2023"
               "stage" = "Closed Won"
             }
             {
-              "account" = "Harborview Logistics"
+              "account" = "Dockwright Logistics"
               "amount" = 2150000
               "closeDate" = "2025-05-20"
-              "name" = "Harborview Fleet Expansion 2025"
+              "name" = "Dockwright Fleet Expansion 2025"
               "stage" = "Closed Won"
             }
             {
-              "account" = "Harborview Logistics"
+              "account" = "Dockwright Logistics"
               "amount" = 4800000
               "closeDateOffsetMonths" = 4
-              "name" = "Harborview Logistics - Distribution Facility Acquisition"
+              "name" = "Dockwright Logistics - Distribution Facility Acquisition"
               "stage" = "Proposal/Price Quote"
             }
             {

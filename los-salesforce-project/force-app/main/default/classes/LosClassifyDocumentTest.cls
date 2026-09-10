@@ -96,9 +96,9 @@ private class LosClassifyDocumentTest {
 
     private static LOS_Loan__c seedLoan() {
         LOS_Loan__c loan = new LOS_Loan__c(
-            Name = 'Harborview Logistics Commercial Real Estate 2026',
+            Name = 'Dockwright Logistics Commercial Real Estate 2026',
             Loan_ID__c = 'LN-2026-0042',
-            Borrower__c = 'Harborview Logistics',
+            Borrower__c = 'Dockwright Logistics',
             Status__c = 'Application',
             Loan_Type__c = 'Commercial Real Estate',
             Box_Workspace_Folder_ID__c = '900000001');

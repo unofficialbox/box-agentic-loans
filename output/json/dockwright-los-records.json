@@ -1,13 +1,13 @@
 {
   "loan": {
     "loanId": "LN-2026-0042",
-    "name": "Harborview Logistics Distribution Facility Loan 2026",
-    "borrower": "Harborview Logistics",
-    "borrowerEntity": "Harborview Logistics Holdings LLC",
+    "name": "Dockwright Logistics Distribution Facility Loan 2026",
+    "borrower": "Dockwright Logistics",
+    "borrowerEntity": "Dockwright Logistics Holdings LLC",
     "applicantName": "Jordan Pike",
-    "applicantEmail": "kadams@boxdemo.com",
+    "applicantEmail": "jordan.pike@dockwrightlogistics.example",
     "loanType": "Commercial Real Estate",
-    "status": "Approved",
+    "status": "Underwriting",
     "loanAmount": 4800000,
     "termMonths": 120,
     "amortizationMonths": 300,
@@ -24,12 +24,12 @@
     "targetClosingDate": "2026-11-30",
     "maturityDate": null,
     "covenantReviewDate": "2027-03-31",
-    "boxWorkspace": "LOS-2026-Harborview"
+    "boxWorkspace": "LOS-2026-Dockwright"
   },
   "salesforceOpportunity": {
-    "id": "006-demo-harborview",
-    "accountName": "Harborview Logistics",
-    "name": "Harborview Logistics - Distribution Facility Acquisition",
+    "id": "006-demo-dockwright",
+    "accountName": "Dockwright Logistics",
+    "name": "Dockwright Logistics - Distribution Facility Acquisition",
     "stage": "Proposal/Price Quote",
     "amount": 4800000,
     "closeDate": "2026-11-30",
@@ -41,7 +41,7 @@
   "priorLoans": [
     {
       "loanId": "LN-2023-0311",
-      "name": "Harborview Logistics Revolving Line of Credit 2023",
+      "name": "Dockwright Logistics Revolving Line of Credit 2023",
       "loanType": "Line of Credit",
       "status": "Closed",
       "loanAmount": 1500000,
@@ -60,7 +60,7 @@
     },
     {
       "loanId": "LN-2025-0148",
-      "name": "Harborview Logistics Equipment Term Loan 2025",
+      "name": "Dockwright Logistics Equipment Term Loan 2025",
       "loanType": "Equipment Finance",
       "status": "Closed",
       "loanAmount": 2150000,

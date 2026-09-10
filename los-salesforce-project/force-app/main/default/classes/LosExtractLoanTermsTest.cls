@@ -53,9 +53,9 @@ private class LosExtractLoanTermsTest {
 
     private static LOS_Loan__c seedLoan() {
         LOS_Loan__c loan = new LOS_Loan__c(
-            Name = 'Harborview Logistics Distribution Facility Loan 2026',
+            Name = 'Dockwright Logistics Distribution Facility Loan 2026',
             Loan_ID__c = 'LN-2026-0042',
-            Borrower__c = 'Harborview Logistics',
+            Borrower__c = 'Dockwright Logistics',
             Status__c = 'Underwriting',
             Loan_Amount__c = 4800000,
             Interest_Rate__c = 6.85,

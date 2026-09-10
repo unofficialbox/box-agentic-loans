@@ -281,7 +281,7 @@ Create table:
 Start timer
 → Which loan documents are flagged critical policy risk?
 → Extract the loan terms from that term sheet
-→ What closed loans does Harborview Logistics have?
+→ What closed loans does Dockwright Logistics have?
 → Generate the commitment letter
 End timer
 

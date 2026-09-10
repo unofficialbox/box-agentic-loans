@@ -18,18 +18,18 @@ private class LosCreateApplicationTest {
 
     @TestSetup
     static void makeData() {
-        Account harborview = new Account(Name = 'Harborview Logistics');
+        Account dockwright = new Account(Name = 'Dockwright Logistics');
         Account pinecrest = new Account(Name = 'Pinecrest Dental Group');
-        insert new List<Account>{ harborview, pinecrest };
+        insert new List<Account>{ dockwright, pinecrest };
 
         // Numbers are minted across the whole org, so the highest one this year belongs
         // to another borrower on purpose: the next application must still count past it.
         String year = thisYear();
         insert new List<LOS_Loan__c>{
-            new LOS_Loan__c(Name = 'Harborview Logistics Revolving Line of Credit 2023', Loan_ID__c = 'LN-2023-0311',
-                Borrower_Account__c = harborview.Id, Status__c = 'Closed'),
-            new LOS_Loan__c(Name = 'Harborview Logistics Distribution Facility Loan', Loan_ID__c = 'LN-' + year + '-0042',
-                Borrower_Account__c = harborview.Id, Status__c = 'Underwriting'),
+            new LOS_Loan__c(Name = 'Dockwright Logistics Revolving Line of Credit 2023', Loan_ID__c = 'LN-2023-0311',
+                Borrower_Account__c = dockwright.Id, Status__c = 'Closed'),
+            new LOS_Loan__c(Name = 'Dockwright Logistics Distribution Facility Loan', Loan_ID__c = 'LN-' + year + '-0042',
+                Borrower_Account__c = dockwright.Id, Status__c = 'Underwriting'),
             new LOS_Loan__c(Name = 'Pinecrest Dental Group Practice Expansion', Loan_ID__c = 'LN-' + year + '-0088',
                 Borrower_Account__c = pinecrest.Id, Status__c = 'Application'),
             // A hand-typed id in the year's range must be skipped, not allowed to break minting.
@@ -72,7 +72,7 @@ private class LosCreateApplicationTest {
 
     @IsTest
     static void createsTheApplicationForTheSignedInBorrowerWithTheNextLoanNumber() {
-        LosCreateApplication.accountOverride = accountNamed('Harborview Logistics');
+        LosCreateApplication.accountOverride = accountNamed('Dockwright Logistics');
         Integer before = loanCount();
 
         Test.startTest();
@@ -86,8 +86,8 @@ private class LosCreateApplicationTest {
             'The next number counts past the highest in the org, not the highest this borrower can see');
         System.assertEquals('Application', summary.get('status'));
         System.assertEquals('Commercial Real Estate', summary.get('loanType'));
-        System.assertEquals('Harborview Logistics', summary.get('borrower'));
-        System.assertEquals('Harborview Logistics', summary.get('borrowerEntity'), 'Defaults to the account name');
+        System.assertEquals('Dockwright Logistics', summary.get('borrower'));
+        System.assertEquals('Dockwright Logistics', summary.get('borrowerEntity'), 'Defaults to the account name');
         System.assertEquals(120, summary.get('termMonths'));
         System.assertEquals(null, summary.get('boxFolderId'), 'The folder is the next request, not this one');
         System.assertEquals(null, summary.get('maturityDate'));
@@ -111,9 +111,9 @@ private class LosCreateApplicationTest {
         ];
         System.assertEquals(expectedLoanId, created.Loan_ID__c);
         System.assertEquals('Borrower Portal', created.Record_Source__c);
-        System.assertEquals(accountNamed('Harborview Logistics'), created.Borrower_Account__c);
-        System.assertEquals('Harborview Logistics', created.Borrower__c);
-        System.assertEquals('Harborview Logistics Commercial Real Estate ' + thisYear(), created.Name);
+        System.assertEquals(accountNamed('Dockwright Logistics'), created.Borrower_Account__c);
+        System.assertEquals('Dockwright Logistics', created.Borrower__c);
+        System.assertEquals('Dockwright Logistics Commercial Real Estate ' + thisYear(), created.Name);
         System.assertEquals(UserInfo.getName(), created.Applicant_Name__c);
         System.assertEquals(UserInfo.getUserEmail(), created.Applicant_Email__c);
         System.assertEquals(4800000, created.Loan_Amount__c);
@@ -131,7 +131,7 @@ private class LosCreateApplicationTest {
 
     @IsTest
     static void aSecondApplicationInTheSameYearTakesTheNextNumber() {
-        LosCreateApplication.accountOverride = accountNamed('Harborview Logistics');
+        LosCreateApplication.accountOverride = accountNamed('Dockwright Logistics');
 
         Test.startTest();
         post(validApplication());
@@ -156,7 +156,7 @@ private class LosCreateApplicationTest {
     static void ignoresAnAccountNamedInTheBody() {
         // The one thing a borrower must never be able to choose. A body naming another
         // organisation is not refused, because the field does not exist; it is not read.
-        LosCreateApplication.accountOverride = accountNamed('Harborview Logistics');
+        LosCreateApplication.accountOverride = accountNamed('Dockwright Logistics');
         Map<String, Object> smuggled = (Map<String, Object>) JSON.deserializeUntyped(validApplication());
         smuggled.put('borrowerAccountId', accountNamed('Pinecrest Dental Group'));
         smuggled.put('borrowerAccount', 'Pinecrest Dental Group');
@@ -174,8 +174,8 @@ private class LosCreateApplicationTest {
             SELECT Borrower_Account__c, Borrower__c, Interest_Rate__c, Risk_Rating__c
             FROM LOS_Loan__c WHERE Id = :createdId
         ];
-        System.assertEquals(accountNamed('Harborview Logistics'), created.Borrower_Account__c);
-        System.assertEquals('Harborview Logistics', created.Borrower__c);
+        System.assertEquals(accountNamed('Dockwright Logistics'), created.Borrower_Account__c);
+        System.assertEquals('Dockwright Logistics', created.Borrower__c);
         System.assertEquals(null, created.Interest_Rate__c);
         System.assertEquals(null, created.Risk_Rating__c);
     }
@@ -212,7 +212,7 @@ private class LosCreateApplicationTest {
 
     @IsTest
     static void refusesAnInvalidApplicationWithASentenceForEachRule() {
-        LosCreateApplication.accountOverride = accountNamed('Harborview Logistics');
+        LosCreateApplication.accountOverride = accountNamed('Dockwright Logistics');
         Integer before = loanCount();
         Map<String, Object> valid = (Map<String, Object>) JSON.deserializeUntyped(validApplication());
 
@@ -240,13 +240,13 @@ private class LosCreateApplicationTest {
     @IsTest
     static void acceptsNumbersSentAsStringsAndLoanTypesInAnyCase() {
         // A form serialises what it has; the record must still carry the picklist's spelling.
-        LosCreateApplication.accountOverride = accountNamed('Harborview Logistics');
+        LosCreateApplication.accountOverride = accountNamed('Dockwright Logistics');
         Map<String, Object> valid = (Map<String, Object>) JSON.deserializeUntyped(validApplication());
         valid.put('loanType', 'term loan');
         valid.put('loanAmount', '250000');
         valid.put('termMonths', '36');
         valid.remove('collateralType');
-        valid.put('borrowerEntity', 'Harborview Logistics Holdings LLC');
+        valid.put('borrowerEntity', 'Dockwright Logistics Holdings LLC');
 
         Test.startTest();
         post(JSON.serialize(valid));
@@ -262,7 +262,7 @@ private class LosCreateApplicationTest {
         System.assertEquals(250000, created.Loan_Amount__c);
         System.assertEquals(36, created.Term_Months__c);
         System.assertEquals('None', created.Collateral_Type__c, 'Collateral defaults to None');
-        System.assertEquals('Harborview Logistics Holdings LLC', created.Borrower_Entity__c);
+        System.assertEquals('Dockwright Logistics Holdings LLC', created.Borrower_Entity__c);
     }
 
     private static String altered(Map<String, Object> valid, String key, Object value) {

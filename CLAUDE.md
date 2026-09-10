@@ -56,7 +56,7 @@ Box connector → query_metadata(template="losDocument", query="reviewStatus='Pe
 
 **Find all documents for a borrower:**
 ```
-Box connector → query_metadata(template="losDocument", query="borrowerEntity='Harborview Logistics'")
+Box connector → query_metadata(template="losDocument", query="borrowerEntity='Dockwright Logistics'")
 ```
 
 **NEVER DO THIS:**
@@ -105,7 +105,7 @@ Which loan documents are flagged critical policy risk?
 
 **For Beat 4 - Portfolio Search:**
 ```
-What closed loans does Harborview Logistics have with us?
+What closed loans does Dockwright Logistics have with us?
 ```
 → Use LOS connector's `listLoans` with borrower filter
 
@@ -124,12 +124,12 @@ What closed loans does Harborview Logistics have with us?
 
 ❌ **Wrong:**
 ```
-Source: harborview-term-sheet-2026-borrower-markup.pdf
+Source: dockwright-term-sheet-2026-borrower-markup.pdf
 ```
 
 ✅ **Correct:**
 ```
-Source: harborview-term-sheet-2026-borrower-markup.pdf
+Source: dockwright-term-sheet-2026-borrower-markup.pdf
 [calls Box connector's get_file_preview with file ID]
 ```
 
@@ -165,9 +165,9 @@ query_metadata(template="losDocument", query="documentType='Term Sheet'")
 query_metadata(template="losDocument", query="reviewStatus='Pending'")
 ```
 
-**"What documents do we have for Harborview Logistics?"**
+**"What documents do we have for Dockwright Logistics?"**
 ```
-query_metadata(template="losDocument", query="borrowerEntity='Harborview Logistics'")
+query_metadata(template="losDocument", query="borrowerEntity='Dockwright Logistics'")
 ```
 
 ## Example: Beat 3 (Extract & Validate)
@@ -183,10 +183,10 @@ query_metadata(template="losDocument", query="borrowerEntity='Harborview Logisti
 
 ## Example: Beat 4 (Portfolio Search)
 
-**Prompt:** What closed loans does Harborview Logistics have with us?
+**Prompt:** What closed loans does Dockwright Logistics have with us?
 
 **Tool Sequence:**
-1. ✅ LOS connector → `listLoans` with borrower="Harborview Logistics", status="Closed"
+1. ✅ LOS connector → `listLoans` with borrower="Dockwright Logistics", status="Closed"
 
 **Why LOS connector here:** Salesforce records, not Box files.
 
@@ -199,7 +199,7 @@ query_metadata(template="losDocument", query="borrowerEntity='Harborview Logisti
 **✅ CORRECT Tool Sequence (Box MCP):**
 1. LOS connector → `getLoanPackage('LN-2026-0042')` - get folder ID
 2. LOS connector → `extractLoanTerms` - get extracted terms & policy validation
-3. LOS connector → `listLoans(borrower='Harborview Logistics', status='Closed')` - get precedent
+3. LOS connector → `listLoans(borrower='Dockwright Logistics', status='Closed')` - get precedent
 4. Query Salesforce for template ID:
    ```sql
    SELECT Commitment_Letter_Template_ID__c FROM LOS_Box_Config__c
@@ -213,7 +213,7 @@ query_metadata(template="losDocument", query="borrowerEntity='Harborview Logisti
      fields: {
        loan: {
          id: "LN-2026-0042",
-         borrower: "Harborview Logistics",
+         borrower: "Dockwright Logistics",
          loanAmount: "4800000",
          status: "Approved",
          termSheetReference: "Term Sheet v3 dated 2026-08-15"

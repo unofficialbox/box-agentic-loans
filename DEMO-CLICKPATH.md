@@ -1,6 +1,6 @@
 # Demo Clickpath
 
-A borrower starts an application in the Acme Borrower Portal; a term sheet marked up on the borrower's numbers is read against the credit policy library and the two loans Harborview already closed. Six beats, two windows, an 11-minute full walkthrough. The 6:30 shortened stage variant and reset procedure are in [docs/PRESENTING.md](docs/PRESENTING.md).
+A borrower starts an application in the Acme Borrower Portal; a term sheet marked up on the borrower's numbers is read against the credit policy library and the two loans Dockwright already closed. Six beats, two windows, an 11-minute full walkthrough. The 6:30 shortened stage variant and reset procedure are in [docs/PRESENTING.md](docs/PRESENTING.md).
 
 Headless, not branded: Box holds the file, Salesforce holds the record, and the harness is whatever the room uses. Beats 2 to 5 are written for Claude Desktop with the LOS and Box connectors; the same prompts work from ChatGPT, Slack, or the Loan Copilot inside Agentforce.
 
@@ -45,7 +45,7 @@ apply the amount, rate and term to the record, confirm
 
 **Beat 4 (Claude Desktop):**
 ```
-Compare the covenant terms across Harborview's prior executed loans and the 2026 markup.
+Compare the covenant terms across Dockwright's prior executed loans and the 2026 markup.
 ```
 
 **Beat 5 (Claude Desktop):**
@@ -55,7 +55,7 @@ Generate the commitment letter for LN-2026-0042.
 
 **Beat 5b (Claude Desktop):**
 ```
-Send the Harborview commitment letter for signature.
+Send the Dockwright commitment letter for signature.
 ```
 
 **Beat 6 (Browser):** `https://<your-site>.my.site.com/loansvforcesite/login?startURL=%2Floans%2F`
@@ -100,18 +100,18 @@ Expect both connectors listed under Context in the session. Box must offer folde
 **P4. Terminal: the loan statuses.** Beat 5's signature preparation needs the 2026 loan in Approved; beat 4 needs the two earlier loans Closed.
 
 ```bash
-sf data query -o <alias> -q "SELECT Loan_ID__c, Status__c FROM LOS_Loan__c WHERE Borrower__c='Harborview Logistics' ORDER BY Loan_ID__c"
+sf data query -o <alias> -q "SELECT Loan_ID__c, Status__c FROM LOS_Loan__c WHERE Borrower__c='Dockwright Logistics' ORDER BY Loan_ID__c"
 ```
 
 Expect LN-2023-0311 Closed, LN-2025-0148 Closed, LN-2026-0042 Approved.
 
-**P5. Box: no stray duplicates.** Inventory `LOS-2026-Harborview / 02 - Borrower Documents` for `(1)` copies left by earlier seeds. Unclassified duplicates are excluded from the borrower listing. Queue them for the cleanup owner to review; deletion requires a separate explicit decision. Confirm `Loans_Root_Folder_Id__c` in `LOS_Box_Config__c` points at the loans root so beat 2 is scoped.
+**P5. Box: no stray duplicates.** Inventory `LOS-2026-Dockwright / 02 - Borrower Documents` for `(1)` copies left by earlier seeds. Unclassified duplicates are excluded from the borrower listing. Queue them for the cleanup owner to review; deletion requires a separate explicit decision. Confirm `Loans_Root_Folder_Id__c` in `LOS_Box_Config__c` points at the loans root so beat 2 is scoped.
 
 **P6. Salesforce Setup: the borrower's login.** Dana Whitfield needs either a real password (Setup, Users, Dana Whitfield, Reset Password; the mail goes to `<borrower-user-email>`) or an admin who opens the site as her with Log in to Experience as User from her user record, which needs no password. Confirm she is a site member with a `NetworkMember` query first; a non-member's login failure looks like bad credentials.
 
 **P7. Private window: sign in as Dana once.** Use the login path from beat 1, not `/loans/`.
 
-Expect the portal to open on Your loans with the three Harborview loans and a Start a new application button under the Acme Bank mark. A borrower with no loans lands on Start an application; a signed-out visitor gets the sign-in prompt, never an error card.
+Expect the portal to open on Your loans with the three Dockwright loans and a Start a new application button under the Acme Bank mark. A borrower with no loans lands on Start an application; a signed-out visitor gets the sign-in prompt, never an error card.
 
 ## The six beats
 
@@ -121,11 +121,11 @@ Expect the portal to open on Your loans with the three Harborview loans and a St
 https://<your-site>.my.site.com/loansvforcesite/login?startURL=%2Floans%2F
 ```
 
-Sign in as Dana Whitfield, Harborview's CFO. Start a new application: Commercial Real Estate, amount, term, one line of purpose. The borrowing entity is filled from her account; she cannot apply for anyone else. Submit.
+Sign in as Dana Whitfield, Dockwright's CFO. Start a new application: Commercial Real Estate, amount, term, one line of purpose. The borrowing entity is filled from her account; she cannot apply for anyone else. Submit.
 
 Expect the workspace to open on the new loan with a Required documents card listing the seven things the bank asks a real-estate borrower for, each with one sentence of why, every row missing with an Upload button.
 
-Upload two files from `output/pdf/`: `harborview-appraisal-2026.pdf`, then `harborview-financial-statements-fy2025.pdf`.
+Upload two files from `output/pdf/`: `dockwright-appraisal-2026.pdf`, then `dockwright-financial-statements-fy2025.pdf`.
 
 Expect "Classified as Appraisal by Box AI", then "Classified as Financial Statement by Box AI", and two ticks on the checklist. Nobody chose a type from a menu; Box AI read the document against the `losDocument` template. A file it cannot name is still received, but remains excluded from the document listing until the loan officer classifies it. The upload notice explains the pending classification.
 
@@ -133,7 +133,7 @@ Then the lender's side: open the new record in Salesforce. Expect Status Applica
 
 If asked: creating the record and provisioning its folder are two requests, because Apex cannot make a callout after DML. If the folder step fails the workspace says so; retry from the workspace, not the form. A borrower who emails the package instead is captured onto the Opportunity's Box folder, and `losLoan` metadata in `01 - Application Intake` starts the alternate Automate path. Say it in one sentence; do not show it.
 
-Beats 2 to 5 pick up LN-2026-0042, the Harborview loan now in Approved status, with the term sheet the CFO sent back on her numbers.
+Beats 2 to 5 pick up LN-2026-0042, the Dockwright loan now in Approved status, with the term sheet the CFO sent back on her numbers.
 
 ### 2. The portfolio already knows what's risky (Claude Desktop, to 4:05)
 
@@ -141,7 +141,7 @@ Beats 2 to 5 pick up LN-2026-0042, the Harborview loan now in Approved status, w
 Which loan documents for LN-2026-0042 are flagged critical policy risk?
 ```
 
-Expect `getLoanPackage('LN-2026-0042')` to get the folder ID, then Box metadata search for `policyRisk = Critical` with folder scope. One hit: `harborview-term-sheet-2026-borrower-markup.pdf`. **MUST call `get_file_preview` to show the document inline**. The document should appear on screen, not just a filename or link. Ask for High or above and the FY2025 financial statements and the appraisal join it.
+Expect `getLoanPackage('LN-2026-0042')` to get the folder ID, then Box metadata search for `policyRisk = Critical` with folder scope. One hit: `dockwright-term-sheet-2026-borrower-markup.pdf`. **MUST call `get_file_preview` to show the document inline**. The document should appear on screen, not just a filename or link. Ask for High or above and the FY2025 financial statements and the appraisal join it.
 
 **If the assistant only cites "Source: filename.pdf" without showing the document:** Say "show me the document" — P2 custom instructions require preview after citing. The beat is not complete until the document appears.
 
@@ -174,12 +174,12 @@ First request the same write without confirmation and verify the action refuses.
 Box does this beat across three files.
 
 ```text
-Compare the covenant terms across Harborview's prior executed loans and the 2026 markup.
+Compare the covenant terms across Dockwright's prior executed loans and the 2026 markup.
 ```
 
-Expect `getLoanPackage` for the two closed loans to hand over the executed agreements, then one Box AI multi-file answer: both closed loans at 70% LTV and 1.30x DSCR tested quarterly, Section 8 and Schedule 1 of each executed agreement, signed by Jordan Pike for Harborview and Priya Shah for Acme Bank; the 2026 markup asks 1.10x tested annually. One table, then the 2025 agreement previewed at Schedule 1.
+Expect `getLoanPackage` for the two closed loans to hand over the executed agreements, then one Box AI multi-file answer: both closed loans at 70% LTV and 1.30x DSCR tested quarterly, Section 8 and Schedule 1 of each executed agreement, signed by Jordan Pike for Dockwright and Priya Shah for Acme Bank; the 2026 markup asks 1.10x tested annually. One table, then the 2025 agreement previewed at Schedule 1.
 
-Land it: Harborview's markup regresses two positions their own CFO agreed, in writing, twice.
+Land it: Dockwright's markup regresses two positions their own CFO agreed, in writing, twice.
 
 ### 5. Put the terms on paper, then stop (to 9:20)
 
@@ -194,7 +194,7 @@ Expect `getLoanPackage` for the record and folder, then `create_docgen_batch` wi
 If the Box connector refuses Doc Gen: the Box Admin Console must have the Doc Gen MCP tools enabled and the connector reconnected afterwards (docs/SETUP.md §5a).
 
 ```text
-Send the Harborview commitment letter for signature.
+Send the Dockwright commitment letter for signature.
 ```
 
 Expect `prepareSignatureRequest` to be called and succeed. The loan's Approved status passes the state check (`SIGNABLE = Approved, Commitment`). The sign request is created with:
@@ -214,7 +214,7 @@ https://<your-site>.my.site.com/loansvforcesite/login?startURL=%2Floans%2F
 
 Sign in as Dana Whitfield with the password from P6. Use the login path: `/loans/` serves the app for every URL beneath it and never redirects a signed-out visitor.
 
-Expect the header to name her, Dana Whitfield · Harborview Logistics, above the three seeded Harborview loans plus the beat 1 application, and no Pinecrest. Same code, different identity, different rows: a Salesforce sharing set on the borrower account, with upload-only folder access and separately authorized per-file preview tokens.
+Expect the header to name her, Dana Whitfield · Dockwright Logistics, above the three seeded Dockwright loans plus the beat 1 application, and no Pinecrest. Same code, different identity, different rows: a Salesforce sharing set on the borrower account, with upload-only folder access and separately authorized per-file preview tokens.
 
 Open the 2026 loan. **Expect to see the embedded Box Sign iframe** at the top of the workspace with the commitment letter ready to sign. The signature and date fields are interactive (converted from Box Sign tags). 
 
@@ -238,7 +238,7 @@ Setup, Agentforce Agents: confirm Loan Copilot shows Active, open it, and click 
 | `What does the borrower's markup change about the rate and the guaranty?` | 6.50% requested against 6.85% fixed; limited guaranty capped at $1,000,000 each; cited to the markup PDF. |
 | `Extract the terms from the term sheet and validate them against the record.` | Seven fields. LTV 75 vs 85 and DSCR 1.25 vs 1.12 flagged as mismatches. States that nothing was written. |
 | `Does credit policy allow 85% LTV (loan-to-value) and 1.12x DSCR (debt service coverage ratio)? Cite the policy IDs.` | LOS-LTV-001 and LOS-LTV-002, LOS-DSCR-001 and LOS-DSCR-002. Both requests outside the approved exceptions. |
-| `What has Harborview submitted for LN-2026-0043 so far?` | The Equipment Finance application: Financial Statement and Tax Return classified, loan application still missing. |
+| `What has Dockwright submitted for LN-2026-0043 so far?` | The Equipment Finance application: Financial Statement and Tax Return classified, loan application still missing. |
 
 Expect five answers without a fallback. If one falls to the fallback or narrates tool names, note the message and send it to the maintainer: the fix is an edit to the `.agent` file and a republish. Never edit the agent in the builder; the next publish overwrites it.
 
@@ -259,6 +259,6 @@ Every run of beat 1 creates a real `LOS_Loan__c` in Application status and a rea
 - **The Box MCP server package for Agentforce is not generally available.** Its security review is stalled. The Loan Copilot runs on Apex actions and does not depend on it.
 - **Where do the documents live? In Box.** Documents stay in Box; Salesforce permission sets decide what a user may read or write on the record; Box permissions decide which content they may see; the assistant reads both; extracted values and generated draft content cross those interfaces while source documents remain in Box.
 - **Why no Copilot on the borrower site?** A Service Agent runs as its assigned agent user and cannot inherit Dana's access. An Employee Agent inherits the signed-in user's permissions; that is where the internal Loan Copilot runs.
-- **The tagging on seeded files is manual.** Portal uploads are classified by Box AI as they land; the seeded Harborview files were tagged by the seed script and by hand. A metadata cascade policy on the loan folder is what would make it survive the next loan.
+- **The tagging on seeded files is manual.** Portal uploads are classified by Box AI as they land; the seeded Dockwright files were tagged by the seed script and by hand. A metadata cascade policy on the loan folder is what would make it survive the next loan.
 
 Loans: LN-2023-0311, LN-2025-0148, LN-2026-0042, Pinecrest LN-2026-0088, plus each rehearsal's application.

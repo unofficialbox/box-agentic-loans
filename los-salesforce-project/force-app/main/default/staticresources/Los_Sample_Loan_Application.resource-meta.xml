@@ -2,5 +2,5 @@
 <StaticResource xmlns="http://soap.sforce.com/2006/04/metadata">
     <cacheControl>Private</cacheControl>
     <contentType>application/pdf</contentType>
-    <description>Sample Harborview loan application PDF, used by demo-email-intake.apex as a realistic inbound attachment.</description>
+    <description>Sample Dockwright loan application PDF, used by demo-email-intake.apex as a realistic inbound attachment.</description>
 </StaticResource>

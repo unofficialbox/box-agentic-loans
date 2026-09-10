@@ -35,7 +35,7 @@ After generating a commitment letter with Doc Gen:
 Generate the commitment letter for LN-2026-0042.
 
 # Prepare sign request (Beat 5b)
-Send the Harborview commitment letter for signature.
+Send the Dockwright commitment letter for signature.
 
 # Verify in borrower portal
 1. Sign in as Dana Whitfield
