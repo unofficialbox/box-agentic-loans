@@ -138,8 +138,8 @@ public with sharing class LosSendForSignature {
                 List<Object> signers = (List<Object>) parsed.get('signers');
                 if (signers != null && !signers.isEmpty()) {
                     Map<String, Object> firstSigner = (Map<String, Object>) signers[0];
-                    result.embedUrl = firstSigner.get('embed_url') == null
-                        ? null : String.valueOf(firstSigner.get('embed_url'));
+                    result.embedUrl = firstSigner.get('iframeable_embed_url') == null
+                        ? null : String.valueOf(firstSigner.get('iframeable_embed_url'));
 
                     // Store embed URL on the loan record for borrower portal access
                     if (result.embedUrl != null) {
