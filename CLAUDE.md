@@ -115,7 +115,7 @@ Which loan documents are flagged critical policy risk?
 - Hub/policy search → Box connector's `ai_qa_hub` with hub_id `1488378748`
 
 **NEVER:**
-- Get file contents (Box AI works on file IDs without downloading)
+- Get source file contents for analysis (use Box AI on IDs). Exception: inspect the exact Doc Gen output to verify merge completion before signing.
 - List hubs (Hub ID is static: `1488378748`)
 - List templates (metadata template is `losDocument`, Doc Gen template from Salesforce)
 
@@ -220,74 +220,11 @@ query_metadata(template="losDocument", query="borrowerEntity='Harborview Logisti
 
 ---
 
-## Example: Beat 5 (Generate Commitment Letter) - Box MCP
+## Example: Beat 5 (Generate Commitment Letter)
 
-**Prompt:** Generate the commitment letter for this loan.
+Follow [the canonical Doc Gen contract](docs/DOCGEN-GUIDE.md) for `create_docgen_batch`. Resolve the template from Salesforce and the destination from the current loan package. Pass all 15 merge paths under `document_generation_data[].user_input`.
 
-**NOTE:** This example uses demo values (`LN-2026-0042`). In production/borrower portal, use the dynamic `recordId` from context, not hardcoded loan IDs.
-
-**✅ CORRECT Tool Sequence (Box MCP):**
-1. LOS connector → `getLoanPackage(<recordId or loan ID>)` - get folder ID
-2. LOS connector → `extractLoanTerms` - get extracted terms & policy validation
-3. LOS connector → `listLoans(borrower='Harborview Logistics', status='Closed')` - get precedent
-4. Query Salesforce for template ID:
-   ```sql
-   SELECT Commitment_Letter_Template_ID__c FROM LOS_Box_Config__c
-   ```
-5. Box connector → `create_document_from_template` with:
-   ```javascript
-   {
-     template_id: "2454763922014",  // From step 4
-     destination_folder_id: "<folderId from getLoanPackage>",  // From step 1 - use loan's folder ID
-     output_name: "commitment-letter-LN-2026-0042",
-     fields: {
-       loan: {
-         id: "LN-2026-0042",
-         borrower: "Harborview Logistics",
-         loanAmount: "4800000",
-         status: "Approved",
-         termSheetReference: "Term Sheet v3 dated 2026-08-15"
-       },
-       terms: {
-         policyAtIssue: "LTV and DSCR covenants per LOS-LTV-001, LOS-LTV-002, LOS-DSCR-001, LOS-DSCR-002",
-         requestedPosition: "Borrower requested: $4.8M at 6.85% for 120 months, 85% LTV, 1.10 DSCR",
-         approvedPosition: "Standard policy: 80% LTV maximum (LOS-LTV-001), 1.25 DSCR minimum (LOS-DSCR-001)",
-         exceptionPosition: "Exception approved: Up to 85% LTV for collateral values exceeding $5M (LOS-LTV-002), DSCR as low as 1.15 with compensating factors (LOS-DSCR-002)",
-         owner: "Credit Risk Committee",  // REQUIRED: Who owns the exception decision (e.g., "Credit Risk Committee", "Senior Credit Officer", "Credit Administration")
-         risk: "High",  // From loan record
-         proposedTerms: "$4.8M at 6.85% for 120 months, subject to 82% LTV, 1.15 DSCR minimum, enhanced monitoring"
-       },
-       precedent: {
-         summary: "Prior executed loans: LN-2023-0311 ($1.5M @ 7.25%, 75% LTV, 1.35 DSCR) and LN-2025-0148 ($2.15M @ 6.95%, 78% LTV, 1.28 DSCR). Both within standard policy limits."
-       },
-       letter: {
-         preparedOn: "8 September 2026",
-         preparedBy: "Loan Copilot (draft)"
-       }
-     }
-   }
-   ```
-
-**Why Box MCP here:** 
-- Direct API access (MCP-first strategy)
-- Faster than going through Salesforce
-- Consistent with metadata-first approach
-
-**Critical:** All `fields` values must come from prior analysis (steps 2-3), NOT placeholder text. Empty/missing fields result in unfilled `{{placeholders}}` appearing in red in the PDF.
-
-**REQUIRED fields that MUST be populated:**
-- `terms.owner` - Who owns the exception decision (e.g., "Credit Risk Committee", "Senior Credit Officer")
-- `terms.policyAtIssue` - Which policy sections apply
-- `terms.requestedPosition` - What the borrower requested
-- `terms.approvedPosition` - Standard policy position
-- `terms.exceptionPosition` - Exception policy (if applicable)
-- `terms.proposedTerms` - Final proposed terms
-- `precedent.summary` - Prior loan precedent
-- `loan.*` - Loan facts from the record
-
-**❌ DON'T:**
-- Call Doc Gen without complete analysis data (results in red `{{placeholders}}` in PDF)
-- Omit `terms.owner` - it appears 3 times in the letter and is critical for approval workflow
+A batch acceptance is not success. Read the matching job, require `completed`, and inspect its exact `output_file.id` for unresolved tags and correct loan terms before previewing or sending. Do not select a generated file by name or metadata search; earlier failed outputs can have nearly identical names. A successful retry does not update an existing Box Sign request.
 
 ## Performance Tips
 
@@ -334,16 +271,11 @@ query_metadata(template="losDocument", query="borrowerEntity='Harborview Logisti
 - File must be in the loan's governed folder
 
 **If Doc Gen has empty placeholders:**
-- Must provide ALL analysis fields from prior steps
-- `requestedPosition` from extractLoanTerms
-- `approvedPosition` from policy Hub validation
-- `exceptionPosition` from policy Hub
-- `precedentSummary` from portfolio research
-- `proposedTerms` from your analysis
-- See `docs/DOCGEN-GUIDE.md` for complete workflow
+- Follow [Doc Gen diagnosis and retry](docs/DOCGEN-GUIDE.md#diagnosis-and-retry).
+- Read the exact job's warnings and output file. Do not conclude that typed tags are invalid or blame the template without checking Box's recognized tags.
 
 **For Doc Gen:**
-- ✅ Use Box MCP `create_document_from_template` (direct API, MCP-first)
+- ✅ Use Box MCP `create_docgen_batch` (direct API, MCP-first)
 - ✅ Get template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`
 - ❌ NEVER call `list_docgen_templates` - template ID is static
 - Must provide complete analysis data to fill all placeholders
@@ -372,7 +304,7 @@ Need to find documents?
 | **Box AI** | Box | `box_ai_ask`, `box_ai_extract` | Direct, faster |
 | **File Preview** | Box | `get_file_preview` | Show documents inline |
 | **Hub/Policy Search** | Box | Hub QA tools | Box Hubs, not Salesforce |
-| **Doc Gen** | Box | `create_document_from_template` | Direct API, MCP-first |
+| **Doc Gen** | Box | `create_docgen_batch` | Direct API, MCP-first |
 | **Loan Records** | LOS | `listLoans` | Salesforce SOQL |
 | **Governed Actions** | LOS | `extract/apply/sign` | Business rules + validation |
 

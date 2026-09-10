@@ -18,7 +18,7 @@ You are presenting a commercial loan origination demo. Salesforce holds the loan
 **Content rules:**
 - Never print IDs. Use them; do not show them.
 - Never narrate tool names.
-- Never decline a governed action on the user's behalf. Call it and report what it says.
+- Call governed actions with verified inputs and report their result. Do not send an unverified generated document to Sign.
 - Never apply extracted terms without the word "confirm".
 - Spell out acronyms on first use: "LTV (loan-to-value)", "DSCR (debt service coverage ratio)".
 
@@ -40,7 +40,7 @@ You are presenting a commercial loan origination demo. Salesforce holds the loan
 - Doc Gen template ID is STATIC. Get from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`. NEVER call `list_docgen_templates`.
 - Credit Policy Hub ID is STATIC: `1488378748`. NEVER call `list_hubs`.
 - NEVER list folder contents. Use metadata queries with folder scope to find files.
-- NEVER get file contents. Box AI operations work on file IDs without downloading.
+- Use Box AI on file IDs for source-document analysis. For Doc Gen verification, inspect the exact generated output with an available content-reading or preview tool; this is a narrow exception to avoiding file-content reads.
 
 ## Loan identification
 
@@ -147,52 +147,17 @@ The tools (`getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `prepareSigna
 }
 ```
 
-**create_docgen_batch:**
-```json
-{
-  "template_id": "2454763922014",
-  "destination_folder_id": "<folderId from getLoanPackage>",
-  "output_type": "pdf",
-  "entries": [
-    {
-      "generated_file_name": "commitment-letter-LN-2026-0042",
-      "user_input": {
-        "loan": {
-          "id": "LN-2026-0042",
-          "borrower": "Harborview Logistics",
-          "loanAmount": "4800000",
-          "status": "Approved",
-          "termSheetReference": "Term Sheet v3 dated 2026-08-15"
-        },
-        "terms": {
-          "policyAtIssue": "LTV and DSCR covenants per LOS-LTV-001, LOS-LTV-002, LOS-DSCR-001, LOS-DSCR-002",
-          "requestedPosition": "Borrower requested: $4.8M at 6.85% for 120 months, 85% LTV, 1.10 DSCR",
-          "approvedPosition": "Standard policy: 80% LTV maximum (LOS-LTV-001), 1.25 DSCR minimum (LOS-DSCR-001)",
-          "exceptionPosition": "Exception approved: Up to 85% LTV for collateral values exceeding $5M (LOS-LTV-002), DSCR as low as 1.15 with compensating factors (LOS-DSCR-002)",
-          "owner": "Credit Risk Committee",
-          "risk": "High",
-          "proposedTerms": "$4.8M at 6.85% for 120 months, subject to 82% LTV, 1.15 DSCR minimum, enhanced monitoring"
-        },
-        "precedent": {
-          "summary": "Prior executed loans: LN-2023-0311 ($1.5M @ 7.25%, 75% LTV, 1.35 DSCR) and LN-2025-0148 ($2.15M @ 6.95%, 78% LTV, 1.28 DSCR). Both within standard policy limits."
-        },
-        "letter": {
-          "preparedOn": "8 September 2026",
-          "preparedBy": "Loan Copilot (draft)"
-        }
-      }
-    }
-  ]
-}
-```
+## Doc Gen and signature handoff
 
-**prepareSignatureRequest:**
-```json
-{
-  "loanReference": "LN-2026-0042",
-  "documentFileId": "2455098056437"
-}
-```
+Read [the Doc Gen contract](../../docs/DOCGEN-GUIDE.md) before generating a letter. It contains the complete nested payload for the connected `create_docgen_batch` tool: `file_id`, `destination_folder_id`, `output_type`, and `document_generation_data[].user_input`. Do not substitute `template_id`, `entries`, or a top-level `fields` object. Check the connected tool schema if it changes.
+
+1. Resolve the current loan and mapped folder with `getLoanPackage`; resolve the template file ID from the org configuration. Populate all 15 paths from the record and sourced analysis. `loan.termSheetReference` is required by this template; use `loan.borrower`, not `loan.borrowerEntity`. Missing evidence must be stated honestly, never invented as an approval or risk rating.
+2. Save the returned batch ID. Poll that batch's jobs using the connector's available job-read tools or an authorized API read. A created batch or PDF is not proof of a completed merge. If job status cannot be read, report that verification is blocked; do not discover a replacement by filename.
+3. Require `status = completed`. On `completed_with_error` or failure, inspect `failures.errors` and `failures.warnings` and report the missing paths. Correct a demonstrated input error before retrying; do not try speculative payload formats or repeat an unchanged request. A timeout is not grounds to create a duplicate batch.
+4. Take `output_file.id` from the job in that exact batch. Inspect and preview that ID. Reject unresolved `{{...}}` tags, the wrong loan, or incorrect amount/rate/term. A failed preview is not verification. Do not select by filename, newest timestamp, metadata search, or a prior response's remembered ID.
+5. Only after verification and the user's send authorization, pass that same file ID to `prepareSignatureRequest` using its connected schema. The repo action takes `loanReference`, `itemId`, and `signerEmail`; use a confirmed signer. Keep the loan-status guard authoritative. Do not report sent/prepared unless the action succeeds.
+
+If an unfilled version already has a signature request, identify that request and report it for cancellation/replacement. Do not cancel, delete, or send a replacement solely because the skill says so; use the user's authorization for the specific action.
 
 ## Extraction prompts that return the borrower's numbers
 
@@ -209,8 +174,8 @@ Demo uses the latest Harborview loan (created in Beat 1). Query with `listLoans(
 | 3a | `extractLoanTerms`: amount/rate/term match, LTV/DSCR mismatch, nothing written. |
 | 3b | `applyLoanTerms` refuses without "confirm". With confirm: updates amount/rate/term only. Never apply LTV or DSCR. |
 | 4 | `getLoanPackage` for LN-2023-0311 and LN-2025-0148 (two closed loans) → `ai_qa_multi_file` comparing LTV/DSCR covenants across executed agreements and 2026 markup (what Harborview agreed before, where in agreements, who signed). Expected: 70% LTV, 1.30x DSCR quarterly, Section 8 & Schedule 1, Pike/Shah signatures. Table format. Preview 2025 agreement at Schedule 1. |
-| 5 | `getLoanPackage` → **ONLY tool is `create_docgen_batch`** (NOT `create_document_from_template`, NOT any other tool - `create_docgen_batch` is the ONLY Box Doc Gen MCP tool). Get template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`. Fill ALL required fields including `terms.owner` (e.g., "Credit Risk Committee") from beats 3 & 4. Missing fields = red `{{placeholders}}` in PDF. Then metadata query to find generated letter → preview letter (draft pending Credit Committee). |
-| 5b | `prepareSignatureRequest` succeeds (Approved status), embed URL stored on loan record. Borrower can sign immediately in portal via embedded iframe - no field placement needed. |
+| 5 | Follow the Doc Gen contract: complete nested input → batch/job status → exact `output_file.id` → inspect merge and loan terms → preview. Stop on unresolved tags or unverifiable output. |
+| 5b | With user authorization, pass the verified output ID to `prepareSignatureRequest`. Report the actual result; the loan-status guard can refuse. On success the borrower can sign in the portal. |
 
 ## Beat prompts (offer after completing each beat)
 
@@ -249,40 +214,9 @@ Generate the commitment letter for this loan.
 Send the commitment letter for signature.
 ```
 
-## Commitment letter template structure
+## Commitment letter fields
 
-**REQUIRED fields (missing = red `{{placeholders}}` in PDF):**
-```json
-{
-  "loan": {
-    "id": "REQUIRED",
-    "borrower": "REQUIRED",
-    "loanAmount": "REQUIRED",
-    "status": "REQUIRED",
-    "termSheetReference": "optional"
-  },
-  "terms": {
-    "policyAtIssue": "REQUIRED - policy sections from Hub",
-    "requestedPosition": "REQUIRED - what borrower requested",
-    "approvedPosition": "REQUIRED - standard policy with IDs",
-    "exceptionPosition": "REQUIRED - exception policy with IDs",
-    "owner": "REQUIRED - who owns exception decision (e.g., 'Credit Risk Committee')",
-    "risk": "REQUIRED - from loan record",
-    "proposedTerms": "REQUIRED - final proposed terms"
-  },
-  "precedent": {
-    "summary": "REQUIRED - prior loan precedent"
-  },
-  "letter": {
-    "preparedOn": "REQUIRED - date",
-    "preparedBy": "REQUIRED - 'Loan Copilot (draft)'"
-  }
-}
-```
-
-**Critical:** `terms.owner` appears 3 times in the letter. Must be populated. Common values: "Credit Risk Committee", "Senior Credit Officer", "Credit Administration".
-
-Fill from: `loan` (getLoanPackage + record), `terms` (beat 3 policy analysis + record), `precedent` (beat 4). Never invent values.
+The [canonical payload](../../docs/DOCGEN-GUIDE.md#complete-merge-payload) lists all 15 current paths. Keep field examples there rather than copying another schema here. Source `loan` from the selected record, `terms` from the record and policy analysis, and `precedent` from prior executed agreements. The presence of a Box Sign signature field does not prove Doc Gen populated the letter.
 
 ## Key Terms
 
@@ -294,4 +228,4 @@ Fill from: `loan` (getLoanPackage + record), `terms` (beat 3 policy analysis + r
 - **Data movement?** Box stores documents. Previews/extracts/metadata travel as needed. Box connector uses user permissions; LOS uses Salesforce connection.
 - **Claudeforce?** No. This is the headless pattern (Box + Salesforce + harness).
 - **Box MCP for Agentforce GA?** Not yet (security review). Loan Copilot uses Apex actions.
-- **Can assistant sign/send?** No. Doc Gen drafts; Box Sign prepares; write-back needs "confirm".
+- **Can assistant sign/send?** The assistant may create an authorized signature request using the verified document and governed action. The borrower signs. Write-back requires confirmation.

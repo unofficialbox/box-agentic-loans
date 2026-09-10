@@ -352,3 +352,10 @@ sf project deploy start -o agentforce -d force-app/main/default/uiBundles/losrea
 - Whether there are CORS or other API errors
 
 **Bottom Line:** Code changes were made but not validated. The next person needs to actually test in a browser and debug from there.
+
+
+## Doc Gen skill correction
+
+The live tags endpoint recognized all 15 template paths. A failed generation reported missing input values; a retry against the same template version completed and its PDF contained no unresolved tags. The earlier unfilled copy was mistakenly identified as the corrected output. The exact malformed first payload was not available for inspection.
+
+The presenter skill now uses the connected MCP argument names, checks the batch job, verifies its exact output file, and hands only that verified ID to Sign. `docs/DOCGEN-GUIDE.md` is the canonical complete payload; CLAUDE and the clickpath link to it. A contract test compares its nested merge paths to the actual DOCX template. Reload the updated skill/instructions in the external harness before rehearsing; repository edits alone do not update an already loaded Claude skill.
