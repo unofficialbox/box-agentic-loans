@@ -295,10 +295,10 @@ export function Workspace() {
         sit down the left; the bar across the top says where they are and who they are.
       */}
       <aside className="cb-rail">
-        <div className="brand">
+        <button type="button" className="brand" onClick={() => showView("apply")} aria-label="Return to home">
           <span className="brand-mark" aria-hidden="true">AB</span>
           <span className="brand-copy"><strong>Acme Bank</strong><small>Borrower Portal</small></span>
-        </div>
+        </button>
         <nav aria-label="Primary">
           {navItem("apply", "Start an application", <FilePlus2 size={17} aria-hidden="true" />)}
           {navItem("loans", "Your loans", <FileStack size={17} aria-hidden="true" />)}
