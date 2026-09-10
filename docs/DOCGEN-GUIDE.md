@@ -1,171 +1,84 @@
-# Box Doc Gen - Commitment Letter Generation
+# Box Doc Gen: commitment letters
 
-## Issue: Empty Placeholders
+Use this contract for the Box Demo MCP `create_docgen_batch` tool. Read the connected tool schema before calling it; do not translate examples for another wrapper or the retired Apex generation action into guessed arguments.
 
-If the generated commitment letter shows placeholders like `{{terms.requestedPosition}}` instead of actual values, it means the action was called without the required analysis data.
+## Resolve the inputs
 
-## Root Cause
+- Keep the selected loan fixed throughout generation and signing. Get its record and mapped folder from `getLoanPackage`.
+- Read the template file ID from the org-default `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`.
+- Use the current template version unless a specific version is intentionally requested. If diagnosing tags, read `GET /2.0/docgen_templates/{template_id}/tags` with `box-version: 2025.0` for that version.
+- Source loan facts from Salesforce, requested terms from the term sheet, policy and exception rules from the policy library, and precedent from executed agreements. Do not turn an allowed exception into an approved exception or infer approval from a generated document.
 
-The `generateCommitmentLetter` action splits responsibilities:
-- **Loan record** provides facts (ID, borrower, amount, status)
-- **Caller** provides analysis (policy citations, exceptions, precedents)
+## Complete merge payload
 
-The analysis fields are NOT in the loan record - the agent must provide them based on:
-1. Extracted loan terms from marked-up term sheet
-2. Credit policy Hub validation results
-3. Prior executed loan agreements research
+Replace every angle-bracket value with resolved data before calling the tool. These are instructional placeholders, not fallback text. Where a source genuinely has no value, state that accurately (for example, “No exception approval recorded”); do not invent evidence to fill a tag.
 
-## Required Fields
-
-### Minimal (Will generate, but with dashes for missing fields)
-```
-loanReference: "LN-2026-0042"
-policyAtIssue: "LTV and DSCR covenants"
-```
-
-### Complete (Fills all placeholders)
-```
-loanReference: "LN-2026-0042"
-policyAtIssue: "LTV and DSCR covenants per LOS-LTV-001, LOS-LTV-002, LOS-DSCR-001, LOS-DSCR-002"
-
-requestedPosition: "Borrower requested: $4.8M at 6.85% for 120 months, 85% LTV, 1.10 DSCR"
-
-approvedPosition: "Standard policy: 80% LTV maximum (LOS-LTV-001), 1.25 DSCR minimum (LOS-DSCR-001)"
-
-exceptionPosition: "Exception approved: Up to 85% LTV for collateral values exceeding $5M (LOS-LTV-002), DSCR as low as 1.15 with compensating factors (LOS-DSCR-002)"
-
-owner: "Credit Risk Committee"
-
-precedentSummary: "Prior executed loans: LN-2023-0311 ($1.5M @ 7.25%, 75% LTV, 1.35 DSCR) and LN-2025-0148 ($2.15M @ 6.95%, 78% LTV, 1.28 DSCR). Both within standard policy limits."
-
-proposedTerms: "$4.8M at 6.85% for 120 months, subject to 82% LTV (not the requested 85%), 1.15 DSCR minimum, and enhanced collateral monitoring."
-
-termSheetReference: "Term Sheet v3 dated 2026-08-15 with borrower markup"
-```
-
-## Workflow to Get Complete Data
-
-**Step 1: Extract Terms**
-```
-Extract the loan terms from the marked-up term sheet for LN-2026-0042
-```
-→ Returns: $4.8M, 6.85%, 120mo, 85% LTV, 1.10 DSCR
-
-**Step 2: Validate Against Policy**
-```
-Validate these terms against our credit policy
-```
-→ Returns: LTV exceeds 80% standard, DSCR below 1.25 minimum, cites LOS-LTV-001/002, LOS-DSCR-001/002
-
-**Step 3: Research Precedent**
-```
-What closed loans does Harborview Logistics have with us?
-```
-→ Returns: LN-2023-0311 and LN-2025-0148 with their terms
-
-**Step 4: Generate Letter**
-```
-Generate commitment letter with all this analysis
-```
-→ Agent must pass ALL fields from steps 1-3 to the action
-
-## Solution: Use Box MCP
-
-Per MCP-first strategy, use the Box MCP connector's Doc Gen capability:
-
-```javascript
-// Box MCP has the right scopes
-box_create_document_from_template({
-  template_id: "2454763922014",  // From LOS_Box_Config__c
-  destination_folder_id: "416352496139",
-  output_name: "commitment-letter-LN-2026-0042",
-  fields: {
-    loan: {
-      id: "LN-2026-0042",
-      borrower: "Harborview Logistics",
-      loanAmount: "4800000",
-      status: "Approved"
-    },
-    terms: {
-      requestedPosition: "...",
-      approvedPosition: "...",
-      exceptionPosition: "...",
-      owner: "Credit Risk Committee",
-      risk: "High",
-      proposedTerms: "..."
-    },
-    precedent: {
-      summary: "..."
-    },
-    letter: {
-      preparedOn: "8 September 2026",
-      preparedBy: "Loan Copilot (draft)"
+```json
+{
+  "file_id": "<template file ID from Salesforce configuration>",
+  "destination_folder_id": "<mapped folder ID from the current loan package>",
+  "output_type": "pdf",
+  "document_generation_data": [
+    {
+      "generated_file_name": "<current loan ID>-Commitment-Letter",
+      "user_input": {
+        "loan": {
+          "id": "<current loan ID>",
+          "borrower": "<borrower from the record>",
+          "loanAmount": "<amount from the record>",
+          "status": "<status from the record>",
+          "termSheetReference": "<source term sheet reference>"
+        },
+        "terms": {
+          "policyAtIssue": "<applicable policy sections and citations>",
+          "requestedPosition": "<borrower-requested position from the term sheet>",
+          "approvedPosition": "<standard policy position with citations>",
+          "exceptionPosition": "<exception rules and whether approval is actually recorded>",
+          "owner": "<decision owner supported by the policy or record>",
+          "risk": "<recorded risk or explicit absence of a rating>",
+          "proposedTerms": "<proposed amount, rate, term and covenants supported by the analysis>"
+        },
+        "precedent": {
+          "summary": "<prior executed agreement findings with citations>"
+        },
+        "letter": {
+          "preparedOn": "<current preparation date>",
+          "preparedBy": "<identified preparer, marked as draft when applicable>"
+        }
+      }
     }
-  }
-})
+  ]
+}
 ```
 
-## Template Tag Reference
+All 15 paths above occur in the current template. `loan.termSheetReference` is not optional; the borrower path is `loan.borrower`. Use nested objects for dotted template paths. Do not replace `file_id` with `template_id`, `document_generation_data` with `entries`, or wrap merge values in `fields`.
 
-The Box Doc Gen template uses these placeholders:
+The native Box REST API uses `file` and `destination_folder` reference objects; those are different from this MCP tool's `file_id` and `destination_folder_id` arguments. Both use `document_generation_data[].user_input`. [Box API contract](https://developer.box.com/reference/v2025.0/post-docgen-batches).
 
-| Template Tag | Data Source | Example Value |
-|--------------|-------------|---------------|
-| `{{loan.id}}` | Salesforce record | "LN-2026-0042" |
-| `{{loan.borrower}}` | Salesforce record | "Harborview Logistics" |
-| `{{loan.loanAmount}}` | Salesforce record | "4800000" |
-| `{{loan.status}}` | Salesforce record | "Approved" |
-| `{{loan.termSheetReference}}` | Caller analysis | "Term Sheet v3 dated 2026-08-15" |
-| `{{letter.preparedOn}}` | Auto-generated | "8 September 2026" |
-| `{{letter.preparedBy}}` | Auto-generated | "Loan Copilot (draft)" |
-| `{{terms.policyAtIssue}}` | Caller analysis | "LTV and DSCR covenants per LOS-LTV-001..." |
-| `{{terms.requestedPosition}}` | Caller analysis (from term sheet) | "Borrower requested: $4.8M at 6.85%..." |
-| `{{terms.approvedPosition}}` | Caller analysis (from policy Hub) | "Standard policy: 80% LTV maximum..." |
-| `{{terms.exceptionPosition}}` | Caller analysis (from policy Hub) | "Exception approved: Up to 85% LTV..." |
-| `{{terms.owner}}` | Caller analysis | "Credit Risk Committee" |
-| `{{terms.risk}}` | Salesforce record | "High" |
-| `{{terms.proposedTerms}}` | Caller analysis | "$4.8M at 6.85% for 120 months..." |
-| `{{precedent.summary}}` | Caller analysis (from prior loans) | "Prior executed loans: LN-2023-0311..." |
+## Verify the output before signing
 
-**Key Point:** The template expects ANALYSIS, not just data extraction. The agent must:
-1. Extract terms from documents
-2. Cite specific policies
-3. Explain exceptions
-4. Research precedents
-5. Propose final terms
+1. Retain the returned batch ID and read its jobs. Use the available connector tools or an authorized API read: `GET /2.0/docgen_batches/{batch_id}/jobs` and `GET /2.0/docgen_jobs/{job_id}` with `box-version: 2025.0`.
+2. Wait for the matching job to reach `completed`. `completed_with_error` is a failed merge gate even if a PDF exists. Report `failures.errors` and `failures.warnings`. If status cannot be checked, report the blocker rather than claiming success or creating another batch.
+3. Read `output_file.id` from that job, then inspect and preview that exact file. Check for unresolved `{{...}}` tags and verify the loan, borrower, amount, rate, term, and approval wording against the source record and analysis. A preview-tool error is not a successful review.
+4. Use the same verified ID for the authorized signature action. The repo action accepts it as `itemId`; consult the connected tool schema for its envelope and provide the confirmed signer. Let the action enforce loan eligibility.
 
-Simply calling `generateCommitmentLetter("LN-2026-0042", "some policy")` will generate a letter with mostly dashes.
+Never select the output by a filename, duplicate suffix, newest timestamp, metadata query, or an ID remembered from a previous attempt. Metadata search remains useful for discovering source documents, but job output is authoritative for generation results.
 
-
-## Agent Instructions
-
-Add to Copilot/agent instructions:
-
-```
-When generating a commitment letter:
-1. Extract loan terms from the marked-up term sheet
-2. Validate against credit policy Hub - cite specific policy IDs
-3. Research prior loans with this borrower
-4. Draft proposed terms (may differ from requested)
-5. Use Box MCP create_document_from_template
-6. Pass ALL analysis fields - not just loan ID and generic policy
-
-Do not call Doc Gen with incomplete data.
-The letter quality depends on the complete analysis you provide.
+```mermaid
+flowchart LR
+    Input[Resolved loan and complete merge data] --> Batch[Create batch]
+    Batch --> Job[Read matching job]
+    Job -->|completed| Output[Exact output_file.id]
+    Job -->|error or unverifiable| Stop[Report and diagnose]
+    Output --> Check[Inspect tags and loan terms]
+    Check -->|verified and authorized| Sign[Governed signature action]
+    Check -->|unresolved or incorrect| Stop
 ```
 
-## Testing
+## Diagnosis and retry
 
-**Box MCP approach** - Test via Claude Desktop with both connectors loaded.
-
-**Internal validation** - The LOS connector also works (for technical verification only):
-```bash
-sf apex run --file /tmp/test-docgen-call.apex --target-org agentforce
-```
-
-**Verify generated file:** Check Box folder 416352496139 for `commitment-letter-LN-2026-0042.pdf`
-
-**Verify placeholders filled:** Open PDF, search for `{{` - should find none if data was provided correctly.
-
-**If empty placeholders found:** Agent didn't provide complete analysis fields. Review workflow steps 1-4 above.
-
+- Missing-value warnings identify a mismatch between template paths and the data Box received. Capture the actual submitted `document_generation_data[].user_input`; a narration that the payload was correct is not evidence.
+- Box's tags endpoint reports recognized paths. Dotted tags such as `{{loan.id}}` are supported. Do not prescribe re-tagging merely because visible placeholder text remains. [Template tag reference](https://support.box.com/hc/en-us/articles/36149723736723-Template-Tags-Reference).
+- Before retrying, identify and correct the specific input/schema error. Do not alternate speculative formats or repeat unchanged requests. On timeout, inspect the existing batch first.
+- A retry creates its own job and output file; discard the prior attempt's file ID from the signing handoff. It does not repair an existing signature request.
+- If an unfilled document was already sent for signature, identify the affected request and use the user's authorization to cancel/replace it. Do not silently delete files, cancel requests, or send another request.
