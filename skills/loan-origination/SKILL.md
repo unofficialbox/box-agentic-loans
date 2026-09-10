@@ -89,14 +89,15 @@ You are presenting a commercial loan origination demo. Salesforce holds the loan
 - **Borrower portal**: Use `recordId` from React app URL params - NEVER hardcode the loan ID when the portal is passing a dynamic recordId
 - **Dynamic scenarios**: Use Salesforce record ID from context
 
-**Selecting the latest loan from listLoans:**
-When `listLoans` returns multiple Harborview loans:
-1. Filter to only loans matching the borrower (exclude other borrowers like Pinecrest)
-2. Filter to only active loans with Status "Application" or "Approved" (exclude "Closed")
-3. Select the loan with the **highest loan ID number** in the NNNN portion (e.g., LN-2026-0002 > LN-2026-0001 > LN-2026-0088 doesn't match if YYYY differs)
-4. Format: `LN-YYYY-NNNN` where NNNN increments for each new loan that year
+**Selecting the newest loan from listLoans:**
 
-**Example:** Given loans LN-2026-0002, LN-2026-0001, LN-2023-0311, LN-2025-0148 → select LN-2026-0002 (highest 2026 loan, not closed)
+Simple rule: Exclude Status="Closed", then take the loan with the highest number.
+
+**Example:**
+- `listLoans(borrower='Harborview Logistics')` returns: LN-2026-0002, LN-2026-0001, LN-2023-0311, LN-2025-0148
+- Filter out Closed: LN-2026-0002, LN-2026-0001
+- Sort by loan ID descending: LN-2026-0002 is first
+- **Use LN-2026-0002** for all subsequent beats
 
 **Context reuse across beats:**
 - Beat 2 calls `listLoans` ONCE to get the latest loan → store this loan ID/recordId in context
@@ -301,38 +302,44 @@ Query credit policy Hub (ID `1488378748`) with the extracted terms:
 
 **Finding:** 2026 markup regresses two positions Harborview's CFO agreed to twice (1.30x → 1.10x, quarterly → annual).
 
-## Beat 2 efficiency checklist
+## Beat 2 - Simple 3-step process
 
-Beat 2 should be **exactly 4 tool calls** and find ONE document from ONE loan:
+It's super simple - just 4 tool calls:
 
-1. ✅ `listLoans(borrower='Harborview Logistics')` 
-   - Returns: LN-2026-0002, LN-2026-0001, LN-2023-0311, LN-2025-0148
-   - Filter: Status ≠ "Closed" (removes 0311 and 0148)
-   - Select: Highest 2026 number = **LN-2026-0002**
+**Step 1:** Get the newest loan record
+```
+listLoans(borrower='Harborview Logistics')
+→ Returns multiple loans
+→ Sort by loan ID, exclude Status="Closed"
+→ Take the first (newest): LN-2026-0002
+```
 
-2. ✅ `getLoanPackage(inputLoan="LN-2026-0002")` 
-   - Extract folder ID from output (e.g., `"outputFolderId": "416730980454"`)
+**Step 2:** Get the folder ID for that record
+```
+getLoanPackage(inputLoan="LN-2026-0002")
+→ Returns outputFolderId: "416730980454"
+→ Extract this folder ID
+```
 
-3. ✅ `search_files_metadata(from="enterprise_1023254676.losDocument", query="policyRisk = :risk", query_params={"risk": "Critical"}, ancestor_folder_id="416730980454")` 
-   - **CRITICAL:** `ancestor_folder_id` MUST be set to the folder ID from step 2
-   - This limits search to ONLY documents in LN-2026-0002's folder
-   - Returns: ONE file (harborview-term-sheet-2026-borrower-markup.pdf)
-   - DO NOT return files from LN-2026-0001 or orphaned folders
+**Step 3:** Scope your search to that folder
+```
+search_files_metadata(
+  from="enterprise_1023254676.losDocument",
+  query="policyRisk = :risk", 
+  query_params={"risk": "Critical"},
+  ancestor_folder_id="416730980454"  ← CRITICAL: limits to this loan only
+)
+→ Returns ONE file from this loan's folder
+→ get_file_preview(fileId=<result>)
+```
 
-4. ✅ `get_file_preview(fileId=<first result>)` → show term sheet inline
-
-**Expected output:**
-- "One document flagged critical: harborview-term-sheet-2026-borrower-markup.pdf"
-- Preview of term sheet with red borrower markup visible
-- NO mention of files from other loans
+**Expected result:** ONE document (term sheet) from ONE loan (LN-2026-0002). Done.
 
 **DO NOT:**
-- ❌ Call `list_metadata_templates` (violates NEVER rule)
-- ❌ Call `get_metadata_template_schema` (violates NEVER rule)
-- ❌ Call `get_file_details` to investigate duplicates
-- ❌ Call `getLoanPackage` for multiple loans in parallel
-- ❌ Search metadata without `ancestor_folder_id` (returns files from ALL loans)
-- ❌ Mention files from LN-2026-0001 or orphaned folders (wrong scope)
+- ❌ Call `list_metadata_templates` or `get_metadata_template_schema`
+- ❌ Call `get_file_details` to investigate files
+- ❌ Search without `ancestor_folder_id` (returns files from ALL loans)
+- ❌ Show files from other loans
 
 ## Beat prompts (offer after completing each beat)
 
