@@ -279,7 +279,7 @@ Demo uses the latest Harborview loan (created in Beat 1). Query with `listLoans(
 | 3 | **Comprehensive analysis in ONE response - 6-7 tool calls total:** `getLoanPackage` (reuse loan ID from Beat 2, get folder + term sheet file ID) → `ai_extract_structured_from_fields` (markup extraction) → `extractLoanTerms` (get extracted values only, don't show validation table) → `ai_qa_hub` (policy check against Hub ID `1488378748`) → **PARALLEL**: `getLoanPackage` for LN-2023-0311 + `getLoanPackage` for LN-2025-0148 → `ai_qa_multi_file` (precedent comparison). DO NOT call `get_file_preview` - we already showed term sheet in Beat 2. Execute ALL tools deterministically without pausing. Output: (1) Extracted Terms bullets, (2) Policy Check with Hub citations, (3) Precedent comparison table. |
 | 4 | `applyLoanTerms` with loan ID from Beat 2 context, confirm=true: updates amount/rate/term only. Never apply LTV or DSCR. DO NOT call ToolSearch - the tool is already loaded. **1 tool call total.** |
 | 5 | `approveDocuments` with loan ID from Beat 2 context. Updates `approvalStatus="Pending"` to "Approved". DO NOT call listLoans or getLoanPackage - just use the loan ID from Beat 2. **1 tool call total.** |
-| 6 | **Generate + sign in ONE response - 5-6 tool calls total:** Query Salesforce for template ID → `getLoanPackage` with loan ID from Beat 2 (get folder) → `create_docgen_batch` with ALL fields from beat 3 → metadata query to find generated letter (or wait briefly) → `get_file_preview` (show letter) → `prepareSignatureRequest` with loan ID from Beat 2. Execute ALL tools deterministically - do NOT pause between Doc Gen and Sign to ask "Would you like me to send for signature now?". Embed URL stored on loan record. |
+| 6 | **Generate + sign in ONE response - EXACTLY 6 tool calls:** (1) Query Salesforce `LOS_Box_Config__c.Commitment_Letter_Template_ID__c` → (2) `getLoanPackage` with loan ID from Beat 2 → extract folder ID → (3) `create_docgen_batch` with file_id=template, destination=folder, ALL fields from beat 3 → (4) `search_files_metadata` with `from="enterprise_1023254676.losDocument"`, `query="documentType = :type AND loanReference = :loan"`, `query_params={"type": "Commitment Letter", "loan": "LN-2026-0002"}`, `ancestor_folder_id=<folder>` → extract generated file ID → (5) `get_file_preview` → (6) **`prepareSignatureRequest`** with loan ID + file ID. DO NOT call: list_docgen_templates, ToolSearch, keyword search, list_folder_content, or getLoanPackage twice. Embed URL stored on loan record for portal display. |
 
 ## Beat 3 expected output format
 
@@ -311,6 +311,71 @@ Query credit policy Hub (ID `1488378748`) with the extracted terms:
 | LN-2026-NNNN (markup) | $4.8M | — | 1.10x | Annual | — |
 
 **Finding:** 2026 markup regresses two positions Harborview's CFO agreed to twice (1.30x → 1.10x, quarterly → annual).
+
+## Beat 6 - Deterministic 6-step process
+
+**EXACTLY 6 tool calls. No more. No less.**
+
+**Step 1:** Get template ID from Salesforce
+```
+Query: SELECT Commitment_Letter_Template_ID__c FROM LOS_Box_Config__c
+→ Result: "2457200558153" (los-commitment-letter-template.docx)
+```
+
+**Step 2:** Get folder ID
+```
+getLoanPackage(inputLoan="LN-2026-0002")  ← Use loan ID from Beat 2
+→ Extract outputFolderId: "416730980454"
+```
+
+**Step 3:** Generate document
+```
+create_docgen_batch(
+  file_id="2457200558153",
+  destination_folder_id="416730980454",
+  output_type="pdf",
+  document_generation_data=[{...all fields from beat 3...}]
+)
+→ Returns batch ID
+```
+
+**Step 4:** Find generated document (use metadata query, NOT keyword search, NOT list_folder)
+```
+search_files_metadata(
+  from="enterprise_1023254676.losDocument",
+  query="documentType = :type AND loanReference = :loan",
+  query_params={"type": "Commitment Letter", "loan": "LN-2026-0002"},
+  ancestor_folder_id="416730980454"
+)
+→ Returns file ID of generated PDF
+```
+
+**Step 5:** Preview document
+```
+get_file_preview(fileId=<generated file ID>)
+```
+
+**Step 6:** Send for signature ← THIS STEP IS CRITICAL, DO NOT SKIP
+```
+prepareSignatureRequest(
+  loanReference="LN-2026-0002",  ← Use loan ID from Beat 2
+  itemId=<generated file ID>,
+  signerEmail=<from loan record>,
+  signerName=<borrower name>
+)
+→ Creates Box Sign request with embedded signing
+→ Stores embed URL on LOS_Loan__c.Sign_Embed_URL__c
+```
+
+**DO NOT:**
+- ❌ Call ToolSearch
+- ❌ Call list_docgen_templates (template ID is static)
+- ❌ Use keyword search to find generated letter (use metadata query)
+- ❌ Call list_folder_content (use metadata query)
+- ❌ Call getLoanPackage twice
+- ❌ Skip prepareSignatureRequest (required for portal signing)
+
+**Expected result:** Commitment letter generated AND sign request created. Portal will show Box Sign embed iframe.
 
 ## Beat 2 - Simple 3-step process
 

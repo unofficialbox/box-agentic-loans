@@ -38,7 +38,36 @@ After applying metadata, refresh the borrower portal. You should see:
 
 ---
 
-## Issue 6: Beat 6 Blocked - Loan Status Check
+## Issue 6: Box Sign Embed Not Showing in Portal
+
+**Problem:** After Beat 6, the Box Sign iframe doesn't appear in the borrower portal.
+
+**Root Cause:** `prepareSignatureRequest` was NEVER called in Beat 6. The tool logs show:
+- ✅ create_docgen_batch (letter generated)
+- ❌ prepareSignatureRequest (MISSING!)
+
+Without calling `prepareSignatureRequest`, the `Sign_Embed_URL__c` field is never set on the loan record, so the portal has no URL to display.
+
+**The UI is already built:**
+- `EmbeddedSign.tsx` component exists
+- `Workspace.tsx` displays it when `signEmbedUrl` is present
+- Apex endpoint `/services/apexrest/los/loans` returns `Sign_Embed_URL__c`
+- Shows as prominent "Signature Required" panel at top of workspace
+
+**Fix:** Ensure Beat 6 calls all 6 tools in sequence:
+1. Query Salesforce for template ID
+2. `getLoanPackage` (once)
+3. `create_docgen_batch`
+4. Metadata query to find generated letter
+5. `get_file_preview`
+6. **`prepareSignatureRequest`** ← THIS MUST BE CALLED
+
+**Verification:** After Beat 6, check:
+- Claude tool logs show `prepareSignatureRequest` was called
+- Response includes embed URL stored on loan record
+- Portal refresh shows "Signature Required" panel with Box Sign iframe
+
+## Issue 7: Beat 6 Blocked - Loan Status Check
 
 **Symptoms:**
 ```
