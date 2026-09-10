@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <McpServerDefinition xmlns="http://soap.sforce.com/2006/04/metadata">
-    <description>Governed Apex: list loans, get loan package, classify documents, extract and apply terms, prepare signature requests. Use Box MCP for metadata search, AI, and Doc Gen.</description>
+    <description>Governed Apex: list loans, get loan package, classify and approve documents, extract and apply terms, prepare signature requests. Use Box MCP for metadata search, AI, and Doc Gen.</description>
     <masterLabel>LOS Loan Tools</masterLabel>
     <tools>
         <apiDefinition>
@@ -61,5 +61,15 @@
         <descriptionOverride>Classifies one document of a named loan with Box AI against the losDocument template and writes documentType (and policyRisk when found) to the file. A file outside that loan is refused; a document Box AI cannot name is left for a loan officer.</descriptionOverride>
         <toolName>classifyDocument</toolName>
         <toolTitle>Classify a Loan Document</toolTitle>
+    </tools>
+    <tools>
+        <apiDefinition>
+            <apiIdentifier>aa:apex-LosApproveDocuments</apiIdentifier>
+            <apiSource>API_CATALOG</apiSource>
+            <operation>LosApproveDocuments</operation>
+        </apiDefinition>
+        <descriptionOverride>Approves all pending documents for a loan by updating reviewStatus from Pending to Approved. When 6 required documents are approved, automatically releases the held term sheet for review by changing it from Held to Pending.</descriptionOverride>
+        <toolName>approveDocuments</toolName>
+        <toolTitle>Approve Loan Documents</toolTitle>
     </tools>
 </McpServerDefinition>
