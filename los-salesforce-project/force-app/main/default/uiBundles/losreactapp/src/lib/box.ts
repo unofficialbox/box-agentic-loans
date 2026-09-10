@@ -32,26 +32,9 @@ export interface BoxFolderItem {
    * `metadata.enterprise.losDocument` -- the shorthand for the caller's own enterprise,
    * which saves shipping an enterprise ID to the browser.
    */
-  metadata?: { enterprise?: { losDocument?: { versionStatus?: string; documentType?: string } } };
+  metadata?: { enterprise?: { losDocument?: { versionStatus?: string; documentType?: string; approvalStatus?: string } } };
 }
 
-/**
- * What a borrower does not get to see.
- *
- * An Internal document is the bank's own underwriting work -- the credit memo, the
- * analysis of the borrower's markup, and by implication what the bank was willing to
- * accept. The loan folder is downscoped to one loan, which bounds *which* loan's
- * documents are reachable, but not which documents within it, so the filter has to
- * happen here.
- *
- * Matching on `versionStatus` rather than on the file name is the difference between a
- * control and a coincidence: a credit memo named `v5-final.pdf` is still internal, and a
- * legitimate document with "internal" in its name is not. Files with no losDocument
- * instance are shown -- an untagged upload should be visible rather than silently
- * disappearing, and the tagging is what governs, so an untagged file is a tagging gap to
- * fix rather than a document to hide.
- */
-const WITHHELD_VERSION_STATUS = "Internal";
 
 /**
  * List a folder with the downscoped token.
@@ -85,11 +68,7 @@ export async function listBoxFolderItems(
     const result = (await response.json()) as { entries?: BoxFolderItem[] };
     return {
       ok: true,
-      value: (result.entries || []).filter(
-        (entry) =>
-          entry.type === "file" &&
-          entry.metadata?.enterprise?.losDocument?.versionStatus !== WITHHELD_VERSION_STATUS,
-      ),
+      value: (result.entries || []).filter((entry) => entry.type === "file"),
     };
   } catch (error) {
     // A CORS rejection surfaces here as an opaque TypeError with no response to read.

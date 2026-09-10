@@ -23,11 +23,6 @@ Before starting:
 
 **Beat 1 (Browser):** `https://<your-site>.my.site.com/loansvforcesite/login?startURL=%2Floans%2F`
 
-**Beat 1.5 (Claude Desktop):**
-```
-Approve all pending documents for the latest Harborview Logistics loan
-```
-
 **Beat 2 (Claude Desktop):**
 ```
 Which documents are flagged critical policy risk?
@@ -46,6 +41,11 @@ Validate those terms against the Salesforce record.
 **Beat 3b (Claude Desktop):**
 ```
 apply the amount, rate and term to the record, confirm
+```
+
+**Beat 3c (Claude Desktop):**
+```
+Approve all pending documents for the latest Harborview Logistics loan
 ```
 
 **Beat 4 (Claude Desktop):**
@@ -147,27 +147,13 @@ If asked: creating the record and provisioning its folder are two requests, beca
 
 **Beats 2 to 5 work with the loan just created in Beat 1.** Query for the latest Harborview loan to get its ID, then use that for subsequent operations.
 
-### 1.5. Approve the submitted documents (Claude Desktop, to 3:30)
-
-After the borrower uploads their documents, the bank reviews and approves them.
-
-```text
-Approve all pending documents for the latest Harborview Logistics loan
-```
-
-Expect `listLoans(borrower='Harborview Logistics')` to find the most recent loan, then `approveDocuments` with that loan ID. Tool updates all documents with `approvalStatus="Pending"` to `approvalStatus="Approved"`.
-
-**Response should confirm:** "Approved 7 documents" (all uploaded documents including the term sheet).
-
-**Why this step exists:** Demonstrates governed approval workflow where the AI updates document metadata via Apex callout. All borrower-uploaded documents start with `approvalStatus="Pending"` and are bulk-approved in one call. The UI displays `approvalStatus` in the STATUS column, so status pills change from "Pending" to "Approved" after this beat.
-
 ### 2. The portfolio already knows what's risky (Claude Desktop, to 4:05)
 
 ```text
 Which documents are flagged critical policy risk?
 ```
 
-Expect `getLoanPackage` (using loan context from Beat 1.5) to get the folder ID, then Box metadata search for `policyRisk = Critical` with folder scope. One hit: `harborview-term-sheet-2026-borrower-markup.pdf`. **MUST call `get_file_preview` to show the document inline**. The document should appear on screen, not just a filename or link. Ask for High or above and the FY2025 financial statements and the appraisal join it.
+Expect `getLoanPackage` (query for latest Harborview loan) to get the folder ID, then Box metadata search for `policyRisk = Critical` with folder scope. One hit: `harborview-term-sheet-2026-borrower-markup.pdf`. **MUST call `get_file_preview` to show the document inline**. The document should appear on screen, not just a filename or link. Ask for High or above and the FY2025 financial statements and the appraisal join it.
 
 **If the assistant only cites "Source: filename.pdf" without showing the document:** Say "show me the document" — P2 custom instructions require preview after citing. The beat is not complete until the document appears.
 
@@ -194,6 +180,20 @@ apply the amount, rate and term to the record, confirm
 ```
 
 First request the same write without confirmation and verify the action refuses. Then use the explicit confirmation above and verify it updates only those fields. That is the one write in the demo, and a person just authorised it. Never apply the extracted LTV or DSCR: they are policy thresholds and markup requests, not the borrower's numbers on the record.
+
+### 3c. Approve the reviewed documents (Claude Desktop, to 7:00)
+
+After reviewing and extracting terms, approve the documents.
+
+```text
+Approve all pending documents for the latest Harborview Logistics loan
+```
+
+Expect `listLoans(borrower='Harborview Logistics')` to find the most recent loan, then `approveDocuments` with that loan ID. Tool updates all documents with `approvalStatus="Pending"` to `approvalStatus="Approved"`.
+
+**Response should confirm:** "Approved 7 documents" (all uploaded documents including the term sheet).
+
+**Why this step comes here:** After reviewing the critical-risk term sheet (Beat 2) and extracting/validating its terms (Beats 3/3a/3b), the bank approves the document package. This demonstrates governed approval workflow where the AI updates document metadata via Apex callout. The UI displays `approvalStatus` in the STATUS column, so status pills change from "Pending" to "Approved" after this beat.
 
 ### 4. What they agreed the last two times (to 7:25)
 

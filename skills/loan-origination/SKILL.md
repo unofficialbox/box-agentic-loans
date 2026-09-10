@@ -28,7 +28,7 @@ You are presenting a commercial loan origination demo. Salesforce holds the loan
 **After each beat:**
 - Offer the exact next prompt in a code block so the user can copy/paste.
 - Format: "Next recommended task: ```<exact prompt text>```"
-- Beats follow sequence: 1.5 → 2 → 3 → 3a → 3b → 4 → 5 → 5b
+- Beats follow sequence: 2 → 3 → 3a → 3b → 3c → 4 → 5 → 5b
 - After beat 5b: Say "The borrower can now sign in the portal." No prompt needed.
 
 **Never offer:**
@@ -211,21 +211,16 @@ Demo uses the latest Harborview loan (created in Beat 1). Query with `listLoans(
 
 | Beat | Tool behavior and expected evidence |
 |---|---|
-| 1.5 | `listLoans(borrower='Harborview Logistics')` → get latest loan ID → `approveDocuments`. Updates `approvalStatus="Pending"` to "Approved". DO NOT call getLoanPackage or search - just listLoans + approveDocuments. |
-| 2 | `getLoanPackage` (using loan context from 1.5) → get folder ID → `search_files_metadata` with template `losDocument`, folder scope, query `policyRisk = :risk`. One hit: borrower-marked term sheet (now visible after 1.5), opened inline. "High or above" adds FY2025 financials and appraisal. |
+| 2 | `getLoanPackage` (query for latest Harborview loan) → get folder ID → `search_files_metadata` with template `losDocument`, folder scope, query `policyRisk = :risk`. One hit: borrower-marked term sheet, opened inline. "High or above" adds FY2025 financials and appraisal. |
 | 3 | `getLoanPackage` → `ai_extract_structured_from_fields` on markup (loan amount, bank rate, borrower requested rate, term, DSCR as borrower proposes). Then `ai_qa_hub` on credit policy library (LTV/DSCR within policy or exception, cite IDs). Expected: $4.8M, 6.85% bank / 6.50% requested, 120mo, 1.10x DSCR annual. Hub: LOS-LTV-001/002, LOS-DSCR-001/002 - outside exceptions. Preview markup inline. |
 | 3a | `extractLoanTerms`: amount/rate/term match, LTV/DSCR mismatch, nothing written. |
 | 3b | `applyLoanTerms` refuses without "confirm". With confirm: updates amount/rate/term only. Never apply LTV or DSCR. |
+| 3c | `listLoans(borrower='Harborview Logistics')` → get latest loan ID → `approveDocuments`. Updates `approvalStatus="Pending"` to "Approved". DO NOT call getLoanPackage or search - just listLoans + approveDocuments. |
 | 4 | `getLoanPackage` for LN-2023-0311 and LN-2025-0148 (two closed loans) → `ai_qa_multi_file` comparing LTV/DSCR covenants across executed agreements and 2026 markup (what Harborview agreed before, where in agreements, who signed). Expected: 70% LTV, 1.30x DSCR quarterly, Section 8 & Schedule 1, Pike/Shah signatures. Table format. Preview 2025 agreement at Schedule 1. |
 | 5 | `getLoanPackage` → **ONLY tool is `create_docgen_batch`** (NOT `create_document_from_template`, NOT any other tool - `create_docgen_batch` is the ONLY Box Doc Gen MCP tool). Get template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`. Fill ALL required fields including `terms.owner` (e.g., "Credit Risk Committee") from beats 3 & 4. Missing fields = red `{{placeholders}}` in PDF. Then metadata query to find generated letter → preview letter (draft pending Credit Committee). |
 | 5b | `prepareSignatureRequest` succeeds (Approved status), embed URL stored on loan record. Borrower can sign immediately in portal via embedded iframe - no field placement needed. |
 
 ## Beat prompts (offer after completing each beat)
-
-**Beat 1.5:**
-```
-Approve all pending documents for the latest Harborview Logistics loan
-```
 
 **Beat 2:**
 ```
@@ -245,6 +240,11 @@ Validate those terms against the Salesforce record.
 **Beat 3b:**
 ```
 apply the amount, rate and term to the record, confirm
+```
+
+**Beat 3c:**
+```
+Approve all pending documents for the latest Harborview Logistics loan
 ```
 
 **Beat 4:**
