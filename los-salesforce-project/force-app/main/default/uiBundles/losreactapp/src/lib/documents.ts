@@ -11,7 +11,7 @@ export interface DocumentFacts {
   changedAt?: string;
   /** Who Box records as having made that change. */
   changedBy?: string;
-  /** Draft, Internal, Approved, Executed -- whatever the losDocument instance carries. */
+  /** Pending, Approved, Rejected, Not Required -- whatever the losDocument approvalStatus carries. */
   status?: string;
   /** True only when the document has actually been approved, not merely drafted. */
   approved: boolean;
@@ -19,12 +19,12 @@ export interface DocumentFacts {
 
 export function documentFacts(file: BoxFolderItem): DocumentFacts {
   const los = file.metadata?.enterprise?.losDocument;
-  const status = los?.versionStatus;
+  const status = los?.approvalStatus;
   return {
     changedAt: file.content_modified_at || file.modified_at,
     changedBy: file.modified_by?.name,
     status,
-    approved: status === "Approved" || status === "Executed",
+    approved: status === "Approved",
   };
 }
 
@@ -95,7 +95,7 @@ export function byDocumentType(files: BoxFolderItem[]): Array<{ label: string; v
 /**
  * Documents by review status, largest first, ties broken on label.
  *
- * Reads the same `versionStatus` the table's pill and the timeline read, so the three
+ * Reads the same `approvalStatus` the table's pill and the timeline read, so the three
  * cannot disagree about what state a document is in. A document with no losDocument
  * instance is "Unclassified" rather than dropped -- the point of the chart is to show how
  * much of a package has actually landed, and silently omitting the untagged ones would
