@@ -251,6 +251,14 @@ export function Workspace() {
     () => selected ?? loans.loans.find((loan) => loan.recordId === context.salesforceRecordId) ?? null,
     [selected, loans.loans, context.salesforceRecordId],
   );
+
+  // Sync signEmbedUrl when current loan changes (for direct URL navigation)
+  useEffect(() => {
+    if (current?.signEmbedUrl && current.signEmbedUrl !== signEmbedUrl) {
+      setSignEmbedUrl(current.signEmbedUrl);
+    }
+  }, [current?.signEmbedUrl, signEmbedUrl]);
+
   const collecting = Boolean(current?.status && COLLECTING_STATUSES.has(current.status));
   /** Whether the current user is a borrower (has an accountName) vs a bank user */
   const isBorrower = Boolean(identity?.accountName);
