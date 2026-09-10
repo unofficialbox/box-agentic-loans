@@ -423,14 +423,6 @@ export function Workspace() {
                     />
                   </div>
                 ) : null}
-                {collecting && !boxError ? (
-                  <RequiredDocuments
-                    loanType={current?.loanType}
-                    files={files}
-                    canUpload={Boolean(box)}
-                    onUpload={() => setUploading(true)}
-                  />
-                ) : null}
                 <BoxWorkspace
                   context={workspaceContext}
                   onFilesLoaded={setFiles}
