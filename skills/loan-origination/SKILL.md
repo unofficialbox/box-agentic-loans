@@ -238,8 +238,8 @@ Demo uses the latest Harborview loan (created in Beat 1). Query with `listLoans(
 | Beat | Tool behavior and expected evidence |
 |---|---|
 | 2 | `listLoans(borrower='Harborview Logistics')` → select LATEST loan (highest LN-YYYY-NNNN number) → `getLoanPackage` with that loan ID → get folder ID → `search_files_metadata` with `from="enterprise_1023254676.losDocument"`, folder scope, `query="policyRisk = :risk"`, `query_params={"risk": "Critical"}` → `get_file_preview` of first result. DO NOT investigate duplicates or get file details. If multiple files returned, just preview the first. One hit expected: borrower-marked term sheet. **4 tool calls total: listLoans, getLoanPackage, search_files_metadata, get_file_preview.** |
-| 3 | **Comprehensive analysis in ONE response - 7-8 tool calls total:** `getLoanPackage` (reuse loan ID from Beat 2, get folder + term sheet file ID) → `ai_extract_structured_from_fields` (markup extraction) → `extractLoanTerms` (validation table) → `ai_qa_hub` (policy check) → **PARALLEL**: `getLoanPackage` for LN-2023-0311 + `getLoanPackage` for LN-2025-0148 → `ai_qa_multi_file` (precedent comparison) → `get_file_preview` (show markup). Execute ALL tools deterministically without pausing. Output: (1) Extracted Terms, (2) **Validation table** (Document vs Record), (3) Policy Check with citations, (4) Precedent table. The validation table is the compelling visual. |
-| 4 | `applyLoanTerms` with loan ID from Beat 2 context, confirm=true: updates amount/rate/term only. Never apply LTV or DSCR. **1 tool call total.** |
+| 3 | **Comprehensive analysis in ONE response - 6-7 tool calls total:** `getLoanPackage` (reuse loan ID from Beat 2, get folder + term sheet file ID) → `ai_extract_structured_from_fields` (markup extraction) → `extractLoanTerms` (get extracted values only, don't show validation table) → `ai_qa_hub` (policy check against Hub ID `1488378748`) → **PARALLEL**: `getLoanPackage` for LN-2023-0311 + `getLoanPackage` for LN-2025-0148 → `ai_qa_multi_file` (precedent comparison). DO NOT call `get_file_preview` - we already showed term sheet in Beat 2. Execute ALL tools deterministically without pausing. Output: (1) Extracted Terms bullets, (2) Policy Check with Hub citations, (3) Precedent comparison table. |
+| 4 | `applyLoanTerms` with loan ID from Beat 2 context, confirm=true: updates amount/rate/term only. Never apply LTV or DSCR. DO NOT call ToolSearch - the tool is already loaded. **1 tool call total.** |
 | 5 | `approveDocuments` with loan ID from Beat 2 context. Updates `approvalStatus="Pending"` to "Approved". DO NOT call listLoans or getLoanPackage - just use the loan ID from Beat 2. **1 tool call total.** |
 | 6 | **Generate + sign in ONE response - 5-6 tool calls total:** Query Salesforce for template ID → `getLoanPackage` with loan ID from Beat 2 (get folder) → `create_docgen_batch` with ALL fields from beat 3 → metadata query to find generated letter (or wait briefly) → `get_file_preview` (show letter) → `prepareSignatureRequest` with loan ID from Beat 2. Execute ALL tools deterministically - do NOT pause between Doc Gen and Sign to ask "Would you like me to send for signature now?". Embed URL stored on loan record. |
 
@@ -254,23 +254,9 @@ Beat 3 should produce comprehensive analysis in ONE response with this structure
 - **Term:** 120 months
 - **DSCR:** 1.10x annually (borrower proposes in markup)
 
-### 2. Validation — Document vs Record
+### 2. Policy Check
 
-**This table is the compelling visual. Always include it.**
-
-| Field | Document | Record |
-|-------|----------|--------|
-| Amount | $4,800,000 | match |
-| Rate | 6.85% | empty (new) |
-| Term | 120 months | match |
-| LTV | 75% | empty (new) |
-| DSCR | 1.25x | empty (new) |
-
-**Status:** Nothing written.
-
-### 3. Policy Check
-
-Credit policy positions:
+Query credit policy Hub (ID `1488378748`) with the extracted terms:
 - **LOS-LTV-001:** 75% maximum (standard)
 - **LOS-LTV-002:** 80% with interest reserve (exception)
 - **LOS-DSCR-001:** 1.25x minimum (standard)
@@ -278,17 +264,15 @@ Credit policy positions:
 
 **Borrower's request:** 85% LTV, 1.10x DSCR — **outside even exceptions**
 
-### 4. Precedent Comparison
+### 3. Precedent Comparison
 
 | Loan | Amount | LTV | DSCR | Testing | Signers |
 |------|--------|-----|------|---------|---------|
 | LN-2023-0311 | $1.5M | 70% | 1.30x | Quarterly | Pike/Shah |
 | LN-2025-0148 | $2.15M | 70% | 1.30x | Quarterly | Pike/Shah |
-| LN-2026-0042 (markup) | $4.8M | — | 1.10x | Annual | — |
+| LN-2026-NNNN (markup) | $4.8M | — | 1.10x | Annual | — |
 
 **Finding:** 2026 markup regresses two positions Harborview's CFO agreed to twice (1.30x → 1.10x, quarterly → annual).
-
-**Preview:** Show term sheet markup inline with red borrower changes visible.
 
 ## Beat 2 efficiency checklist
 
