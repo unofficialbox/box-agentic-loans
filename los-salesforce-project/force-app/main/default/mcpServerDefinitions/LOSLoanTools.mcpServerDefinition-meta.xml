@@ -62,4 +62,14 @@
         <toolName>classifyDocument</toolName>
         <toolTitle>Classify a Loan Document</toolTitle>
     </tools>
+    <tools>
+        <apiDefinition>
+            <apiIdentifier>aa:apex-LosApproveDocuments</apiIdentifier>
+            <apiSource>API_CATALOG</apiSource>
+            <operation>LosApproveDocuments</operation>
+        </apiDefinition>
+        <descriptionOverride>Approves all pending documents for a loan by updating approvalStatus from Pending to Approved.</descriptionOverride>
+        <toolName>approveDocuments</toolName>
+        <toolTitle>Approve Loan Documents</toolTitle>
+    </tools>
 </McpServerDefinition>
