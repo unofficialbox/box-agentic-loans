@@ -172,7 +172,9 @@ public with sharing class LosSendForSignature {
         Map<String, Object> signer = new Map<String, Object>{
             'email' => req.signerEmail.trim(),
             'role' => 'signer',
-            'embed_url_external_user_id' => req.signerEmail.trim()
+            'embed_url_external_user_id' => req.signerEmail.trim(),
+            'redirect_url' => 'https://www.box.com/sign/complete',
+            'declined_redirect_url' => 'https://www.box.com/sign/declined'
         };
         if (String.isNotBlank(req.signerName)) {
             signer.put('name', req.signerName.trim());
