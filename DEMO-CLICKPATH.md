@@ -30,7 +30,7 @@ Approve all pending documents for the latest Harborview Logistics loan
 
 **Beat 2 (Claude Desktop):**
 ```
-What's the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?
+Which documents are flagged critical policy risk?
 ```
 
 **Beat 3 (Claude Desktop):**
@@ -164,10 +164,10 @@ Expect `listLoans(borrower='Harborview Logistics')` to find the most recent loan
 ### 2. The portfolio already knows what's risky (Claude Desktop, to 4:05)
 
 ```text
-What's the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?
+Which documents are flagged critical policy risk?
 ```
 
-Expect `listLoans` with borrower filter to find the latest Harborview loan, then `getLoanPackage` to get the folder ID, then Box metadata search for `policyRisk = Critical` with folder scope. One hit: `harborview-term-sheet-2026-borrower-markup.pdf`. **MUST call `get_file_preview` to show the document inline**. The document should appear on screen, not just a filename or link. Ask for High or above and the FY2025 financial statements and the appraisal join it.
+Expect `getLoanPackage` (using loan context from Beat 1.5) to get the folder ID, then Box metadata search for `policyRisk = Critical` with folder scope. One hit: `harborview-term-sheet-2026-borrower-markup.pdf`. **MUST call `get_file_preview` to show the document inline**. The document should appear on screen, not just a filename or link. Ask for High or above and the FY2025 financial statements and the appraisal join it.
 
 **If the assistant only cites "Source: filename.pdf" without showing the document:** Say "show me the document" — P2 custom instructions require preview after citing. The beat is not complete until the document appears.
 
