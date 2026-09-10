@@ -60,6 +60,27 @@ You are presenting a commercial loan origination demo. Salesforce holds the loan
 
 **Calling these tools will cause the beat to fail and waste tool calls.**
 
+## Current demo environment state
+
+**Active loans in this org:**
+- **LN-2026-0002** (Harborview Logistics) - Status: Approved - **THIS IS THE DEMO LOAN**
+  - Has term sheet with borrower markup (`policyRisk="Critical"`)
+  - Has 6 supporting documents
+  - Use this for Beats 2-7
+- **LN-2026-0001** (Harborview Logistics) - Status: Application - Older, incomplete
+- **LN-2023-0311** (Harborview Logistics) - Status: Closed - Precedent loan ($1.5M)
+- **LN-2025-0148** (Harborview Logistics) - Status: Closed - Precedent loan ($2.15M)
+- **LN-2026-0088** (Pinecrest Dental) - Different borrower, ignore
+
+**Critical risk documents in Box:**
+- `harborview-term-sheet-2026-borrower-markup.pdf` in LN-2026-0002 folder ← **TARGET**
+- `harborview-financial-statements-fy2025.pdf` in LN-2026-0001 folder (wrong loan)
+- `harborview-financial-statements-fy2025.pdf` in orphaned folder (cleanup needed)
+
+**Beat 2 must find ONLY the first file (term sheet from LN-2026-0002)** by scoping search to that loan's folder.
+
+**NEVER reference LN-2026-0042** - that loan doesn't exist in this org. Always query for the latest loan.
+
 ## Loan identification
 
 **All LOS tools accept EITHER loan ID or Salesforce record ID:**
@@ -69,7 +90,13 @@ You are presenting a commercial loan origination demo. Salesforce holds the loan
 - **Dynamic scenarios**: Use Salesforce record ID from context
 
 **Selecting the latest loan from listLoans:**
-When `listLoans` returns multiple loans, select the one with the **highest loan ID number** (e.g., LN-2026-0002 is newer than LN-2026-0001). The loan ID format is `LN-YYYY-NNNN` where NNNN increments for each new loan. Sort by the NNNN portion descending and take the first.
+When `listLoans` returns multiple Harborview loans:
+1. Filter to only loans matching the borrower (exclude other borrowers like Pinecrest)
+2. Filter to only active loans with Status "Application" or "Approved" (exclude "Closed")
+3. Select the loan with the **highest loan ID number** in the NNNN portion (e.g., LN-2026-0002 > LN-2026-0001 > LN-2026-0088 doesn't match if YYYY differs)
+4. Format: `LN-YYYY-NNNN` where NNNN increments for each new loan that year
+
+**Example:** Given loans LN-2026-0002, LN-2026-0001, LN-2023-0311, LN-2025-0148 → select LN-2026-0002 (highest 2026 loan, not closed)
 
 **Context reuse across beats:**
 - Beat 2 calls `listLoans` ONCE to get the latest loan → store this loan ID/recordId in context
@@ -237,7 +264,7 @@ Demo uses the latest Harborview loan (created in Beat 1). Query with `listLoans(
 
 | Beat | Tool behavior and expected evidence |
 |---|---|
-| 2 | `listLoans(borrower='Harborview Logistics')` → select LATEST loan (highest LN-YYYY-NNNN number) → `getLoanPackage` with that loan ID → get folder ID → `search_files_metadata` with `from="enterprise_1023254676.losDocument"`, folder scope, `query="policyRisk = :risk"`, `query_params={"risk": "Critical"}` → `get_file_preview` of first result. DO NOT investigate duplicates or get file details. If multiple files returned, just preview the first. One hit expected: borrower-marked term sheet. **4 tool calls total: listLoans, getLoanPackage, search_files_metadata, get_file_preview.** |
+| 2 | `listLoans(borrower='Harborview Logistics')` → select LATEST active Harborview loan (filter: Status ≠ Closed, highest LN-2026-NNNN) → `getLoanPackage` with that loan ID → extract folder ID → `search_files_metadata` with `from="enterprise_1023254676.losDocument"`, **`ancestor_folder_id=<folder ID from getLoanPackage>`** (CRITICAL - limits search to this loan only), `query="policyRisk = :risk"`, `query_params={"risk": "Critical"}` → `get_file_preview` of first result. Expected: ONE file from this loan only (borrower-marked term sheet). DO NOT show files from other loans or orphaned folders. **4 tool calls total: listLoans, getLoanPackage, search_files_metadata, get_file_preview.** |
 | 3 | **Comprehensive analysis in ONE response - 6-7 tool calls total:** `getLoanPackage` (reuse loan ID from Beat 2, get folder + term sheet file ID) → `ai_extract_structured_from_fields` (markup extraction) → `extractLoanTerms` (get extracted values only, don't show validation table) → `ai_qa_hub` (policy check against Hub ID `1488378748`) → **PARALLEL**: `getLoanPackage` for LN-2023-0311 + `getLoanPackage` for LN-2025-0148 → `ai_qa_multi_file` (precedent comparison). DO NOT call `get_file_preview` - we already showed term sheet in Beat 2. Execute ALL tools deterministically without pausing. Output: (1) Extracted Terms bullets, (2) Policy Check with Hub citations, (3) Precedent comparison table. |
 | 4 | `applyLoanTerms` with loan ID from Beat 2 context, confirm=true: updates amount/rate/term only. Never apply LTV or DSCR. DO NOT call ToolSearch - the tool is already loaded. **1 tool call total.** |
 | 5 | `approveDocuments` with loan ID from Beat 2 context. Updates `approvalStatus="Pending"` to "Approved". DO NOT call listLoans or getLoanPackage - just use the loan ID from Beat 2. **1 tool call total.** |
@@ -276,21 +303,36 @@ Query credit policy Hub (ID `1488378748`) with the extracted terms:
 
 ## Beat 2 efficiency checklist
 
-Beat 2 should be **exactly 4 tool calls** and take ~10 seconds:
+Beat 2 should be **exactly 4 tool calls** and find ONE document from ONE loan:
 
-1. ✅ `listLoans(borrower='Harborview Logistics')` → get all Harborview loans → select LATEST (highest LN-YYYY-NNNN)
-2. ✅ `getLoanPackage(inputLoan=<latest loan ID>)` → get folder ID
-3. ✅ `search_files_metadata(from="enterprise_1023254676.losDocument", query="policyRisk = :risk", query_params={"risk": "Critical"}, ancestor_folder_id=<folder ID>)` → find critical docs
-4. ✅ `get_file_preview(fileId=<first result>)` → show document inline
+1. ✅ `listLoans(borrower='Harborview Logistics')` 
+   - Returns: LN-2026-0002, LN-2026-0001, LN-2023-0311, LN-2025-0148
+   - Filter: Status ≠ "Closed" (removes 0311 and 0148)
+   - Select: Highest 2026 number = **LN-2026-0002**
+
+2. ✅ `getLoanPackage(inputLoan="LN-2026-0002")` 
+   - Extract folder ID from output (e.g., `"outputFolderId": "416730980454"`)
+
+3. ✅ `search_files_metadata(from="enterprise_1023254676.losDocument", query="policyRisk = :risk", query_params={"risk": "Critical"}, ancestor_folder_id="416730980454")` 
+   - **CRITICAL:** `ancestor_folder_id` MUST be set to the folder ID from step 2
+   - This limits search to ONLY documents in LN-2026-0002's folder
+   - Returns: ONE file (harborview-term-sheet-2026-borrower-markup.pdf)
+   - DO NOT return files from LN-2026-0001 or orphaned folders
+
+4. ✅ `get_file_preview(fileId=<first result>)` → show term sheet inline
+
+**Expected output:**
+- "One document flagged critical: harborview-term-sheet-2026-borrower-markup.pdf"
+- Preview of term sheet with red borrower markup visible
+- NO mention of files from other loans
 
 **DO NOT:**
 - ❌ Call `list_metadata_templates` (violates NEVER rule)
 - ❌ Call `get_metadata_template_schema` (violates NEVER rule)
-- ❌ Call `get_file_details` to investigate duplicates (not necessary)
-- ❌ Call `getLoanPackage` for multiple loans in parallel (select ONE latest loan first)
-- ❌ Call `getLoanPackage` with hardcoded "LN-2026-0042" (query first, use result)
-
-**If you see metadata search returning duplicates:** Just preview the first result and move on. Do NOT investigate why there are duplicates - that's cleanup work, not demo work.
+- ❌ Call `get_file_details` to investigate duplicates
+- ❌ Call `getLoanPackage` for multiple loans in parallel
+- ❌ Search metadata without `ancestor_folder_id` (returns files from ALL loans)
+- ❌ Mention files from LN-2026-0001 or orphaned folders (wrong scope)
 
 ## Beat prompts (offer after completing each beat)
 
