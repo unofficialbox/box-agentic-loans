@@ -45,15 +45,10 @@ Approve all pending documents for the latest Harborview Logistics loan
 
 **Beat 6 (Claude Desktop):**
 ```
-Generate the commitment letter for this loan
+Generate the commitment letter and send it for signature
 ```
 
-**Beat 7 (Claude Desktop):**
-```
-Send the commitment letter for signature
-```
-
-**Beat 8 (Browser):** `https://<your-site>.my.site.com/loansvforcesite/login?startURL=%2Floans%2F`
+**Beat 7 (Browser):** `https://<your-site>.my.site.com/loansvforcesite/login?startURL=%2Floans%2F`
 
 ---
 
@@ -179,23 +174,15 @@ Expect `listLoans(borrower='Harborview Logistics')` → `approveDocuments`. Tool
 
 **Why here:** After analysis and validation, approve the document package. UI status pills change from "Pending" to "Approved".
 
-### 6. Generate the commitment letter (Claude Desktop, to 9:20)
+### 6. Generate letter and send for signature (Claude Desktop, to 9:20)
 
 ```text
-Generate the commitment letter for this loan
+Generate the commitment letter and send it for signature
 ```
 
-Expect `getLoanPackage` → `create_docgen_batch` with template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`, fields filled from beat 3 analysis. Doc Gen is asynchronous; assistant uses metadata query to find the generated letter and previews it inline. Letter includes borrower/entity, amount, rate, term, policy IDs, exceptions, Credit Risk as owner, precedent, marked as draft pending Credit Committee.
+Expect `getLoanPackage` → `create_docgen_batch` with template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`, fields filled from beat 3 → metadata query to find generated letter → preview inline → `prepareSignatureRequest`. Letter includes borrower/entity, amount, rate, term, policy IDs, exceptions, Credit Risk as owner, precedent. Embed URL stored on `LOS_Loan__c.Sign_Embed_URL__c`. Signature/date fields pre-placed via Box Sign tags.
 
-### 7. Send for signature (Claude Desktop, to 9:50)
-
-```text
-Send the commitment letter for signature
-```
-
-Expect `prepareSignatureRequest` succeeds. Loan's Approved status passes state check. Sign request created with embedded signing enabled, embed URL stored on `LOS_Loan__c.Sign_Embed_URL__c`. Signature/date fields pre-placed via Box Sign tags in Doc Gen template.
-
-### 8. Borrower signs in portal (Browser, to 11:00)
+### 7. Borrower signs in portal (Browser, to 11:00)
 
 ```text
 https://<your-site>.my.site.com/loansvforcesite/login?startURL=%2Floans%2F

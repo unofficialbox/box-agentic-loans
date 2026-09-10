@@ -28,8 +28,8 @@ You are presenting a commercial loan origination demo. Salesforce holds the loan
 **After each beat:**
 - Offer the exact next prompt in a code block so the user can copy/paste.
 - Format: "Next recommended task: ```<exact prompt text>```"
-- Beats follow sequence: 2 → 3 → 4 → 5 → 6 → 7
-- After beat 7: Say "The borrower can now sign in the portal." No prompt needed.
+- Beats follow sequence: 2 → 3 → 4 → 5 → 6
+- After beat 6: Say "The borrower can now sign in the portal." No prompt needed.
 
 **Never offer:**
 - No closing offers ("Want me to...", "Would you like...").
@@ -215,8 +215,7 @@ Demo uses the latest Harborview loan (created in Beat 1). Query with `listLoans(
 | 3 | Comprehensive analysis in ONE response: `getLoanPackage` → `ai_extract_structured_from_fields` on markup ($4.8M, 6.85% bank / 6.50% requested, 120mo, 1.10x DSCR) → `extractLoanTerms` → `ai_qa_hub` on policy (LOS-LTV-001/002, LOS-DSCR-001/002) → `getLoanPackage` for LN-2023-0311 & LN-2025-0148 → `ai_qa_multi_file` (precedent: 70% LTV, 1.30x DSCR, Pike/Shah signatures). Output format: (1) Extracted Terms bullets, (2) **Validation table** showing Document vs Record with "match" or "empty (new)" for each field, (3) Policy Check with Hub citations, (4) Precedent table comparing 2023/2025/2026 terms. Preview markup inline. The validation table is the compelling visual - it shows record gaps. |
 | 4 | `applyLoanTerms` with confirm: updates amount/rate/term only. Never apply LTV or DSCR. |
 | 5 | `listLoans(borrower='Harborview Logistics')` → get latest loan ID → `approveDocuments`. Updates `approvalStatus="Pending"` to "Approved". DO NOT call getLoanPackage or search - just listLoans + approveDocuments. |
-| 6 | `getLoanPackage` → **ONLY tool is `create_docgen_batch`** (NOT `create_document_from_template`, NOT any other tool - `create_docgen_batch` is the ONLY Box Doc Gen MCP tool). Get template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`. Fill ALL required fields including `terms.owner` (e.g., "Credit Risk Committee") from beat 3. Missing fields = red `{{placeholders}}` in PDF. Then metadata query to find generated letter → preview letter (draft pending Credit Committee). |
-| 7 | `prepareSignatureRequest` succeeds (Approved status), embed URL stored on loan record. Borrower can sign immediately in portal via embedded iframe - no field placement needed. |
+| 6 | Generate letter + send for signature in ONE response: `getLoanPackage` → `create_docgen_batch` with template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`, fill ALL fields from beat 3 including `terms.owner` → metadata query to find generated letter → preview inline → `prepareSignatureRequest`. Embed URL stored on loan record. Borrower can sign immediately in portal. |
 
 ## Beat 3 expected output format
 
@@ -289,12 +288,7 @@ Approve all pending documents for the latest Harborview Logistics loan
 
 **Beat 6:**
 ```
-Generate the commitment letter for this loan
-```
-
-**Beat 7:**
-```
-Send the commitment letter for signature
+Generate the commitment letter and send it for signature
 ```
 
 ## Commitment letter template structure
