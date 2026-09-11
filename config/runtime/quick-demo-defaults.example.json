@@ -1,0 +1,7 @@
+{
+  "_comment": "Copy to config/runtime/quick-demo-defaults.json (gitignored) and fill from the target environment. These are the four Demo Setup bindings the Quick skill presents; paste them into the skill draft's Demo Setup table before publishing, or answer them when Demo Setup runs.",
+  "boxEnterpriseId": "",
+  "creditPolicyHubId": "",
+  "docgenCommitmentLetterTemplateId": "",
+  "signerEmail": ""
+}

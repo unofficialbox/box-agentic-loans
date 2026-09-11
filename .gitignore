@@ -88,6 +88,7 @@ web_modules/
 # Generated per-operator environment bindings (copy from the example).
 # Runtime files are JSON; only the *.example.json templates are committed.
 config/runtime/demo-environment.json
+config/runtime/quick-demo-defaults.json
 config/runtime/bootstrap-state.json
 config/runtime/validation-receipts.json
 config/runtime/rehearsal-runs.json

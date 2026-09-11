@@ -1,0 +1,74 @@
+{
+  "harness": "amazon-quick",
+  "kind": "chat-agent",
+  "format_note": "Manifest of the Quick chat agent configuration for review and rebuild. Quick does not import this file; build the agent from it per docs/SETUP.md section 5b. Every ARN and ID stays a placeholder here; real values live only in the Quick account or in gitignored runtime files.",
+  "name": "Loan Origination Agent",
+  "description": "Presents the Acme Bank \"Harborview Logistics\" commercial loan origination demo from Amazon Quick. Orchestrates the Salesforce Loan Origination (LOS) and Box connectors to find the latest loan, surface critical policy-risk documents, extract and validate term-sheet terms against credit policy, compare covenants across prior executed loans, and generate and send the commitment letter for signature. Every write is confirmed by a person.",
+  "welcome_message": "",
+  "starter_prompts": [
+    "run the Harborview loan origination demo",
+    "Demo Setup",
+    "What's the latest loan for Harborview Logistics?"
+  ],
+  "capabilities": [
+    {
+      "id": "WEB_SEARCH",
+      "enabled": false
+    }
+  ],
+  "scoped_skills": [
+    {
+      "name": "loan-origination-quick",
+      "source": "skills/loan-origination-quick/SKILL.md",
+      "note": "Import from the repository file or the archive built by scripts/package_loan_skill.py --skill loan-origination-quick. Reference the tools of both connectors in the skill editor before publishing."
+    }
+  ],
+  "instructions_file": "instructions.md",
+  "connectors": [
+    {
+      "ref": "salesforce_loan_origination",
+      "display_name": "Salesforce Loan Origination",
+      "type": "MODEL_CONTEXT_PROTOCOL",
+      "tool_prefix": "salesforce_loan_origination__",
+      "tools": [
+        "listLoans",
+        "getLoanPackage",
+        "extractLoanTerms",
+        "applyLoanTerms",
+        "approveDocuments",
+        "prepareSignatureRequest",
+        "classifyDocument"
+      ],
+      "arn": "<SET_PER_ENVIRONMENT: action-connector ARN>",
+      "note": "The hosted Salesforce MCP server LOSLoanTools (docs/SETUP.md section 5a). The ARN is environment-specific; do not commit a real value."
+    },
+    {
+      "ref": "box_agent",
+      "display_name": "Box Agent",
+      "type": "BOX",
+      "tool_prefix": "box_agent__",
+      "arn": "<SET_PER_ENVIRONMENT: action-connector ARN>",
+      "note": "Box MCP connector. Enable read and write tools for Box Doc Gen and Box AI in the Box Admin Console, then reconnect (docs/SETUP.md section 5a)."
+    }
+  ],
+  "spaces": [
+    {
+      "ref": "loan-origination-workspace",
+      "display_name": "Loan Origination Workspace",
+      "arn": "<SET_PER_ENVIRONMENT: space ARN>",
+      "internalId": "<SET_PER_ENVIRONMENT: internal space id>"
+    }
+  ],
+  "demo_setup_defaults": {
+    "_comment": "Presented by the skill's Demo Setup step; the operator can override each at runtime. Values are environment-bound and live in config/runtime/quick-demo-defaults.json (gitignored); copy config/runtime/quick-demo-defaults.example.json to create it.",
+    "box_enterprise_id": "<SET_PER_ENVIRONMENT>",
+    "credit_policy_hub_id": "<SET_PER_ENVIRONMENT>",
+    "docgen_commitment_letter_template_id": "<SET_PER_ENVIRONMENT>",
+    "signer_email": "<SET_PER_ENVIRONMENT>"
+  },
+  "provenance": {
+    "exported_from": "Amazon Quick",
+    "agent_display_name_in_quick": "Loan Origination Agent v2",
+    "notes": "Loan ID and loan folder ID are always resolved dynamically via listLoans(borrower='Harborview Logistics'); they are never part of setup."
+  }
+}
