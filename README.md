@@ -70,6 +70,8 @@ python3 scripts/cleanup_demo.py --status Application --interactive
 
 ### Demo
 
+**[Open the public demo guide](https://unofficialbox.github.io/box-claudeforce-loans/)** · [Download portable HTML](https://unofficialbox.github.io/box-claudeforce-loans/docs/demo-storyboard/standalone.html)
+
 [Open the borrower portal login](https://agentforce-box.my.site.com/loansvforcesite/login)
 
 Run the demo beats with Claude Desktop (or any AI harness):
