@@ -3,7 +3,9 @@ import base64
 import hashlib
 from html.parser import HTMLParser
 import json
+import mimetypes
 from pathlib import Path
+from urllib.parse import urlsplit
 import re
 import tempfile
 import unittest
@@ -27,10 +29,19 @@ class StandaloneStoryboardTests(unittest.TestCase):
                 self.assertEqual(hashlib.sha256(base64.b64decode(asset['data'])).hexdigest(),key)
             for attrs in tags:
                 if 'data-embedded-src' in attrs: self.assertIn(attrs['data-embedded-src'],manifest)
+                if 'data-embedded-href' in attrs:
+                    self.assertTrue(manifest[attrs['data-embedded-href']]['mime'].startswith('image/'))
+                    self.assertNotIn('href', attrs)
+                if 'href' in attrs:
+                    mime = mimetypes.guess_type(urlsplit(attrs['href']).path)[0] or ''
+                    self.assertFalse(mime.startswith('image/'),attrs['href'])
                 for key in ('src','href'):
                     if key in attrs: self.assertTrue(attrs[key].startswith(('https://','#','data:')),attrs[key])
             self.assertIn(REPO_URL+'skills/loan-origination/SKILL.md', content)
             self.assertIn(REPO_URL+'output/pdf/harborview-appraisal-2026.pdf',content)
-            self.assertNotIn('data-embedded-href',content)
+            original_image_links = [a for a in Links(original.decode()).attrs
+                                    if (mimetypes.guess_type(a.get('href',''))[0] or '').startswith('image/')]
+            self.assertGreater(len(original_image_links),0)
+            self.assertEqual(sum('data-embedded-href' in a for a in tags),len(original_image_links))
             for url in re.findall(r'url\("([^"]+)"\)',content):self.assertTrue(url.startswith('data:'))
             self.assertEqual(sum(a.get('role') == 'tabpanel' for a in tags),3)

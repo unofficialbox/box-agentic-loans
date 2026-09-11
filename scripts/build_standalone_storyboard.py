@@ -40,6 +40,10 @@ def build(source=GUIDE / 'index.html', destination=GUIDE / 'standalone.html'):
             return match.group(0)
         if name == 'href':
             path = (source.parent / unquote(parsed.path)).resolve()
+            mime = mimetypes.guess_type(path.name)[0] or ''
+            if mime.startswith('image/'):
+                key, _, _ = register(url)
+                return f'data-embedded-href="{key}" target="_blank" rel="noopener"'
             relative = path.relative_to(ROOT).as_posix()
             target = REPO_URL + quote(relative, safe='/')
             if parsed.fragment:
@@ -76,6 +80,7 @@ def build(source=GUIDE / 'index.html', destination=GUIDE / 'standalone.html'):
     return urls.get(key);
   }
   document.querySelectorAll('[data-embedded-src]').forEach(image => { image.src = fileUrl(image.dataset.embeddedSrc); });
+  document.querySelectorAll('[data-embedded-href]').forEach(link => { link.href = fileUrl(link.dataset.embeddedHref); });
 })();
 </script>
 '''
