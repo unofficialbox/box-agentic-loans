@@ -5,6 +5,8 @@ description: Present the Acme Bank Harborview loan origination demo from Amazon 
 
 # LOS demo presenter (Amazon Quick)
 
+Skill revision: 2026-09-11 r2. If the skill panel in Quick shows an older or missing revision line, or any reference to a separate Doc Gen guide, the loaded copy is stale: re-import this file and publish.
+
 You are presenting a commercial loan origination demo from Amazon Quick. Salesforce holds the loan record, Box holds the loan file, and you orchestrate both through their connector tools. The audience is bankers and Salesforce field teams. A person confirms every write.
 
 This file is the complete skill. It is the Quick variant of the Claude Desktop presenter skill; the beats, prompts, and governance rules are the same. Everything specific to Quick is in the two sections that follow.
@@ -71,6 +73,7 @@ All LOS tools accept a loan ID or a Salesforce record ID. For the demo, query `l
     { "key": "bankRate", "prompt": "the fixed interest rate the bank states" },
     { "key": "borrowerRequestedRate", "prompt": "the rate the borrower requests in its HARBORVIEW MARKUP notes" },
     { "key": "termMonths", "prompt": "the term in months" },
+    { "key": "ltv", "prompt": "the loan-to-value the borrower proposes in its markup, not the policy maximum the term sheet quotes" },
     { "key": "dscr", "prompt": "the debt service coverage ratio the borrower proposes in its markup" },
     { "key": "dscrTesting", "prompt": "how often the borrower proposes the DSCR be tested" }
   ]
@@ -159,7 +162,7 @@ Beats 1 and 6 happen in the borrower portal browser window. Beats 2 to 5 run her
 | Beat | Tool behavior and expected evidence |
 |---|---|
 | 2 | `listLoans(borrower='Harborview Logistics')` → latest loan → `getLoanPackage` → folder ID → `search_files_metadata` with `losDocument`, folder scope, `policyRisk = :risk`. One hit: the borrower-marked term sheet, previewed inline. Do not answer this beat with `extractLoanTerms`. |
-| 3 | `getLoanPackage` → `ai_extract_structured_from_fields` on the markup with the prompts above → `ai_qa_hub` on the policy library. Expected: $4.8M; 6.85% bank rate, 6.50% requested; 120 months; DSCR 1.10x tested annually. Hub: LOS-LTV-001/002 and LOS-DSCR-001/002, both requests outside the exceptions, Credit Risk owns the deviation. Preview the markup. |
+| 3 | `getLoanPackage` → `ai_extract_structured_from_fields` on the markup with the prompts above → `ai_qa_hub` on the policy library. Expected: $4.8M; 6.85% bank rate, 6.50% requested; 120 months; LTV 85%; DSCR 1.10x tested annually. If the extract returns 75% or 1.25x, it read the quoted policy thresholds; re-run with the prompts above. Hub: LOS-LTV-001/002 and LOS-DSCR-001/002, both requests outside the exceptions, Credit Risk owns the deviation. Preview the markup. |
 | 3a | `extractLoanTerms` on the markup: amount, rate, and term match the record; LTV and DSCR mismatch; nothing written. |
 | 3b | Without "confirm", `applyLoanTerms` refuses; show that. With "confirm", it updates amount, rate, and term only. Re-read the record and inspect `fieldsUpdated`. |
 | 4 | `getLoanPackage` for LN-2023-0311 and LN-2025-0148 → `ai_qa_multi_file` across the two executed agreements and the 2026 markup. Expected: 70% LTV and 1.30x DSCR tested quarterly, Section 8 and Schedule 1, signed by Jordan Pike and Priya Shah; the 2026 markup asks 1.10x annually. One table, then preview the 2025 agreement at Schedule 1. Do not answer this beat with `extractLoanTerms`. |
