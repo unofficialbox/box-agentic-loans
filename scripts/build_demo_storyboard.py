@@ -85,11 +85,11 @@ body{font:16px/1.5 Inter,sans-serif;margin:0;background:#f7f5ef;color:#183c38}ma
 .storyboard-layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:28px;align-items:start}.storyboard-content{min-width:0}.step-nav{position:sticky;top:86px;max-height:calc(100vh - 110px);overflow:auto;padding:20px 0}.step-nav p{margin:0 12px 12px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:#62736e}.step-nav a{display:flex;gap:12px;padding:10px 12px;margin:3px 0;border-radius:8px;text-decoration:none;color:#183c38;font-size:14px;line-height:1.35}.step-nav a span{color:#72847b;font-variant-numeric:tabular-nums}.step-nav a:hover,.step-nav a:focus-visible{background:#e8ede7;outline-offset:2px}.storyboard-content article{scroll-margin-top:90px}.storyboard-content article:target{border-color:#006b62}#setup,#resources{max-width:1120px;margin:auto}@media(max-width:850px){.storyboard-layout{grid-template-columns:1fr;gap:0}.step-nav{position:static;max-height:210px;border-bottom:1px solid #ddd8cd}.step-nav a{padding:8px 12px}}@media print{.step-nav{display:none}.storyboard-layout{display:block}}
 </style><main><h1>Loan Origination Demo</h1><p><a href=""" + '"' + LOGIN + '"' + """>Open borrower portal</a></p>
 <nav class="tabs" role="tablist" aria-label="Demo sections">
-<button id="tab-setup" role="tab" aria-selected="true" aria-controls="setup" data-panel="setup">Setup</button>
-<button id="tab-storyboard" role="tab" aria-selected="false" aria-controls="storyboard" data-panel="storyboard" tabindex="-1">Storyboard</button>
+<button id="tab-storyboard" role="tab" aria-selected="true" aria-controls="storyboard" data-panel="storyboard">Storyboard</button>
+<button id="tab-setup" role="tab" aria-selected="false" aria-controls="setup" data-panel="setup" tabindex="-1">Setup</button>
 <button id="tab-resources" role="tab" aria-selected="false" aria-controls="resources" data-panel="resources" tabindex="-1">Resources</button>
-</nav><section id="setup" role="tabpanel" aria-labelledby="tab-setup">""" + setup + """</section>
-<section id="storyboard" role="tabpanel" aria-labelledby="tab-storyboard" hidden><div class="storyboard-layout">""" + step_nav + '<div class="storyboard-content">' + overview + "".join(cards) + """</div></div></section>
+</nav><section id="setup" role="tabpanel" aria-labelledby="tab-setup" hidden>""" + setup + """</section>
+<section id="storyboard" role="tabpanel" aria-labelledby="tab-storyboard"><div class="storyboard-layout">""" + step_nav + '<div class="storyboard-content">' + overview + "".join(cards) + """</div></div></section>
 <section id="resources" role="tabpanel" aria-labelledby="tab-resources" hidden>""" + "".join(resource_cards) + """</section></main>
 <script>
 const tabs = [...document.querySelectorAll('[role="tab"]')];
