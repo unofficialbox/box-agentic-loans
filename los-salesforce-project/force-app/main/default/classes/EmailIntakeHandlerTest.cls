@@ -10,7 +10,7 @@ private class EmailIntakeHandlerTest {
         email.toAddresses = new List<String>{ 'lending@acmebank.example' };
         if (withAttachment) {
             Messaging.InboundEmail.BinaryAttachment att = new Messaging.InboundEmail.BinaryAttachment();
-            att.fileName = 'dockwright-loan-application-2026.pdf';
+            att.fileName = 'harborview-loan-application-2026.pdf';
             att.body = Blob.valueOf('%PDF-1.7 fake bytes');
             email.binaryAttachments = new List<Messaging.InboundEmail.BinaryAttachment>{ att };
         }
@@ -19,20 +19,20 @@ private class EmailIntakeHandlerTest {
 
     @isTest
     static void logsEmailActivityOntoOpportunity() {
-        Account acct = new Account(Name = 'Dockwright Logistics', Website = 'https://www.dockwrightlogistics.example');
+        Account acct = new Account(Name = 'Harborview Logistics', Website = 'https://www.harborviewlogistics.example');
         insert acct;
         insert new Contact(
             FirstName = 'Jordan', LastName = 'Pike',
             Email = 'kadams@boxdemo.com', AccountId = acct.Id
         );
         Opportunity opp = new Opportunity(
-            Name = 'Dockwright Logistics - Distribution Facility Acquisition',
+            Name = 'Harborview Logistics - Distribution Facility Acquisition',
             AccountId = acct.Id, StageName = 'Proposal/Price Quote',
             CloseDate = Date.today().addMonths(4)
         );
         insert opp;
 
-        Messaging.InboundEmail email = buildEmail('kadams@boxdemo.com', 'Dockwright loan application package 2026', true);
+        Messaging.InboundEmail email = buildEmail('kadams@boxdemo.com', 'Harborview loan application package 2026', true);
         Messaging.InboundEnvelope env = new Messaging.InboundEnvelope();
         env.fromAddress = email.fromAddress;
 

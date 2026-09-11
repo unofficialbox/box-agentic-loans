@@ -31,7 +31,7 @@ describe("Workspace", () => {
     const failure = await screen.findByTestId("box-error");
     expect(failure).toBeVisible();
     expect(failure).toHaveTextContent(/could not be reached|returned/i);
-    expect(screen.queryByText("dockwright-term-sheet-2026-markup.pdf")).not.toBeInTheDocument();
+    expect(screen.queryByText("harborview-term-sheet-2026-markup.pdf")).not.toBeInTheDocument();
   });
 
   test("hides the panels built from the listing when the listing failed", async () => {
@@ -101,7 +101,7 @@ describe("Workspace", () => {
     expect(container.querySelector(".loan-banner")).toBeNull();
     expect(screen.queryByText(/120 months/)).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("heading", { name: "Dockwright Logistics Distribution Facility Loan 2026" }),
+      screen.queryByRole("heading", { name: "Harborview Logistics Distribution Facility Loan 2026" }),
     ).not.toBeInTheDocument();
   });
 
@@ -178,7 +178,7 @@ describe("Workspace", () => {
           return {
             ok: true,
             json: async () => [
-              { recordId: "a01xx0000009abcAAA", name: "Dockwright Logistics Equipment Term Loan 2025", boxFolderId: "123456789" },
+              { recordId: "a01xx0000009abcAAA", name: "Harborview Logistics Equipment Term Loan 2025", boxFolderId: "123456789" },
             ],
           };
         }
@@ -206,7 +206,7 @@ describe("Workspace", () => {
               {
                 recordId: "a01xx0000009abcAAA",
                 loanId: "LN-2026-0042",
-                name: "Dockwright Logistics Distribution Facility Loan 2026",
+                name: "Harborview Logistics Distribution Facility Loan 2026",
                 boxFolderId: "123456789",
               },
             ],
@@ -396,7 +396,7 @@ vi.mock("./components/UploadDialog", () => ({
   ),
 }));
 
-const borrower = { isGuest: false, name: "Dana Whitfield", accountName: "Dockwright Logistics", loginUrl: "https://example.invalid/login" };
+const borrower = { isGuest: false, name: "Dana Whitfield", accountName: "Harborview Logistics", loginUrl: "https://example.invalid/login" };
 const guest = { isGuest: true, loginUrl: "https://example.invalid/login" };
 
 /** One fetch double for the whole app: identity, loans, and whatever else a test adds. */
@@ -420,8 +420,8 @@ function apiDouble(
 const applicationLoan = {
   recordId: "a01xx0000009newAAA",
   loanId: "LN-2026-0089",
-  name: "Dockwright Logistics Commercial Real Estate 2026",
-  borrower: "Dockwright Logistics",
+  name: "Harborview Logistics Commercial Real Estate 2026",
+  borrower: "Harborview Logistics",
   loanType: "Commercial Real Estate",
   status: "Application",
   loanAmount: 2_400_000,

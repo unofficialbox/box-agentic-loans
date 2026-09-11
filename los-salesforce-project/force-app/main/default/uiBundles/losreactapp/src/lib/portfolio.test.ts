@@ -33,11 +33,11 @@ describe("valueByBorrower", () => {
     expect(
       valueByBorrower([
         c({ borrower: "Pinecrest", loanAmount: 1_000_000 }),
-        c({ borrower: "Dockwright", loanAmount: 2_400_000 }),
+        c({ borrower: "Harborview", loanAmount: 2_400_000 }),
         c({ borrower: "Pinecrest", loanAmount: 500_000 }),
       ]),
     ).toEqual([
-      { label: "Dockwright", value: 2_400_000 },
+      { label: "Harborview", value: 2_400_000 },
       { label: "Pinecrest", value: 1_500_000 },
     ]);
   });
@@ -75,31 +75,31 @@ describe("valueBreakdown", () => {
     // A borrower deals with exactly one lender, so "by borrower" is a single bar with
     // nothing to compare against. Their own loans are the useful comparison.
     const result = valueBreakdown([
-      c({ borrower: "Dockwright", loanId: "A", loanAmount: 100 }),
-      c({ borrower: "Dockwright", loanId: "B", loanAmount: 200 }),
+      c({ borrower: "Harborview", loanId: "A", loanAmount: 100 }),
+      c({ borrower: "Harborview", loanId: "B", loanAmount: 200 }),
     ]);
     expect(result.title).toBe("Value by loan");
     expect(result.slices.map((s) => s.label)).toEqual(["B", "A"]);
   });
 
   test("prefers the borrowing entity when one borrower borrows through several", () => {
-    // Dockwright borrows through the parent and a holding company; that is a real
+    // Harborview borrows through the parent and a holding company; that is a real
     // comparison, and it sits between the borrower view and the per-loan fallback.
     const result = valueBreakdown([
-      c({ borrower: "Dockwright", borrowerEntity: "Dockwright Logistics", loanId: "A", loanAmount: 100 }),
-      c({ borrower: "Dockwright", borrowerEntity: "Dockwright Logistics Holdings LLC", loanId: "B", loanAmount: 200 }),
+      c({ borrower: "Harborview", borrowerEntity: "Harborview Logistics", loanId: "A", loanAmount: 100 }),
+      c({ borrower: "Harborview", borrowerEntity: "Harborview Logistics Holdings LLC", loanId: "B", loanAmount: 200 }),
     ]);
     expect(result.title).toBe("Value by borrowing entity");
-    expect(result.slices.map((s) => s.label)).toEqual(["Dockwright Logistics Holdings LLC", "Dockwright Logistics"]);
+    expect(result.slices.map((s) => s.label)).toEqual(["Harborview Logistics Holdings LLC", "Harborview Logistics"]);
   });
 
   test("keeps the portfolio view when borrowers actually differ", () => {
     const result = valueBreakdown([
-      c({ borrower: "Dockwright", loanAmount: 100 }),
+      c({ borrower: "Harborview", loanAmount: 100 }),
       c({ borrower: "Pinecrest", loanAmount: 200 }),
     ]);
     expect(result.title).toBe("Value by borrower");
-    expect(result.slices.map((s) => s.label)).toEqual(["Pinecrest", "Dockwright"]);
+    expect(result.slices.map((s) => s.label)).toEqual(["Pinecrest", "Harborview"]);
   });
 });
 

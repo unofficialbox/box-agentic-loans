@@ -15,9 +15,9 @@
  * code path live.
  */
 Map<String, String> fileByLoan = new Map<String, String>{
-    'LN-2023-0311' => 'Los_Sample_Loan_2023_Executed:dockwright-loan-agreement-2023-executed.pdf',
-    'LN-2025-0148' => 'Los_Sample_Loan_2025_Executed:dockwright-loan-agreement-2025-executed.pdf',
-    'LN-2026-0042' => 'Los_Sample_Term_Sheet_2026_Markup:dockwright-term-sheet-2026-markup.docx'
+    'LN-2023-0311' => 'Los_Sample_Loan_2023_Executed:harborview-loan-agreement-2023-executed.pdf',
+    'LN-2025-0148' => 'Los_Sample_Loan_2025_Executed:harborview-loan-agreement-2025-executed.pdf',
+    'LN-2026-0042' => 'Los_Sample_Term_Sheet_2026_Markup:harborview-term-sheet-2026-markup.docx'
 };
 
 // Upload into the loan's Opportunity Box folder (Opportunity is the Box-mapped object).

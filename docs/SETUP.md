@@ -45,7 +45,7 @@ python3 scripts/demo_operator.py bootstrap --scenario box-salesforce-los --yes
 
 `bootstrap` runs `generate-assets`, `box-foundation`, `seed-metadata`, `salesforce-deploy` and `resolve-config --allow-unresolved` in order, checkpointing after each create so a rerun skips what exists. Run the phases one at a time (each accepts `--dry-run`) when Box and Salesforce administration belong to different people.
 
-Box phases create `LOS-2026-Dockwright` (`01 - Application Intake` through `07 - Covenants and Servicing`, `08 - DocGen Templates`, `Credit Policies`), the five metadata templates, the borrower documents, the Doc Gen templates, the policy library, and sixteen metadata seeds. They publish and share nothing.
+Box phases create `LOS-2026-Harborview` (`01 - Application Intake` through `07 - Covenants and Servicing`, `08 - DocGen Templates`, `Credit Policies`), the five metadata templates, the borrower documents, the Doc Gen templates, the policy library, and sixteen metadata seeds. They publish and share nothing.
 
 The Salesforce phase deploys the object, fields, layout, permission sets, tab, app, record page, UI Bundle and the authenticated Experience Cloud site, publishes the site, and assigns the LOS and Box permission sets to the deploying administrator. It excludes the External Client App because its scope, consumer key, callback URL and Run As user are environment-specific.
 
@@ -148,7 +148,7 @@ Complete each item for every new environment. Record IDs only in the gitignored 
 - Record the loans root folder id in `Loans_Root_Folder_Id__c`; without it `LosPortfolioSearch` queries the whole enterprise.
 - Create an API-only integration user with `LOS_Box_Automate_Integration` and nothing broader (`los-salesforce-project/scripts/configure-los-oauth.sh <alias>` with `LOS_INTEGRATION_USERNAME` and `LOS_INTEGRATION_EMAIL` set), and an External Client App with client credentials, `api` scope, admin preauthorization and that user as Run As. Keep the consumer secret in the Box-managed OAuth connection.
 - Confirm the Box for Salesforce package can provision loan folders (MT-044); a failure surfaces as `box_folder_not_provisioned`.
-- Give the borrower portal an authenticated user (Dana Whitfield on Dockwright Logistics) with `LOS_Borrower_Portal`, site membership and a real password; `NetworkMember` must list her.
+- Give the borrower portal an authenticated user (Dana Whitfield on Harborview Logistics) with `LOS_Borrower_Portal`, site membership and a real password; `NetworkMember` must list her.
 - Decide whether signed-out visitors may read loans (MT-045). `LOS_Loan__c` is Private, so a guest sees an empty list; a guest sharing rule exposes real records to anyone who can open the site.
 - Select real reviewers for Credit Risk, Collateral, Compliance, Loan Documentation, Pricing, Insurance and Servicing, with Credit Administration as the triage fallback, and grant them least-privilege Box access.
 - Per run: submit a labelled portal application and confirm record, folder and classification (MT-058); run Extract and confirm the write-back refuses without `confirmed = true`, then apply amount, rate and term with it (MT-057; never LTV or DSCR, which the extract reads from the policy text); confirm signature is blocked on an Underwriting loan; confirm a repeated loan ID updates the same record.
@@ -188,7 +188,7 @@ python3 scripts/cleanup_demo.py --last-n-days 7 --yes
 python3 scripts/cleanup_demo.py --loan-id LN-2026-0042 --yes
 
 # Delete loans for a specific borrower
-python3 scripts/cleanup_demo.py --borrower "Dockwright" --yes
+python3 scripts/cleanup_demo.py --borrower "Harborview" --yes
 
 # Interactive mode (prompts before each deletion)
 python3 scripts/cleanup_demo.py --status Application --interactive

@@ -86,7 +86,7 @@ Box connector → query_metadata(template="losDocument", query="reviewStatus='Pe
 
 **Find all documents for a borrower:**
 ```
-Box connector → query_metadata(template="losDocument", query="borrowerEntity='Dockwright Logistics'")
+Box connector → query_metadata(template="losDocument", query="borrowerEntity='Harborview Logistics'")
 ```
 
 **NEVER DO THIS:**
@@ -135,7 +135,7 @@ Which loan documents are flagged critical policy risk?
 
 **For Beat 4 - Portfolio Search:**
 ```
-What closed loans does Dockwright Logistics have with us?
+What closed loans does Harborview Logistics have with us?
 ```
 → Use LOS connector's `listLoans` with borrower filter
 
@@ -154,12 +154,12 @@ What closed loans does Dockwright Logistics have with us?
 
 ❌ **Wrong:**
 ```
-Source: dockwright-term-sheet-2026-borrower-markup.pdf
+Source: harborview-term-sheet-2026-borrower-markup.pdf
 ```
 
 ✅ **Correct:**
 ```
-Source: dockwright-term-sheet-2026-borrower-markup.pdf
+Source: harborview-term-sheet-2026-borrower-markup.pdf
 [calls Box connector's get_file_preview with file ID]
 ```
 
@@ -195,9 +195,9 @@ query_metadata(template="losDocument", query="documentType='Term Sheet'")
 query_metadata(template="losDocument", query="reviewStatus='Pending'")
 ```
 
-**"What documents do we have for Dockwright Logistics?"**
+**"What documents do we have for Harborview Logistics?"**
 ```
-query_metadata(template="losDocument", query="borrowerEntity='Dockwright Logistics'")
+query_metadata(template="losDocument", query="borrowerEntity='Harborview Logistics'")
 ```
 
 ## Example: Beat 3 (Extract & Validate)
@@ -213,10 +213,10 @@ query_metadata(template="losDocument", query="borrowerEntity='Dockwright Logisti
 
 ## Example: Beat 4 (Portfolio Search)
 
-**Prompt:** What closed loans does Dockwright Logistics have with us?
+**Prompt:** What closed loans does Harborview Logistics have with us?
 
 **Tool Sequence:**
-1. ✅ LOS connector → `listLoans` with borrower="Dockwright Logistics", status="Closed"
+1. ✅ LOS connector → `listLoans` with borrower="Harborview Logistics", status="Closed"
 
 **Why LOS connector here:** Salesforce records, not Box files.
 

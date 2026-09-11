@@ -39,7 +39,7 @@ EXCLUDED_PARTS = {
 }
 MAX_TEXT_BYTES = 5_000_000
 DETERMINISTIC_DATA_FIXTURES = (
-    "json/dockwright-los-records.json",
+    "json/harborview-los-records.json",
     "json/credit-policy-playbook.json",
 )
 RUNTIME_ID_SUFFIXES = {".md", ".json", ".py", ".ts", ".tsx", ".js", ".xml", ".sh", ".yml", ".yaml", ".toml", ".env", ".properties"}
