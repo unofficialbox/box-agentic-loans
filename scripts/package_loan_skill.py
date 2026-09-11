@@ -29,6 +29,6 @@ def package(output: Path, root: Path = ROOT, skill_name: str = 'loan-origination
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
-    parser.add_argument('--skill', default='loan-origination', choices=['loan-origination', 'loan-origination-quick'])
+    parser.add_argument('--skill', default='loan-origination', choices=['loan-origination', 'loan-origination-quick', 'loan-origination-slack'])
     args = parser.parse_args()
     print(package(args.output, skill_name=args.skill))

@@ -8,7 +8,7 @@ from scripts.package_loan_skill import package, ROOT
 
 class LoanSkillPackageTests(unittest.TestCase):
     def fixture(self, root):
-        for name in ['skills/loan-origination/SKILL.md', 'skills/loan-origination-quick/SKILL.md']:
+        for name in ['skills/loan-origination/SKILL.md', 'skills/loan-origination-quick/SKILL.md', 'skills/loan-origination-slack/SKILL.md']:
             target = root / name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / name, target)
@@ -32,6 +32,14 @@ class LoanSkillPackageTests(unittest.TestCase):
             output = package(root / 'quick.skill', root, skill_name='loan-origination-quick')
             with zipfile.ZipFile(output) as archive:
                 self.assertEqual(set(archive.namelist()), {'loan-origination-quick/SKILL.md'})
+
+    def test_slack_archive_contains_only_its_entrypoint(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            output = package(root / 'slack.skill', root, skill_name='loan-origination-slack')
+            with zipfile.ZipFile(output) as archive:
+                self.assertEqual(set(archive.namelist()), {'loan-origination-slack/SKILL.md'})
 
     def test_rejects_dependency_outside_the_archive(self):
         with tempfile.TemporaryDirectory() as directory:

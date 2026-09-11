@@ -127,27 +127,13 @@ The hosted server `LOSLoanTools` deploys with the metadata but is inert until th
 2. **Deploy the External Client App.** `externalClientApps/LOS_Claude_MCP` with its OAuth settings (`MCP` and `RefreshToken` scopes), global OAuth set (callback `https://claude.ai/api/mcp/auth_callback`, PKCE required, consumer secret optional, named-user JWT tokens) and policy (admin pre-authorized users). Read the consumer key from Setup → External Client App Manager → LOS Claude MCP → Settings → OAuth; never retrieve `ExtlClntAppGlobalOauthSettings` into source, it carries the secret.
 3. **Grant the user.** Assign `LOS_MCP_Client` to every presenter, and add them to the app's pre-authorized profiles or permission sets (Setup → External Client App Manager → LOS Claude MCP → Policies).
 
-Then in the client:
-
-- **Claude Desktop or claude.ai:** Customize → Connectors → + → Add custom connector. Name `LOS Loan Tools`, server URL from step 1, Advanced settings → OAuth Client ID = the consumer key, no secret. Click Connect; the org login completes the OAuth flow. Configure → all seven tools on. Load the Box connector alongside it.
-- **Box connector:** in the Box Admin Console → Integrations → Box MCP Server, enable read and write tools for Box Doc Gen and Box AI (they are off by default), then disconnect and reconnect the Box connector in the client; a token issued before the change keeps the old grants and every Doc Gen call answers "Access denied".
-- **ChatGPT:** the same app with the ChatGPT callback URL added to the ECA; untested here.
-- **Slack:** the workspace connected to the org with this server enabled; untested here.
+Then each presenter connects their own client by following [docs/CLIENT-SETUP.md](CLIENT-SETUP.md), written for non-developers. Before they do, add that client's callback URL to the app's global OAuth set (`https://claude.ai/api/mcp/auth_callback` for Claude, `https://oauth2.slack.com/external/auth/callback` for Slack, the URL shown in Quick's or ChatGPT's connector dialog for those), and in the Box Admin Console → Integrations → Box MCP Server enable read and write tools for Box Doc Gen and Box AI (off by default); a Box token issued before that change keeps the old grants and every Doc Gen call answers "Access denied" until the presenter reconnects.
 
 Expect: the connector lists seven tools (`listLoans`, `getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `classifyDocument`, `approveDocuments`, `prepareSignatureRequest`). Beat 2 uses Box MCP `query_metadata` directly.
 
 ## 5b. Amazon Quick
 
-Amazon Quick on desktop runs the same two servers through a chat agent scoped to one skill. Nothing org-side changes; the three steps in 5a must already be done, and the Quick callback URL must be added to the External Client App's global OAuth set.
-
-1. **Connectors.** Customize → Connectors → Create → Cloud connector → MCP server: name `Salesforce Loan Origination`, server URL from 5a step 1, OAuth Client ID = the consumer key. Install the Box connector from the catalog after enabling the Doc Gen and Box AI tools in the Box Admin Console (5a); reconnect if the connector predates that change. Quick exposes tools as `<connector>__<tool>`; the skill assumes the installed names `salesforce_loan_origination` and `box_agent`, so use those or edit the prefixes in the skill.
-2. **Runtime defaults.** `cp config/runtime/quick-demo-defaults.example.json config/runtime/quick-demo-defaults.json` and fill the Box enterprise ID, Credit Policy Hub ID, Doc Gen commitment-letter template ID, and signer email for this environment. The file is gitignored.
-3. **Skill.** Customize → Skills → Create → From file → [skills/loan-origination-quick/SKILL.md](../skills/loan-origination-quick/SKILL.md), or the archive from `python3 scripts/package_loan_skill.py --skill loan-origination-quick --output /tmp/loan-origination-quick.skill`. In the editor, reference the tools of both connectors, replace the four placeholders in the Demo Setup table from the runtime defaults file, and Publish. Repository edits never reach Quick; re-import whenever the `Skill revision` line at the top of the file changes, and check the skill panel shows the current one.
-4. **Agent.** Customize → Agents → Create. Paste [config/quick/instructions.md](../config/quick/instructions.md) into Instructions; on Capabilities attach both connectors, limit Skills to `loan-origination-quick`, turn Web search off. [config/quick/agent.json](../config/quick/agent.json) is the manifest of that configuration for review, not a Quick import file. Publish.
-5. **Tool permissions.** Leave `applyLoanTerms`, `approveDocuments`, `prepareSignatureRequest`, and `create_docgen_batch` at Ask Each Time. The consent pause is part of the demo.
-6. **Demo Setup.** Before the show, send `Demo Setup` once in the agent chat. The skill presents the four bindings as one confirmation and caches them for the session.
-
-Expect: the same seven LOS tools as 5a; the document stages (metadata search, Box AI, Doc Gen, preview) run on the Box connector. Quick has no project custom instructions, so the answer-style rules in DEMO-CLICKPATH P2 live inside the skill and the agent instructions.
+Amazon Quick on desktop runs the same two servers through a chat agent scoped to one skill. Nothing org-side changes beyond the callback URL in 5a. The presenter steps (connectors, skill import, agent, tool permissions, Demo Setup) are in [docs/CLIENT-SETUP.md](CLIENT-SETUP.md#amazon-quick-desktop). Maintainers keep the four Demo Setup values in `config/runtime/quick-demo-defaults.json` (gitignored; copy `quick-demo-defaults.example.json`), and give them to the presenter to paste into the skill draft before publishing. [config/quick/agent.json](../config/quick/agent.json) is the manifest of the agent configuration for review, not a Quick import file; [config/quick/instructions.md](../config/quick/instructions.md) is the agent's Instructions text. Quick has no project custom instructions, so the answer-style rules in DEMO-CLICKPATH P2 live inside the skill and the agent instructions.
 
 | Symptom | Fix |
 |---|---|
@@ -156,6 +142,26 @@ Expect: the same seven LOS tools as 5a; the document stages (metadata search, Bo
 | A stage runs on the LOS connector alone and shows no previews | The skill does not reference the Box connector's tools. Edit the skill, reference both connectors, Publish. |
 | `prepareSignatureRequest` or `create_docgen_batch` times out after 60 seconds | The call may have completed. The skill re-reads the loan package before any retry; do not retry by hand. |
 | `applyLoanTerms` reports `Status__c` in `fieldsUpdated` | The deployed Apex differs from source, which never writes status. Redeploy `LosApplyLoanTerms` and hold signature preparation until the approval state is verified. |
+
+## 5c. Slack (Slackbot)
+
+Slackbot connects to remote MCP servers through a Slack app, discovers their tools, and runs them in a direct message. It loads no skills and has no custom instructions; the presenter pastes the primer from [skills/loan-origination-slack/SKILL.md](../skills/loan-origination-slack/SKILL.md) at the start of each rehearsal, and Slack shows Box links rather than document previews.
+
+1. **Create the app.** At `api.slack.com/apps` choose Create New App → From a manifest, paste [config/slack/los-loan-tools.manifest.json](../config/slack/los-loan-tools.manifest.json) (fix the server URL for a sandbox org), and create it.
+2. **Configure the server's OAuth.** Features → MCP Servers → the LOS entry: Auth Type Manual OAuth; Client ID = the consumer key; Client Secret = the consumer secret from Setup → External Client App Manager → LOS Claude MCP → Settings → OAuth; Authorization URL `https://login.salesforce.com/services/oauth2/authorize`; Token request URL `https://login.salesforce.com/services/oauth2/token`; Use PKCE on. The Slack callback `https://oauth2.slack.com/external/auth/callback` must already be on the app's global OAuth set (5a). The secret lives in Slack's app settings and the org, never in this repository.
+3. **Fetch tools.** In the MCP Server Connection Details table open the entry's menu → Tools → Fetch Tools. Expect seven tools; mark the read tools read-only so Slackbot does not ask consent for them.
+4. **Install and approve.** Install the app to the workspace. If the workspace requires admin approval, approve it under Integrations → Installed apps; the approval screen lists the connected MCP server with its own Allow checkbox. Re-approval is needed if the server URL's domain changes.
+5. **Box.** Box for Slack must be installed in the workspace; presenters add Box in the Slackbot Apps list and complete Box OAuth themselves. Existing Box for Slack users re-authorize once at `https://account.box.com/app-api/slack-v2/install`.
+
+Expect: in a Slackbot direct message, Apps lists `LOS Loan Tools` and `Box`; after sign-in both show under Your apps; `What tools are available from LOS Loan Tools?` lists seven. Limits: five connected apps per user, 60-second tool timeout, direct messages only.
+
+| Symptom | Fix |
+|---|---|
+| App missing from the Slackbot Apps list | The `mcp:connect` scope is missing or the app is not installed or approved; reinstall after fixing the manifest. |
+| "Failed to load tools" | OAuth misconfigured or the server URL is wrong; Fetch Tools again after correcting. |
+| "Unexpected error" on sign-in | Callback URL mismatch: add the Slack callback to the LOS app's global OAuth set. |
+| `access_token_exchange_failed` or "Not able to connect" | Token endpoint auth mismatch or a missing/incorrect client secret in the Slack app settings. |
+| Tools listed but never invoked | Ask Slackbot what tools the app offers once, then repeat the prompt; confirm the tool descriptions fetched are current. |
 
 ## 6. Administrator checklist
 
