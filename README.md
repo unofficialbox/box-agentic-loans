@@ -70,9 +70,14 @@ python3 scripts/cleanup_demo.py --status Application --interactive
 
 ### Demo
 
+[Open the borrower portal login](https://agentforce-box.my.site.com/loansvforcesite/login)
+
 Run the demo beats with Claude Desktop (or any AI harness):
+- **Demo guide:** [Setup](docs/demo-storyboard/index.html#setup) · [Storyboard](docs/demo-storyboard/index.html#storyboard) · [Resources and sample files](docs/demo-storyboard/index.html#resources)
+- **Standalone HTML:** [Portable edition](docs/demo-storyboard/standalone.html) — embedded images/fonts; resource links open GitHub. Rebuild with `python3 scripts/build_standalone_storyboard.py`.
+- **Markdown storyboard:** [Tell / Show / Tell with screenshots](docs/demo-storyboard/storyboard.md)
 - **Prompts & walkthrough:** [DEMO-CLICKPATH.md](DEMO-CLICKPATH.md)
-- **Presenter skill:** [skills/loan-origination/SKILL.md](skills/loan-origination/SKILL.md)
+- **Presenter skill:** [skills/loan-origination/SKILL.md](skills/loan-origination/SKILL.md) — [package for Claude](docs/DOCGEN-GUIDE.md#distributing-the-claude-skill)
 - **Presenter guide:** [docs/PRESENTING.md](docs/PRESENTING.md)
 
 ## Documentation
