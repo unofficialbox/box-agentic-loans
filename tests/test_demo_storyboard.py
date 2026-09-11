@@ -45,6 +45,14 @@ class DemoStoryboardTests(unittest.TestCase):
             self.assertLessEqual(len(step['land'].split()), 15)
         self.assertEqual(self.content.count('Tell — business value'), 13)
 
+    def test_step_navigation_matches_the_storyboard(self):
+        steps = json.loads((GUIDE/'storyboard.json').read_text())
+        nav = self.content.split('aria-label="Storyboard steps">', 1)[1].split('</nav>', 1)[0]
+        links = [a['href'] for tag,a in Page(nav).tags if tag == 'a']
+        self.assertEqual(links, [f"#step-{step['number']}" for step in steps])
+        for step in steps:
+            self.assertIn(step['title'], nav)
+
     def test_claude_captures_are_distinct(self):
         steps = json.loads((GUIDE/'storyboard.json').read_text())
         digests = []
