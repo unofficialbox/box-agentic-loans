@@ -1,6 +1,8 @@
 import { Upload, FileText } from "lucide-react";
 import type { BoxFolderItem } from "../lib/box";
-import { checklistFor } from "../lib/requiredDocuments";
+import { checklistFor, type ChecklistRow } from "../lib/requiredDocuments";
+import { WorkspaceSkeleton } from "./WorkspaceSkeleton";
+import { documentFacts } from "../lib/documents";
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -22,12 +24,15 @@ function formatFileSize(bytes: number): string {
  */
 export function RequiredDocuments({
   loanType,
+  includeAllFiles = false,
   files,
   canUpload,
   onUpload,
   onPreview,
 }: {
   loanType?: string;
+  /** Include every authorized file once, alongside any missing requirements. */
+  includeAllFiles?: boolean;
   /** Null until the folder has been listed; the card waits rather than guessing. */
   files: BoxFolderItem[] | null;
   /** False until the workspace holds a Box token an upload could use. */
@@ -41,26 +46,35 @@ export function RequiredDocuments({
       <section className="box-live" data-testid="required-documents-loading">
         <div className="panel-head">
           <div>
-            <h2>Required documents</h2>
-            <p style={{ color: "var(--ab-muted)" }}>Loading...</p>
+            <h2>{includeAllFiles ? "Documents" : "Required documents"}</h2>
           </div>
         </div>
+        <WorkspaceSkeleton showHeader={false} />
       </section>
     );
   }
 
   const checklist = checklistFor(loanType, files);
-  if (!checklist) return null;
-
-  const outstanding = checklist.rows.length - checklist.received;
+  if (!checklist && !includeAllFiles) return null;
+  const rows: ChecklistRow[] = [...(checklist?.rows ?? [])];
+  if (includeAllFiles) {
+    const listed = new Set(rows.flatMap(row => row.file ? [row.file.id] : []));
+    for (const file of files) {
+      if (listed.has(file.id)) continue;
+      listed.add(file.id);
+      rows.push({ documentType: file.metadata?.enterprise?.losDocument?.documentType || "Other", label: file.metadata?.enterprise?.losDocument?.documentType || "Unclassified",
+        why: "", status: "received", file });
+    }
+  }
+  const outstanding = checklist ? checklist.rows.length - checklist.received : 0;
 
   return (
     <section className="box-live" data-testid="required-documents">
       <div className="panel-head">
         <div>
-          <h2>Required documents</h2>
+          <h2>{includeAllFiles ? "Documents" : "Required documents"}</h2>
           <p>
-            {outstanding === 0
+            {!checklist ? `${files.length} documents received.` : outstanding === 0
               ? "Everything the bank asked for has been received."
               : `${checklist.received} of ${checklist.rows.length} received.`}
           </p>
@@ -83,15 +97,15 @@ export function RequiredDocuments({
             <tr>
               <th scope="col">Name</th>
               <th scope="col">Type</th>
-              <th scope="col">Last modified</th>
               <th scope="col">Status</th>
+              <th scope="col">Last modified</th>
               <th scope="col">Size</th>
             </tr>
           </thead>
           <tbody>
-            {checklist.rows.map((row) => (
+            {rows.map((row) => (
               <tr
-                key={row.documentType}
+                key={row.file?.id ?? row.documentType}
                 className={row.status === "received" ? "row-received" : "row-missing"}
                 data-testid="required-document-row"
                 data-status={row.status}
@@ -117,6 +131,15 @@ export function RequiredDocuments({
                     : row.label}
                 </td>
                 <td>
+                  {row.status === "received" && row.file ? (
+                    <span className={`doc-status doc-status-${(documentFacts(row.file).status || "received").toLowerCase().replaceAll(" ", "-")}`}>
+                      {documentFacts(row.file).status || "Received"}
+                    </span>
+                  ) : (
+                    <span className="doc-status doc-status-missing">Missing</span>
+                  )}
+                </td>
+                <td>
                   {row.status === "received" && row.file?.modified_at
                     ? new Date(row.file.modified_at).toLocaleDateString("en-US", {
                         month: "short",
@@ -124,15 +147,6 @@ export function RequiredDocuments({
                         year: "numeric",
                       })
                     : "—"}
-                </td>
-                <td>
-                  {row.status === "received" && row.file?.metadata?.enterprise?.losDocument?.versionStatus ? (
-                    <span className={`doc-status doc-status-${row.file.metadata.enterprise.losDocument.versionStatus.toLowerCase()}`}>
-                      {row.file.metadata.enterprise.losDocument.versionStatus}
-                    </span>
-                  ) : (
-                    <span className="doc-status doc-status-missing">Missing</span>
-                  )}
                 </td>
                 <td>
                   {row.status === "received" && row.file?.size != null
@@ -144,7 +158,7 @@ export function RequiredDocuments({
           </tbody>
         </table>
       </div>
-      {checklist.unclassified.length > 0 ? (
+      {checklist && checklist.unclassified.length > 0 ? (
         <p className="cb-checklist-note" data-testid="awaiting-classification">
           {checklist.unclassified.length === 1
             ? `${checklist.unclassified[0].name} has been received and is awaiting classification.`

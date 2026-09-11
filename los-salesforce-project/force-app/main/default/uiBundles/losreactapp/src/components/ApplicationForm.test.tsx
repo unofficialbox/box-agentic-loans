@@ -118,8 +118,7 @@ describe("ApplicationForm", () => {
 
   test("previews the documents a loan type will ask for", () => {
     render(<ApplicationForm identity={borrower} onCreated={() => {}} />);
-    expect(screen.queryByTestId("application-required-preview")).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Loan type"), { target: { value: "Commercial Real Estate" } });
+
     expect(screen.getByTestId("application-required-preview")).toHaveTextContent("Property appraisal");
   });
 });

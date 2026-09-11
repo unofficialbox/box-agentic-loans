@@ -264,3 +264,5 @@ Every run of beat 1 creates a real `LOS_Loan__c` in Application status and a rea
 - **The tagging on seeded files is manual.** Portal uploads are classified by Box AI as they land; the seeded Harborview files were tagged by the seed script and by hand. A metadata cascade policy on the loan folder is what would make it survive the next loan.
 
 **Pre-seeded loans:** LN-2023-0311 (Harborview, Closed), LN-2025-0148 (Harborview, Closed), Pinecrest LN-2026-0088 (different borrower). Each rehearsal of Beat 1 creates a new Harborview loan in Application status that becomes the demo loan for Beats 2-5. Use `python3 scripts/cleanup_demo.py` to remove test loans between presentations.
+
+The borrower’s Documents table lists supporting files and signing artifacts once, alongside any missing requirements. Signed Commitment Letter and Signing Log remain accessible without adding to supporting-document approval totals.

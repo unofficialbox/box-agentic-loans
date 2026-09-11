@@ -440,6 +440,7 @@ export function Workspace() {
                   <>
                     {!previewFile && !boxError ? (
                       <RequiredDocuments
+                        includeAllFiles
                         loanType={current?.loanType}
                         files={files}
                         canUpload={Boolean(box)}
@@ -448,7 +449,7 @@ export function Workspace() {
                       />
                     ) : null}
                     {/* BoxWorkspace for borrowers - always mounted for data loading, but only shown for preview */}
-                    <div className={previewFile ? undefined : "visually-hidden"}>
+                    <div hidden={!previewFile && !boxError}>
                       <BoxWorkspace
                         context={workspaceContext}
                         onFilesLoaded={setFiles}

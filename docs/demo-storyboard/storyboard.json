@@ -210,12 +210,12 @@
     "title": "Close the story",
     "phase": "TELL",
     "persona": "Presenter",
-    "screenshot": "screenshots/step-13-closed-loan.png",
-    "origin": "Live borrower portal capture: completed loan in Your loans.",
+    "screenshot": "screenshots/current-closed-workspace.png",
+    "origin": "Live deployed portal: one consolidated document list and Closed loan.",
     "tell": "We started with an application and a document package.",
-    "show": "Return to Your loans and point to the Closed record.",
+    "show": "Review the Closed loan, document list, and retained signing history.",
     "land": "Close loans faster with traceable decisions and documents.",
-    "click": "Your loans → identify the completed loan → point to Closed.",
+    "click": "Return to workspace → point to Closed, Documents, and Document history.",
     "details": "Box connects the evidence, Salesforce records the decisions, and people authorize the actions."
   }
 ]
