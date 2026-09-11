@@ -2,5 +2,5 @@
 <StaticResource xmlns="http://soap.sforce.com/2006/04/metadata">
     <cacheControl>Private</cacheControl>
     <contentType>application/pdf</contentType>
-    <description>Executed Dockwright equipment term loan agreement (2025), used by seed-los-loan-files.apex to populate the prior loan's Box folder.</description>
+    <description>Executed Harborview equipment term loan agreement (2025), used by seed-los-loan-files.apex to populate the prior loan's Box folder.</description>
 </StaticResource>

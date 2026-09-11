@@ -17,9 +17,9 @@ private class LosLoanPackageTest {
 
     private static LOS_Loan__c loan() {
         LOS_Loan__c record = new LOS_Loan__c(
-            Name = 'Dockwright Logistics Distribution Facility Loan 2026',
+            Name = 'Harborview Logistics Distribution Facility Loan 2026',
             Loan_ID__c = 'LN-2026-0042',
-            Borrower__c = 'Dockwright Logistics',
+            Borrower__c = 'Harborview Logistics',
             Status__c = 'Underwriting',
             Box_Workspace_Folder_ID__c = '413766128496'
         );
@@ -44,7 +44,7 @@ private class LosLoanPackageTest {
         System.assertEquals(record.Id, result.outputRecordId);
         System.assertEquals('413766128496', result.outputFolderId,
             'With no Box association record, the folder falls back to the loan field');
-        System.assert(result.outputSummary.contains('Dockwright Logistics'), result.outputSummary);
+        System.assert(result.outputSummary.contains('Harborview Logistics'), result.outputSummary);
         System.assert(result.outputSummary.contains('Underwriting'), result.outputSummary);
     }
 
@@ -53,7 +53,7 @@ private class LosLoanPackageTest {
         loan();
 
         Test.startTest();
-        LosLoanPackage.Result result = run('Dockwright');
+        LosLoanPackage.Result result = run('Harborview');
         Test.stopTest();
 
         System.assert(result.outputSummary.contains('LN-2026-0042'), result.outputSummary);
@@ -68,7 +68,7 @@ private class LosLoanPackageTest {
         LOS_Loan__c record = loan();
 
         Test.startTest();
-        LosLoanPackage.Result byName = run('Dockwright');
+        LosLoanPackage.Result byName = run('Harborview');
         LosLoanPackage.Result byId = run(record.Id);
         Test.stopTest();
 

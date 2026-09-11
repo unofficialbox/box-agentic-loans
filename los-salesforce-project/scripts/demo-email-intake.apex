@@ -8,11 +8,11 @@
  *
  * Change SENDER to a Contact.Email that exists in the org, and SUBJECT/FILE_NAME as desired.
  * The attachment bytes come from the Los_Sample_Loan_Application static resource (the repo's
- * sample Dockwright loan application PDF), so the demo sends a real loan document.
+ * sample Harborview loan application PDF), so the demo sends a real loan document.
  */
 String SENDER    = 'kadams@boxdemo.com';   // must match a Contact.Email
-String SUBJECT   = 'Dockwright loan application package 2026 (demo)';
-String FILE_NAME = 'dockwright-loan-application-2026.pdf';
+String SUBJECT   = 'Harborview loan application package 2026 (demo)';
+String FILE_NAME = 'harborview-loan-application-2026.pdf';
 Blob   FILE_BODY = [SELECT Body FROM StaticResource WHERE Name = 'Los_Sample_Loan_Application' LIMIT 1].Body;
 
 Messaging.InboundEmail email = new Messaging.InboundEmail();

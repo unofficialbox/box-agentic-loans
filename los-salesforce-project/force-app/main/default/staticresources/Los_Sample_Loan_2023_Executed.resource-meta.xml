@@ -2,5 +2,5 @@
 <StaticResource xmlns="http://soap.sforce.com/2006/04/metadata">
     <cacheControl>Private</cacheControl>
     <contentType>application/pdf</contentType>
-    <description>Executed Dockwright revolving line of credit agreement (2023), used by seed-los-loan-files.apex to populate the prior loan's Box folder.</description>
+    <description>Executed Harborview revolving line of credit agreement (2023), used by seed-los-loan-files.apex to populate the prior loan's Box folder.</description>
 </StaticResource>

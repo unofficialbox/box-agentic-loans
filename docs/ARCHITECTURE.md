@@ -51,7 +51,7 @@ Metadata templates (`config/box/metadata-templates.bcl`): `losLoan` on the works
 
 ## Salesforce loan record
 
-`LOS_Loan__c` (label "Loan") is a dedicated custom object, not the standard `Contract`. It links to Account and Opportunity for relationship context; the Opportunity is the Box-mapped object. Sharing is Private internally and externally; the borrower portal reaches records through the `LOS_Borrower_Access` sharing set on `Borrower_Account__c`, which is the anchor (the `Borrower__c` text can hold both "Dockwright Logistics" and "Dockwright Logistics Holdings LLC").
+`LOS_Loan__c` (label "Loan") is a dedicated custom object, not the standard `Contract`. It links to Account and Opportunity for relationship context; the Opportunity is the Box-mapped object. Sharing is Private internally and externally; the borrower portal reaches records through the `LOS_Borrower_Access` sharing set on `Borrower_Account__c`, which is the anchor (the `Borrower__c` text can hold both "Harborview Logistics" and "Harborview Logistics Holdings LLC").
 
 | Group | Fields |
 |---|---|
@@ -99,4 +99,4 @@ The alternate path is email or Box Automate. `EmailIntakeHandler` captures a bor
 
 ## Data
 
-`scripts/generate_sample_loan_assets.py` and `scripts/generate_docgen_templates.py` produce the twelve synthetic loan-file PDFs, two JSON fixtures and the Doc Gen Word templates under `output/`; `validate_los.py` regenerates them and fails on drift. `los-salesforce-project/sample-data/` seeds two Accounts (Dockwright Logistics, Pinecrest Dental Group), their Contacts and Opportunities, and four loans: `LN-2023-0311` and `LN-2025-0148` (Dockwright, Closed, 70% LTV and 1.30x DSCR in Schedule 1 of each executed agreement), `LN-2026-0042` (Dockwright, Underwriting, $4,800,000 at 85% and 1.12x, risk High, with the borrower's term-sheet markup), and `LN-2026-0088` (Pinecrest, Application). The seed is idempotent by `Loan_ID__c`, and each loan's document is uploaded into its Opportunity's Box folder. All of it is deterministic fixture evidence, not proof of a deployed integration.
+`scripts/generate_sample_loan_assets.py` and `scripts/generate_docgen_templates.py` produce the twelve synthetic loan-file PDFs, two JSON fixtures and the Doc Gen Word templates under `output/`; `validate_los.py` regenerates them and fails on drift. `los-salesforce-project/sample-data/` seeds two Accounts (Harborview Logistics, Pinecrest Dental Group), their Contacts and Opportunities, and four loans: `LN-2023-0311` and `LN-2025-0148` (Harborview, Closed, 70% LTV and 1.30x DSCR in Schedule 1 of each executed agreement), `LN-2026-0042` (Harborview, Underwriting, $4,800,000 at 85% and 1.12x, risk High, with the borrower's term-sheet markup), and `LN-2026-0088` (Pinecrest, Application). The seed is idempotent by `Loan_ID__c`, and each loan's document is uploaded into its Opportunity's Box folder. All of it is deterministic fixture evidence, not proof of a deployed integration.

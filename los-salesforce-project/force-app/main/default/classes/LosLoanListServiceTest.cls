@@ -17,9 +17,9 @@ private class LosLoanListServiceTest {
     @IsTest
     static void returnsLoansForTheDashboard() {
         insert new LOS_Loan__c(
-            Name = 'Dockwright Logistics Distribution Facility Loan 2026',
+            Name = 'Harborview Logistics Distribution Facility Loan 2026',
             Loan_ID__c = 'LN-2026-0042',
-            Borrower__c = 'Dockwright Logistics',
+            Borrower__c = 'Harborview Logistics',
             Status__c = 'Underwriting'
         );
 
@@ -32,7 +32,7 @@ private class LosLoanListServiceTest {
         System.assertEquals(1, rows.size(), 'The dashboard must see the loan');
         Map<String, Object> row = (Map<String, Object>) rows[0];
         System.assertEquals('LN-2026-0042', row.get('loanId'));
-        System.assertEquals('Dockwright Logistics', row.get('borrower'));
+        System.assertEquals('Harborview Logistics', row.get('borrower'));
         System.assertEquals('Underwriting', row.get('status'));
         System.assert(row.containsKey('recordId'), 'The record id is what the workspace resolves a Box folder from');
     }

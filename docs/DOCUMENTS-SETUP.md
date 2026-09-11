@@ -4,7 +4,7 @@
 
 ---
 
-## Folder 1: LN-2026-0042 (Dockwright Logistics - Current Loan)
+## Folder 1: LN-2026-0042 (Harborview Logistics - Current Loan)
 
 **Box Folder ID:** `<CONFIGURED_ID>`
 **Direct Upload Link:** https://app.box.com/folder/<CONFIGURED_ID>
@@ -12,7 +12,7 @@
 ### Required Files:
 
 #### 1. Term Sheet with Borrower Markup (CRITICAL)
-**Filename:** `dockwright-term-sheet-2026-borrower-markup.pdf` ✅ **EXISTS in /output/pdf**
+**Filename:** `harborview-term-sheet-2026-borrower-markup.pdf` ✅ **EXISTS in /output/pdf**
 
 **Content Requirements:**
 - Bank's original offer clearly stated:
@@ -22,7 +22,7 @@
   - Section 8.1 LTV: 75% maximum (bank standard)
   - Section 8.2 DSCR: 1.25x minimum (bank standard)
 
-- Borrower's markup (must be clearly labeled as "DOCKWRIGHT MARKUP" in red):
+- Borrower's markup (must be clearly labeled as "HARBORVIEW MARKUP" in red):
   - Section 3.1: Requested Rate: 6.50% (vs. bank's 6.85%)
   - Section 6.1: Limited guaranty capped at $1M each (vs. unlimited)
   - Section 9.3: Annual testing and 1.10x DSCR (vs. quarterly 1.25x)
@@ -37,7 +37,7 @@
   "documentType": "Term Sheet",
   "policyRisk": "Critical",
   "reviewStatus": "Pending",
-  "borrowerEntity": "Dockwright Logistics",
+  "borrowerEntity": "Harborview Logistics",
   "loanReference": "LN-2026-0042",
   "versionStatus": "Draft"
 }
@@ -53,7 +53,7 @@
 ---
 
 #### 2. FY2025 Financial Statements (OPTIONAL - for "High or above" search)
-**Filename:** `dockwright-fy2025-financials.pdf`
+**Filename:** `harborview-fy2025-financials.pdf`
 
 **Content:** Annual financial statements showing revenue, cash flow for DSCR calculation
 
@@ -62,7 +62,7 @@
 {
   "documentType": "Financial Statement",
   "policyRisk": "High",
-  "borrowerEntity": "Dockwright Logistics",
+  "borrowerEntity": "Harborview Logistics",
   "loanReference": "LN-2026-0042",
   "versionStatus": "Draft"
 }
@@ -71,7 +71,7 @@
 ---
 
 #### 3. Property Appraisal (OPTIONAL - for "High or above" search)
-**Filename:** `dockwright-appraisal-2026.pdf`
+**Filename:** `harborview-appraisal-2026.pdf`
 
 **Content:** Commercial real estate appraisal showing $5.65M property value
 
@@ -80,7 +80,7 @@
 {
   "documentType": "Appraisal",
   "policyRisk": "High",
-  "borrowerEntity": "Dockwright Logistics",
+  "borrowerEntity": "Harborview Logistics",
   "loanReference": "LN-2026-0042",
   "versionStatus": "Draft"
 }
@@ -88,7 +88,7 @@
 
 ---
 
-## Folder 2: LN-2023-0311 (Dockwright Logistics - Closed Loan #1)
+## Folder 2: LN-2023-0311 (Harborview Logistics - Closed Loan #1)
 
 **Box Folder ID:** `<CONFIGURED_ID>`
 **Direct Upload Link:** https://app.box.com/folder/<CONFIGURED_ID>
@@ -96,10 +96,10 @@
 ### Required Files:
 
 #### Executed Loan Agreement - 2023
-**Filename:** `dockwright-loan-agreement-2023-executed.pdf` ✅ **EXISTS in /output/pdf**
+**Filename:** `harborview-loan-agreement-2023-executed.pdf` ✅ **EXISTS in /output/pdf**
 
 **Content Requirements:**
-- Borrower: Dockwright Logistics
+- Borrower: Harborview Logistics
 - Loan Amount: $1,500,000
 - Interest Rate: 7.25% (SOFR + 2.75%)
 - Date: September 15, 2023
@@ -123,7 +123,7 @@
   "documentType": "Loan Agreement",
   "policyRisk": "Low",
   "reviewStatus": "Approved",
-  "borrowerEntity": "Dockwright Logistics",
+  "borrowerEntity": "Harborview Logistics",
   "loanReference": "LN-2023-0311",
   "versionStatus": "Executed"
 }
@@ -131,7 +131,7 @@
 
 ---
 
-## Folder 3: LN-2025-0148 (Dockwright Logistics - Closed Loan #2)
+## Folder 3: LN-2025-0148 (Harborview Logistics - Closed Loan #2)
 
 **Box Folder ID:** `<CONFIGURED_ID>`
 **Direct Upload Link:** https://app.box.com/folder/<CONFIGURED_ID>
@@ -139,10 +139,10 @@
 ### Required Files:
 
 #### Executed Loan Agreement - 2025
-**Filename:** `dockwright-loan-agreement-2025-executed.pdf` ✅ **EXISTS in /output/pdf**
+**Filename:** `harborview-loan-agreement-2025-executed.pdf` ✅ **EXISTS in /output/pdf**
 
 **Content Requirements:**
-- Borrower: Dockwright Logistics
+- Borrower: Harborview Logistics
 - Loan Amount: $2,150,000 (equipment term loan)
 - Interest Rate: 6.95% fixed
 - Date: May 20, 2025
@@ -165,7 +165,7 @@
   "documentType": "Loan Agreement",
   "policyRisk": "Low",
   "reviewStatus": "Approved",
-  "borrowerEntity": "Dockwright Logistics",
+  "borrowerEntity": "Harborview Logistics",
   "loanReference": "LN-2025-0148",
   "versionStatus": "Executed"
 }
@@ -189,8 +189,8 @@
 ## Demo Story Arc
 
 **Conservative Precedent vs. Aggressive Ask:**
-- **2023 & 2025 loans:** Dockwright agreed to conservative 70% LTV, 1.30x DSCR, quarterly testing
-- **2026 markup:** Dockwright now requesting 1.10x DSCR (lower/riskier), annual testing (less frequent monitoring)
+- **2023 & 2025 loans:** Harborview agreed to conservative 70% LTV, 1.30x DSCR, quarterly testing
+- **2026 markup:** Harborview now requesting 1.10x DSCR (lower/riskier), annual testing (less frequent monitoring)
 - **Beat 4 reveal:** Box AI shows the borrower is pushing beyond their own established precedent
 
 ---
@@ -204,13 +204,13 @@ Upload to **LN-2026-0042** (<CONFIGURED_ID>):
 - [ ] Optional: Appraisal (policyRisk="High")
 
 Upload to **LN-2023-0311** (<CONFIGURED_ID>):
-- [ ] ✅ `dockwright-loan-agreement-2023-executed.pdf` from /output/pdf
+- [ ] ✅ `harborview-loan-agreement-2023-executed.pdf` from /output/pdf
 - [ ] Loan: $1.5M @ 7.25%, 70% LTV, 1.30x DSCR quarterly (Section 8 & Schedule 1)
 - [ ] Signatures: Pike (Borrower) / Shah (Bank) dated Sept 15, 2023
 - [ ] Metadata: documentType="Loan Agreement", versionStatus="Executed"
 
 Upload to **LN-2025-0148** (<CONFIGURED_ID>):
-- [ ] ✅ `dockwright-loan-agreement-2025-executed.pdf` from /output/pdf
+- [ ] ✅ `harborview-loan-agreement-2025-executed.pdf` from /output/pdf
 - [ ] Loan: $2.15M @ 6.95%, 70% LTV, 1.30x DSCR quarterly (Section 8 & Schedule 1)
 - [ ] Signatures: Pike (Borrower) / Shah (Bank) dated May 20, 2025
 - [ ] Metadata: documentType="Loan Agreement", versionStatus="Executed"
@@ -246,7 +246,7 @@ Should return all documents for that loan with their metadata fields.
 - Verify template key is "losDocument" (not "LOS Document" or other variant)
 
 **Beat 3 extracts bank's numbers instead of borrower's markup:**
-- Term sheet must clearly label borrower's changes as "DOCKWRIGHT MARKUP" or similar
+- Term sheet must clearly label borrower's changes as "HARBORVIEW MARKUP" or similar
 - Borrower's numbers must be visually distinct (strikethrough, margin notes, etc.)
 - Box AI needs clear context about whose numbers are whose
 

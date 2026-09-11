@@ -40,7 +40,7 @@ def build():
 <tr><td>6 · Rehearse</td><td>Follow the <a href="#storyboard">storyboard</a>; use the <a href="../../DEMO-CLICKPATH.md">copy/paste prompts</a>.</td><td>Signing closes the loan and the signed files remain accessible.</td></tr>
 </tbody></table></article>
 <article><h2>Application values</h2><table><tbody>
-<tr><th>Borrower</th><td>Dockwright Logistics for new seeds; Harborview Logistics in the recorded walkthrough.</td></tr><tr><th>Loan type</th><td>Commercial Real Estate</td></tr>
+<tr><th>Borrower</th><td>Harborview Logistics</td></tr><tr><th>Loan type</th><td>Commercial Real Estate</td></tr>
 <tr><th>Amount</th><td>$4,800,000</td></tr><tr><th>Term</th><td>120 months</td></tr><tr><th>Collateral</th><td>Real Estate</td></tr>
 </tbody></table><p>Use the newly created loan throughout the demo.</p></article>'''
     cards = []

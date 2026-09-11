@@ -17,7 +17,7 @@ Applied to individual document files.
 | `documentType` | enum | "Loan Application", "Term Sheet", "Financial Statement", "Tax Return", "Appraisal", "Insurance", "Title Report", "Environmental Report", "Legal Opinion", "Commitment Letter", "Loan Agreement" | Document classification |
 | `policyRisk` | enum | "Critical", "High", "Medium", "Low" | Risk flag from policy review |
 | `reviewStatus` | enum | "Pending", "Approved", "Rejected" | Approval workflow state |
-| `borrowerEntity` | string | e.g., "Dockwright Logistics" | Borrower name for cross-loan search |
+| `borrowerEntity` | string | e.g., "Harborview Logistics" | Borrower name for cross-loan search |
 | `loanReference` | string | e.g., "LN-2026-0042" | Links document to loan |
 
 ### Query Examples
@@ -50,7 +50,7 @@ query_metadata(
 ```
 query_metadata(
   template="losDocument",
-  query="borrowerEntity='Dockwright Logistics'"
+  query="borrowerEntity='Harborview Logistics'"
 )
 ```
 
@@ -81,7 +81,7 @@ Applied to loan workspace folders.
 | Field | Type | Values | Purpose |
 |-------|------|--------|---------|
 | `loanId` | string | e.g., "LN-2026-0042" | Primary loan identifier |
-| `borrower` | string | e.g., "Dockwright Logistics" | Borrower name |
+| `borrower` | string | e.g., "Harborview Logistics" | Borrower name |
 | `status` | enum | "Application", "Underwriting", "Credit Review", "Approved", "Commitment", "Closed", "Declined" | Current loan status |
 | `loanType` | enum | "Commercial Real Estate", "Equipment Finance", "Working Capital", "Construction" | Loan product type |
 
@@ -99,7 +99,7 @@ query_metadata(
 ```
 query_metadata(
   template="losLoan",
-  query="borrower='Dockwright Logistics'"
+  query="borrower='Harborview Logistics'"
 )
 ```
 
@@ -212,12 +212,12 @@ All 6 documents have `losDocument` metadata:
 
 | File | documentType | policyRisk | reviewStatus |
 |------|--------------|------------|--------------|
-| dockwright-loan-application-2026.pdf | Loan Application | Medium | Approved |
-| dockwright-term-sheet-2026-borrower-markup.pdf | Term Sheet | **Critical** | Pending |
-| dockwright-financial-statements-fy2025.pdf | Financial Statement | High | Approved |
-| dockwright-tax-return-summary-2025.pdf | Tax Return | Low | Approved |
-| dockwright-appraisal-2026.pdf | Appraisal | High | Approved |
-| dockwright-insurance-certificate.pdf | Insurance | Low | Approved |
+| harborview-loan-application-2026.pdf | Loan Application | Medium | Approved |
+| harborview-term-sheet-2026-borrower-markup.pdf | Term Sheet | **Critical** | Pending |
+| harborview-financial-statements-fy2025.pdf | Financial Statement | High | Approved |
+| harborview-tax-return-summary-2025.pdf | Tax Return | Low | Approved |
+| harborview-appraisal-2026.pdf | Appraisal | High | Approved |
+| harborview-insurance-certificate.pdf | Insurance | Low | Approved |
 
 **Beat 2 Query:**
 ```

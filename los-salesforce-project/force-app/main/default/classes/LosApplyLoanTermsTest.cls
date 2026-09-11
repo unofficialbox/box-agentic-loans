@@ -8,9 +8,9 @@ private class LosApplyLoanTermsTest {
 
     private static LOS_Loan__c seedLoan(String status) {
         LOS_Loan__c loan = new LOS_Loan__c(
-            Name = 'Dockwright Logistics Distribution Facility Loan 2026',
+            Name = 'Harborview Logistics Distribution Facility Loan 2026',
             Loan_ID__c = 'LN-2026-0042',
-            Borrower__c = 'Dockwright Logistics',
+            Borrower__c = 'Harborview Logistics',
             Status__c = status,
             Risk_Rating__c = 'High',
             Loan_Amount__c = 4800000,
