@@ -159,82 +159,6 @@ def add_section_text(doc, heading, value):
     set_font(p.add_run(value), 11)
 
 
-def credit_memo():
-    doc = Document()
-    configure(doc, "LOS Credit Memo")
-    add_title(doc, "Decision required", "Credit Memo", "Dockwright Logistics loan package")
-    add_key_values(doc, [
-        ("Loan ID", "{{loan.id}}"),
-        ("Borrower", "{{loan.borrower}}"),
-        ("Loan type", "{{loan.type}}"),
-        ("Amount", "{{loan.currency}}{{loan.amount}}"),
-        ("Market / collateral", "{{loan.region}} / {{loan.collateralType}}"),
-        ("Target closing", "{{loan.targetClosingDate}}"),
-        ("Loan officer", "{{loan.loanOfficer}}"),
-    ])
-    add_section_text(doc, "Executive summary", "{{memo.executiveSummary}}")
-    add_key_values(doc, [
-        ("Credit review", "{{reviews.creditStatus}} - {{reviews.creditSummary}}"),
-        ("Collateral review", "{{reviews.collateralStatus}} - {{reviews.collateralSummary}}"),
-        ("Compliance review", "{{reviews.complianceStatus}} - {{reviews.complianceSummary}}"),
-        ("Risk rating", "{{memo.riskRating}}"),
-    ])
-    add_section_text(doc, "Recommendation", "{{memo.recommendation}}")
-    add_key_values(doc, [
-        ("Approver", "{{approval.approver}}"),
-        ("Decision", "{{approval.decision}}"),
-        ("Decision date", "{{approval.decisionDate}}"),
-    ])
-    return doc
-
-
-def closing_summary():
-    doc = Document()
-    configure(doc, "Loan Closing Summary")
-    add_title(doc, "Closing record", "Closing Summary", "Structured loan terms for closing and servicing hand-off")
-    add_key_values(doc, [
-        ("Loan ID", "{{loan.id}}"),
-        ("Borrower", "{{loan.borrower}}"),
-        ("Borrowing entity", "{{loan.borrowerEntity}}"),
-        ("Loan amount", "{{terms.currency}}{{terms.loanAmount}}"),
-        ("Interest rate", "{{terms.interestRate}}"),
-        ("Term", "{{terms.termMonths}} months"),
-        ("Amortization", "{{terms.amortizationMonths}} months"),
-        ("Closing date", "{{terms.closingDate}}"),
-        ("Maturity date", "{{terms.maturityDate}}"),
-        ("Collateral", "{{terms.collateral}}"),
-        ("Financial covenants", "{{terms.covenants}}"),
-        ("Guaranty", "{{terms.guaranty}}"),
-    ])
-    add_section_text(doc, "Policy exception", "{{closing.exceptionSummary}}")
-    add_section_text(doc, "Approval note", "{{closing.approvalNote}}")
-    return doc
-
-
-def maturity_notice():
-    doc = Document()
-    configure(doc, "Loan Maturity Notice")
-    add_title(doc, "Loan notice", "Maturity Notice", "Formal notice generated from tracked covenants")
-    add_key_values(doc, [
-        ("Notice date", "{{notice.date}}"),
-        ("Recipient", "{{recipient.name}}, {{recipient.title}}"),
-        ("Recipient company", "{{recipient.company}}"),
-        ("Recipient email", "{{recipient.email}}"),
-        ("Loan ID", "{{loan.id}}"),
-        ("Loan", "{{loan.name}}"),
-        ("Maturity date", "{{maturity.maturityDate}}"),
-        ("Response requested by", "{{maturity.noticeDeadline}}"),
-    ])
-    add_section_text(doc, "Notice", "{{maturity.noticeText}}")
-    add_section_text(doc, "Requested action", "{{maturity.requestedAction}}")
-    add_key_values(doc, [
-        ("Sender", "{{sender.name}}, {{sender.title}}"),
-        ("Sender company", "{{sender.company}}"),
-        ("Sender email", "{{sender.email}}"),
-    ])
-    return doc
-
-
 def term_sheet_markup():
     """The 2026 term sheet still in negotiation: a Word document with the borrower's visible markup (not a merge template)."""
     doc = Document()
@@ -294,6 +218,18 @@ def term_sheet_markup():
     return doc
 
 
+def add_signing_fields(doc):
+    """Add fields for recipient 1 using Box Sign's documented tag syntax."""
+    signature = doc.add_paragraph()
+    signature.paragraph_format.keep_with_next = True
+    signature.add_run("Borrower signature\n")
+    tag = signature.add_run("[[s|1|id:borrower_signature                    ]]")
+    set_font(tag, size=18, color="FFFFFF")
+    date = doc.add_paragraph()
+    date.add_run("Date signed: ")
+    set_font(date.add_run("[[d|1|id:borrower_signed_date]]"), size=10, color="FFFFFF")
+
+
 def commitment_letter():
     """The document Acme sends once the terms are resolved on the loan record.
 
@@ -342,16 +278,14 @@ def commitment_letter():
         "This letter is a draft pending Credit Committee approval. It is not a commitment to lend, and it does "
         "not authorise signature or funding. {{terms.owner}} owns the decision on this exception.",
     )
+    add_signing_fields(doc)
     return doc
 
 
 def main():
     OUTPUT.mkdir(parents=True, exist_ok=True)
     templates = {
-        "los-credit-memo-template.docx": credit_memo(),
         "los-commitment-letter-template.docx": commitment_letter(),
-        "los-closing-summary-template.docx": closing_summary(),
-        "los-maturity-notice-template.docx": maturity_notice(),
         "dockwright-term-sheet-2026-markup.docx": term_sheet_markup(),
     }
     for name, document in templates.items():

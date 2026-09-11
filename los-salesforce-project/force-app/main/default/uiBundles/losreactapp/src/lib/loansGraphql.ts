@@ -40,6 +40,7 @@ const GET_LOS_LOANS = gql`
               Term_Months__c { value }
               Maturity_Date__c { value }
               Box_Workspace_Folder_ID__c { value }
+              Sign_Embed_URL__c { value }
             }
           }
         }
@@ -64,6 +65,7 @@ interface LoanNode {
   Term_Months__c?: FieldValue<number>;
   Maturity_Date__c?: FieldValue<string>;
   Box_Workspace_Folder_ID__c?: FieldValue<string>;
+  Sign_Embed_URL__c?: FieldValue<string>;
 }
 
 interface LoansQuery {
@@ -108,6 +110,7 @@ export async function fetchLoansViaGraphql(): Promise<LosLoanSummary[] | null> {
         termMonths: node.Term_Months__c?.value ?? undefined,
         maturityDate: node.Maturity_Date__c?.value ?? undefined,
         boxFolderId: node.Box_Workspace_Folder_ID__c?.value ?? undefined,
+        signEmbedUrl: node.Sign_Embed_URL__c?.value ?? undefined,
       }];
     });
   } catch (error) {

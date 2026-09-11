@@ -22,11 +22,6 @@ locals {
           "requirements" = {
             "Term Loan" = [
               {
-                "documentType" = "Application"
-                "label" = "Loan application"
-                "why" = "The signed application that says who is borrowing and what for."
-              }
-              {
                 "documentType" = "Financial Statement"
                 "label" = "Financial statements"
                 "why" = "Your latest balance sheet and income statement, so we can see how the business is performing."
@@ -44,11 +39,6 @@ locals {
             ]
             "Line of Credit" = [
               {
-                "documentType" = "Application"
-                "label" = "Loan application"
-                "why" = "The signed application that says who is borrowing and what for."
-              }
-              {
                 "documentType" = "Financial Statement"
                 "label" = "Financial statements"
                 "why" = "Your latest balance sheet and income statement, so we can see how the business is performing."
@@ -61,11 +51,6 @@ locals {
             ]
             "Equipment Finance" = [
               {
-                "documentType" = "Application"
-                "label" = "Loan application"
-                "why" = "The signed application that says who is borrowing and what for."
-              }
-              {
                 "documentType" = "Financial Statement"
                 "label" = "Financial statements"
                 "why" = "Your latest balance sheet and income statement, so we can see how the business is performing."
@@ -77,11 +62,6 @@ locals {
               }
             ]
             "Commercial Real Estate" = [
-              {
-                "documentType" = "Application"
-                "label" = "Loan application"
-                "why" = "The signed application that says who is borrowing and what for."
-              }
               {
                 "documentType" = "Financial Statement"
                 "label" = "Financial statements"
@@ -114,11 +94,6 @@ locals {
               }
             ]
             "SBA 7(a)" = [
-              {
-                "documentType" = "Application"
-                "label" = "Loan application"
-                "why" = "The signed application that says who is borrowing and what for."
-              }
               {
                 "documentType" = "Financial Statement"
                 "label" = "Financial statements"

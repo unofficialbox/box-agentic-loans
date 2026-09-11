@@ -436,7 +436,7 @@ describe("Where a borrower lands", () => {
     vi.stubGlobal("fetch", apiDouble(borrower, []));
     render(<Workspace />);
     expect(await screen.findByTestId("application-form")).toBeVisible();
-    expect(new URLSearchParams(window.location.search).get("view")).toBe("apply");
+    await waitFor(() => expect(new URLSearchParams(window.location.search).get("view")).toBe("apply"));
     expect(screen.queryByTestId("loans-empty")).not.toBeInTheDocument();
   });
 
@@ -448,7 +448,7 @@ describe("Where a borrower lands", () => {
 
     fireEvent.click(screen.getByTestId("start-application"));
     expect(await screen.findByTestId("application-form")).toBeVisible();
-    expect(new URLSearchParams(window.location.search).get("view")).toBe("apply");
+    await waitFor(() => expect(new URLSearchParams(window.location.search).get("view")).toBe("apply"));
   });
 
   test("a URL that names the list is honoured even with no loans", async () => {
@@ -466,7 +466,7 @@ describe("Where a borrower lands", () => {
     render(<Workspace />);
     expect(await screen.findByTestId("loans-signed-out")).toBeVisible();
     expect(screen.queryByTestId("loans-error")).not.toBeInTheDocument();
-    expect(screen.getByTestId("data-error-signin")).toHaveAttribute("href", "https://example.invalid/login");
+    expect(screen.getByTestId("data-error-signin")).toHaveAttribute("href", "https://example.invalid/login?startURL=%2F");
   });
 
   test("a signed-in reader refused with 403 is told so rather than sent to sign in again", async () => {
@@ -506,10 +506,10 @@ describe("Starting an application", () => {
     fireEvent.change(screen.getByLabelText("Purpose"), { target: { value: "Purchase of the facility at the port." } });
     fireEvent.click(screen.getByTestId("application-submit"));
 
-    // The empty checklist for a Commercial Real Estate loan: seven rows, none received.
+    // The empty checklist for a Commercial Real Estate loan: six rows, none received.
     expect(await screen.findByTestId("required-documents")).toBeVisible();
-    expect(screen.getAllByTestId("required-document-row")).toHaveLength(7);
-    expect(screen.getByText("0 of 7 received.")).toBeVisible();
+    expect(screen.getAllByTestId("required-document-row")).toHaveLength(6);
+    expect(screen.getByText("0 of 6 received.")).toBeVisible();
 
     const params = new URLSearchParams(window.location.search);
     expect(params.get("recordId")).toBe(applicationLoan.recordId);
@@ -529,72 +529,33 @@ describe("Starting an application", () => {
 });
 
 describe("Uploading a required document", () => {
-  test("classifies each upload with Box AI, says so, and ticks the row from the metadata written", async () => {
-    window.history.replaceState({}, "", `/?recordId=${applicationLoan.recordId}&loanId=LN-2026-0089&folderId=987654321`);
+  test("reloads the listing after upload and picks up server-side classification", async () => {
+    window.history.replaceState({}, "", `/?recordId=${applicationLoan.recordId}&folderId=987654321`);
     let classified = false;
-    const classifyCalls: string[] = [];
-    vi.stubGlobal("fetch", apiDouble(borrower, [applicationLoan], (url, init) => {
+    let listingReads = 0;
+    vi.stubGlobal("fetch", apiDouble(borrower, [applicationLoan], (url) => {
       if (url.includes("box-token")) return { ok: true, json: async () => ({ accessToken: "example-scoped-token", folderId: "987654321" }) };
-      if (url.includes("/los/classify")) {
-        classifyCalls.push(`${init?.method} ${url}`);
-        classified = true;
-        return { ok: true, json: async () => ({ classified: true, documentType: "Appraisal", summary: "An appraisal of the facility." }) };
+      if (url.includes("/items")) {
+        listingReads++;
+        return { ok: true, json: async () => ({ entries: [{ id: "f-appraisal", name: "appraisal.pdf", type: "file",
+          ...(classified ? { metadata: { enterprise: { losDocument: { documentType: "Appraisal", approvalStatus: "Pending" } } } } : {}),
+        }] }) };
       }
-      if (url.includes("api.box.com/2.0/folders/987654321/items")) {
-        return {
-          ok: true,
-          json: async () => ({
-            entries: [
-              { id: "f-appraisal", name: "appraisal.pdf", type: "file", modified_at: "2026-09-04T10:00:00Z",
-                ...(classified ? { metadata: { enterprise: { losDocument: { documentType: "Appraisal", versionStatus: "Draft" } } } } : {}) },
-            ],
-          }),
-        };
-      }
-      if (url.includes("api.box.com")) return { ok: true, json: async () => ({ name: "Dockwright Logistics Commercial Real Estate 2026" }) };
+      if (url.includes("api.box.com")) return { ok: true, json: async () => ({ name: "Loan files" }) };
       throw new Error(`unexpected ${url}`);
     }));
     render(<Workspace />);
-
-    // Opened on a record, the workspace finds the loan in the reader's own list, so the
-    // checklist is drawn for its type. The upload has no metadata yet: it is listed as
-    // awaiting classification and ticks nothing.
-    expect(await screen.findByTestId("required-documents")).toBeVisible();
-    expect(screen.getByTestId("awaiting-classification")).toHaveTextContent("appraisal.pdf");
-    expect(screen.getAllByTestId("required-document-row").filter((r) => r.dataset.status === "received")).toHaveLength(0);
-
-    fireEvent.click(screen.getAllByTestId("required-document-upload")[0]);
+    expect(await screen.findByTestId("awaiting-classification")).toHaveTextContent("appraisal.pdf");
+    const readsBefore = listingReads;
+    classified = true;
+    fireEvent.click(screen.getByTestId("required-document-upload"));
     fireEvent.click(await screen.findByTestId("finish-upload"));
-
-    expect(await screen.findByTestId("classification-notice")).toHaveTextContent(/classified as Appraisal by Box AI/);
-    expect(classifyCalls).toEqual([`POST /services/apexrest/los/classify?recordId=${applicationLoan.recordId}&fileId=f-appraisal`]);
-
-    // Re-listed after the answer: the tick comes from the metadata Box now carries.
-    await waitFor(() => {
-      const appraisal = screen.getAllByTestId("required-document-row").find((r) => r.dataset.documentType === "Appraisal");
-      expect(appraisal?.dataset.status).toBe("received");
-    });
+    await waitFor(() => expect(screen.getByTestId("required-documents")).toHaveTextContent("Pending"));
+    expect(listingReads).toBeGreaterThan(readsBefore);
     expect(screen.queryByTestId("awaiting-classification")).not.toBeInTheDocument();
   });
 
-  test("reports the awaiting-classification sentence when Box AI names no type", async () => {
-    window.history.replaceState({}, "", `/?recordId=${applicationLoan.recordId}&folderId=987654321`);
-    vi.stubGlobal("fetch", apiDouble(borrower, [applicationLoan], (url) => {
-      if (url.includes("box-token")) return { ok: true, json: async () => ({ accessToken: "example-scoped-token", folderId: "987654321" }) };
-      if (url.includes("/los/classify")) {
-        return { ok: true, json: async () => ({ classified: false, summary: "Received and awaiting the loan officer's classification." }) };
-      }
-      if (url.includes("api.box.com")) return { ok: true, json: async () => ({ entries: [], name: "x" }) };
-      throw new Error(`unexpected ${url}`);
-    }));
-    render(<Workspace />);
-    await screen.findByTestId("required-documents");
-    fireEvent.click(screen.getAllByTestId("required-document-upload")[0]);
-    fireEvent.click(await screen.findByTestId("finish-upload"));
-    expect(await screen.findByTestId("classification-notice")).toHaveTextContent(/awaiting the loan officer/);
-  });
-
-  test("shows no checklist once the bank has moved past collecting documents", async () => {
+  test("keeps the document table visible after the loan is approved", async () => {
     window.history.replaceState({}, "", `/?recordId=${applicationLoan.recordId}&folderId=987654321`);
     vi.stubGlobal("fetch", apiDouble(borrower, [{ ...applicationLoan, status: "Approved" }], (url) => {
       if (url.includes("box-token")) return { ok: true, json: async () => ({ accessToken: "example-scoped-token", folderId: "987654321" }) };
@@ -603,7 +564,7 @@ describe("Uploading a required document", () => {
     }));
     render(<Workspace />);
     await screen.findByTestId("box-preview");
-    expect(screen.queryByTestId("required-documents")).not.toBeInTheDocument();
+    expect(screen.getByTestId("required-documents")).toBeVisible();
   });
 });
 
@@ -632,9 +593,49 @@ describe("Server-authorized borrower documents", () => {
     });
     vi.stubGlobal("fetch", fetcher);
     render(<Workspace />);
-    expect(await screen.findByTestId("box-elements-double")).toBeVisible();
+    expect(await screen.findByRole("button", { name: "Application.pdf" })).toBeVisible();
+    expect(screen.getAllByRole("table")).toHaveLength(1);
     expect(screen.queryByRole("link", { name: /Open in Box/ })).not.toBeInTheDocument();
     expect(screen.queryByText("Loan Officer")).not.toBeInTheDocument();
     expect(fetcher.mock.calls.some(([url]) => String(url).includes("api.box.com"))).toBe(false);
   });
+});
+
+
+test("an expired workspace session replaces API errors with a return-to-loan sign in", async () => {
+  window.history.replaceState({}, "", "/?recordId=a01xx0000009newAAA&loanId=LN-2026-0089");
+  vi.stubGlobal("fetch", apiDouble(borrower, [applicationLoan]));
+  render(<Workspace />);
+  await waitFor(() => expect(screen.getByText("Dana Whitfield")).toBeVisible());
+  vi.stubGlobal("fetch", apiDouble(guest, { status: 403, body: "Forbidden" }));
+  fireEvent(window, new Event("los:check-session"));
+  const prompt = await screen.findByTestId("workspace-signed-out");
+  expect(prompt).toHaveTextContent("Sign in to continue");
+  const href = screen.getByTestId("data-error-signin").getAttribute("href")!;
+  expect(new URL(href).searchParams.get("startURL")).toBe("/?recordId=a01xx0000009newAAA&loanId=LN-2026-0089");
+  expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
+});
+
+
+test("focus detects an expired identity session and preserves its known sign-in URL", async () => {
+  window.history.replaceState({}, "", "/?recordId=a01xx0000009newAAA");
+  vi.stubGlobal("fetch", apiDouble(borrower, [applicationLoan]));
+  render(<Workspace />);
+  await waitFor(() => expect(screen.getByText("Dana Whitfield")).toBeVisible());
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 401 })));
+  fireEvent(window, new Event("focus"));
+  await screen.findByTestId("workspace-signed-out");
+  expect(screen.getByTestId("data-error-signin")).toHaveAttribute("href", "https://example.invalid/login?startURL=%2F%3FrecordId%3Da01xx0000009newAAA");
+});
+
+
+test("session expiry hides an already loaded loan list", async () => {
+  window.history.replaceState({}, "", "/?view=loans");
+  vi.stubGlobal("fetch", apiDouble(borrower, [applicationLoan]));
+  render(<Workspace />);
+  await screen.findByTestId("loan-row");
+  vi.stubGlobal("fetch", apiDouble(guest, []));
+  fireEvent(window, new Event("focus"));
+  await screen.findByTestId("loans-signed-out");
+  expect(screen.queryByTestId("loan-row")).not.toBeInTheDocument();
 });

@@ -164,3 +164,81 @@ python3 scripts/validate_los.py
 ```
 
 Then run the preflight in `DEMO-CLICKPATH.md`. When every check passes, copy `config/runtime/validation-receipts.example.json` to `validation-receipts.json`, record secret-free references to the run, and run `python3 scripts/validate_los.py --presenter-ready`. It fails closed until both platforms have current passed receipts. The machine-readable workflow is `config/operator/operator-workflow.bcl`.
+
+## 8. Maintenance
+
+### Cleanup Demo Loans
+
+Remove demo loans and their Box folders between presentations using `scripts/cleanup_demo.py`:
+
+```bash
+# Preview what would be deleted (safe dry-run)
+python3 scripts/cleanup_demo.py --status Application --dry-run
+
+# Delete all Application status loans
+python3 scripts/cleanup_demo.py --status Application --yes
+
+# Delete loans created today (useful for resetting between demos)
+python3 scripts/cleanup_demo.py --today --yes
+
+# Delete loans from the last 7 days
+python3 scripts/cleanup_demo.py --last-n-days 7 --yes
+
+# Delete specific loan by ID
+python3 scripts/cleanup_demo.py --loan-id LN-2026-0042 --yes
+
+# Delete loans for a specific borrower
+python3 scripts/cleanup_demo.py --borrower "Dockwright" --yes
+
+# Interactive mode (prompts before each deletion)
+python3 scripts/cleanup_demo.py --status Application --interactive
+```
+
+The script:
+- Queries Salesforce for loans matching the specified criteria
+- Deletes the Salesforce loan records using bulk API
+- Deletes associated Box workspace folders recursively
+- Requires explicit confirmation (`--yes` or `--interactive`) unless using `--dry-run`
+- Handles missing folders gracefully (warns but continues)
+
+**Safety features:**
+- Always preview with `--dry-run` first
+- Must specify at least one filter (won't delete all loans without criteria)
+- `--interactive` mode prompts for each individual loan
+- Uses Salesforce bulk delete API (safer than record-by-record)
+
+**Common workflows:**
+```bash
+# Reset between demo runs (delete test loans created today)
+python3 scripts/cleanup_demo.py --today --yes
+
+# Clean up abandoned applications (borrowers who started but didn't finish)
+python3 scripts/cleanup_demo.py --status Application --yes
+
+# Remove specific borrower's test applications
+python3 scripts/cleanup_demo.py --borrower "Test Company" --dry-run
+python3 scripts/cleanup_demo.py --borrower "Test Company" --yes
+```
+
+
+### Box Sign completion
+
+Embedded requests omit `redirect_url`: Box redirects inside the signing frame, so a full workspace return URL nests the portal. The outer workspace polls the server’s Box-backed signing status and closes the frame only after confirmed completion. `Borrower_Portal_URL__c` is no longer required for signature creation. Existing requests retain their original redirect; return with **Back to documents** and refresh if one displays the nested portal.
+
+### Signing document classification
+
+Keep these exact values in the `losDocument.documentType` enum and Box Extract instructions:
+
+| Document type | Portal label | Supporting-document charts |
+|---|---|---|
+| Commitment Letter | Signing document | Excluded |
+| Signed Commitment Letter | Signed | Excluded |
+| Signing Log | Completed | Excluded |
+
+Commitment letters are separate from term sheets. Classify actual signature evidence as a signed commitment letter; blank signature fields or a prefilled date do not prove completion. Signing logs are audit trails, not loan agreements.
+
+The document list and history retain all three types. Metadata takes precedence; filename matching is a compatibility fallback for unclassified/Other files and never proves completion. Existing files may need reclassification; changing Extract instructions does not itself update their stored metadata.
+
+These are display classifications, not authority to close a loan. The completion endpoint verifies `signed` with Box, retains the resulting signed files and signing log against the loan, then sets Salesforce status to **Closed**. The portal reconciles outstanding requests on workspace entry and during signing. The server sets the verified signed copies and log to their final document types, version Executed and signature status Signed before closure. It retains the request ID and exact artifact references; later visits fetch only those files and verify that they still belong to the mapped loan folder. Closed does not imply that the supporting documents were approved. Servicing is never regressed to Closed.
+
+The storyboard source is `docs/demo-storyboard/storyboard.json`. Regenerate its Markdown and HTML with `python3 scripts/build_demo_storyboard.py` after editing steps or screenshot provenance.

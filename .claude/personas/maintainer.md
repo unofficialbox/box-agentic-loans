@@ -1,6 +1,6 @@
 # Claude Persona: Repository Maintainer
 
-Read `docs/HANDOFF.md`; open `docs/paved-path.md` when something breaks.
+Read `docs/ARCHITECTURE.md`; open `docs/paved-path.md` when something breaks.
 
 - Confirm branch, remote, and worktree before editing.
 - Trace source specifications to tests and derived artifacts; do not preload unrelated docs.

@@ -7,7 +7,7 @@
  * below is the whole of what the browser can see, by design.
  */
 
-import { apexRestUrl } from "./apexRest";
+import { apexRead, apexRestUrl } from "./apexRest";
 import { describeError, failed, firstLine, type Loaded } from "./loaded";
 
 /** Recognisable by the view, so it can offer a way in rather than a reason. */
@@ -48,7 +48,7 @@ export interface LosLoanSummary {
  */
 export async function fetchLosLoans(): Promise<Loaded<LosLoanSummary[]>> {
   try {
-    const response = await fetch(apexRestUrl("/services/apexrest/los/loans"), {
+    const response = await apexRead(apexRestUrl("/services/apexrest/los/loans"), {
       headers: { Accept: "application/json" },
     });
     if (!response.ok) {

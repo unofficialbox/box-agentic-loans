@@ -1,5 +1,5 @@
 import { LOS_CONFIG } from "../config";
-import { apexFetch, apexRestUrl } from "./apexRest";
+import { apexFetch, apexRead, apexRestUrl } from "./apexRest";
 import { describeError, failed, firstLine, type Loaded } from "./loaded";
 
 declare global {
@@ -32,7 +32,7 @@ export interface BoxFolderItem {
    * `metadata.enterprise.losDocument` -- the shorthand for the caller's own enterprise,
    * which saves shipping an enterprise ID to the browser.
    */
-  metadata?: { enterprise?: { losDocument?: { versionStatus?: string; documentType?: string } } };
+  metadata?: { enterprise?: { losDocument?: { versionStatus?: string; documentType?: string; approvalStatus?: string } } };
 }
 
 /**
@@ -207,7 +207,7 @@ interface TokenAttempt extends BoxWorkspaceToken {
 }
 
 async function requestToken(query: string, requestedFolderId: string): Promise<TokenAttempt> {
-  const response = await fetch(apexRestUrl(`/services/apexrest/los/box-token?${query}`), {
+  const response = await apexRead(apexRestUrl(`/services/apexrest/los/box-token?${query}`), {
     headers: { Accept: "application/json" },
   });
   if (!response.ok) {
@@ -277,7 +277,7 @@ export async function provisionBoxFolder(
 /** A fresh file-bound preview grant; the server rechecks loan access and metadata. */
 export async function fetchBoxPreviewToken(recordId: string, fileId: string): Promise<Loaded<string>> {
   try {
-    const response = await fetch(apexRestUrl(`/services/apexrest/los/box-token?recordId=${encodeURIComponent(recordId)}&fileId=${encodeURIComponent(fileId)}`), { headers: { Accept: "application/json" } });
+    const response = await apexRead(apexRestUrl(`/services/apexrest/los/box-token?recordId=${encodeURIComponent(recordId)}&fileId=${encodeURIComponent(fileId)}`), { headers: { Accept: "application/json" } });
     if (!response.ok) return failed("This document is not available for preview. Refresh the loan workspace.");
     const result = await response.json() as { accessToken?: string };
     return result.accessToken ? { ok: true, value: result.accessToken } : failed("No document preview token was returned.");

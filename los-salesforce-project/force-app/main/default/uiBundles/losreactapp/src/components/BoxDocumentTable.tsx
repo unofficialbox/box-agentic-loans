@@ -39,8 +39,8 @@ export function BoxDocumentTable({
         <tr>
           <th scope="col">Name</th>
           <th scope="col">Type</th>
-          <th scope="col">Last modified</th>
           <th scope="col">Status</th>
+          <th scope="col">Last modified</th>
           <th scope="col">Size</th>
         </tr>
       </thead>
@@ -62,21 +62,21 @@ export function BoxDocumentTable({
               {file.metadata?.enterprise?.losDocument?.documentType || "—"}
             </td>
             <td>
+              {documentFacts(file).status ? (
+                <span className={`doc-status doc-status-${documentFacts(file).status!.toLowerCase().replaceAll(" ", "-")}`}>
+                  {documentFacts(file).status}
+                </span>
+              ) : (
+                <span className="doc-status doc-status-none">Unclassified</span>
+              )}
+            </td>
+            <td>
               <span className="cell-stack">
                 <span>{formatDate(documentFacts(file).changedAt)}</span>
                 {/* Who, under when: the date answers "is this current", the name answers
                     "whose change was it", and they are read in that order. */}
                 <small>{documentFacts(file).changedBy || "—"}</small>
               </span>
-            </td>
-            <td>
-              {documentFacts(file).status ? (
-                <span className={`doc-status doc-status-${documentFacts(file).status!.toLowerCase()}`}>
-                  {documentFacts(file).status}
-                </span>
-              ) : (
-                <span className="doc-status doc-status-none">Unclassified</span>
-              )}
             </td>
             <td>{formatSize(file.size)}</td>
           </tr>

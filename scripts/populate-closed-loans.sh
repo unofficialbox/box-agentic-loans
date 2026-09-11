@@ -1,6 +1,9 @@
 #!/bin/bash
 # Populate closed loan folders with demo documents
 set -e
+: "${LOS_2023_FOLDER_ID:?Set the confirmed 2023 loan folder ID}"
+: "${LOS_2025_FOLDER_ID:?Set the confirmed 2025 loan folder ID}"
+: "${LOS_BOX_ENTERPRISE_ID:?Set the confirmed Box enterprise ID}"
 
 cd "$(dirname "$0")/.."
 
@@ -8,17 +11,17 @@ echo "Populating closed loan folders with documents..."
 echo ""
 
 # LN-2023-0311: Harbor Expansion Loan (Closed)
-# Folder: 416383268715
+# Folder: "${LOS_2023_FOLDER_ID}"
 echo "=== LN-2023-0311 (Harbor Expansion 2023) ==="
 UPLOAD_RESULT=$(box files:upload output/pdf/dockwright-loan-agreement-2023-executed.pdf \
-  --parent-id 416383268715 \
+  --parent-id "${LOS_2023_FOLDER_ID}" \
   --name "Loan Agreement - Executed.pdf" \
   --json)
 FILE_ID=$(echo "$UPLOAD_RESULT" | jq -r '.id // empty')
 
 if [ -z "$FILE_ID" ]; then
   # File might already exist, try to find it
-  FILE_ID=$(box folders:items 416383268715 --json | jq -r '.entries[] | select(.name=="Loan Agreement - Executed.pdf") | .id')
+  FILE_ID=$(box folders:items "${LOS_2023_FOLDER_ID}" --json | jq -r '.entries[] | select(.name=="Loan Agreement - Executed.pdf") | .id')
 fi
 
 if [ -n "$FILE_ID" ]; then
@@ -28,7 +31,7 @@ if [ -n "$FILE_ID" ]; then
   echo "Applying metadata..."
   box files:metadata:create "$FILE_ID" \
     --template-key losDocument \
-    --scope enterprise_1023254676 \
+    --scope "enterprise_${LOS_BOX_ENTERPRISE_ID}" \
     --data documentType="Loan Agreement" \
     --data versionStatus="Executed" \
     --data policyRisk="Low" \
@@ -44,17 +47,17 @@ fi
 echo ""
 
 # LN-2025-0148: Equipment Finance Loan (Closed)
-# Folder: 416381677501
+# Folder: "${LOS_2025_FOLDER_ID}"
 echo "=== LN-2025-0148 (Equipment Finance 2025) ==="
 UPLOAD_RESULT=$(box files:upload output/pdf/dockwright-loan-agreement-2025-executed.pdf \
-  --parent-id 416381677501 \
+  --parent-id "${LOS_2025_FOLDER_ID}" \
   --name "Loan Agreement - Executed.pdf" \
   --json)
 FILE_ID=$(echo "$UPLOAD_RESULT" | jq -r '.id // empty')
 
 if [ -z "$FILE_ID" ]; then
   # File might already exist, try to find it
-  FILE_ID=$(box folders:items 416381677501 --json | jq -r '.entries[] | select(.name=="Loan Agreement - Executed.pdf") | .id')
+  FILE_ID=$(box folders:items "${LOS_2025_FOLDER_ID}" --json | jq -r '.entries[] | select(.name=="Loan Agreement - Executed.pdf") | .id')
 fi
 
 if [ -n "$FILE_ID" ]; then
@@ -64,7 +67,7 @@ if [ -n "$FILE_ID" ]; then
   echo "Applying metadata..."
   box files:metadata:create "$FILE_ID" \
     --template-key losDocument \
-    --scope enterprise_1023254676 \
+    --scope "enterprise_${LOS_BOX_ENTERPRISE_ID}" \
     --data documentType="Loan Agreement" \
     --data versionStatus="Executed" \
     --data policyRisk="Low" \

@@ -1,5 +1,7 @@
 # Claude Desktop - LOS Demo Connector Strategy
 
+For repository work, read README.md and exactly one persona from .claude/personas/. Never load the entire documentation tree.
+
 When both **LOS Loan Tools** and **Box** MCP connectors are loaded, use this strategy:
 
 ## Search Strategy: Metadata First
@@ -16,8 +18,36 @@ Metadata searches are:
 **CRITICAL: These IDs are STATIC. NEVER call list tools - they return hundreds of results and swamp the session.**
 
 - **Metadata template:** `losDocument` (NEVER call `list_metadata_templates`)
-- **Doc Gen template ID:** Get from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c` (NEVER call `list_docgen_templates`)
-- **Credit Policy Hub ID:** `1488378748` "Acme Credit Policy Library" (NEVER call `list_hubs`)
+- **Doc Gen template ID:** Get from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c` (use the bounded fallback in `skills/loan-origination/SKILL.md` when config reads are unavailable)
+- **Credit Policy Hub ID:** `<CONFIGURED_ID>` "Acme Credit Policy Library" (NEVER call `list_hubs`)
+
+### Loan Identification
+
+**LOS tools accept EITHER loan ID or Salesforce record ID:**
+
+All LOS connector tools (`getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `prepareSignatureRequest`, etc.) accept:
+- **Loan ID**: `"LN-2026-0042"` - human-readable identifier
+- **Salesforce Record ID**: `"a0bxx000000XXXXX"` - 15 or 18 character Salesforce ID
+
+**When to use which:**
+- **Demo/hardcoded scenarios**: Use loan ID (`LN-2026-0042`)
+- **Borrower portal (React app)**: Use `recordId` from URL params - the app passes this dynamically
+- **Dynamic workflows**: Use `recordId` from Salesforce context, NOT hardcoded loan IDs
+
+**Example - Borrower portal flow:**
+```javascript
+// React app URL: ?recordId=a0bxx000000ABC123
+// Tool call should use the recordId, NOT hardcoded LN-2026-0042:
+getLoanPackage({ inputLoan: "a0bxx000000ABC123" })  // ✅ Dynamic
+getLoanPackage({ inputLoan: "LN-2026-0042" })       // ❌ Hardcoded demo loan
+```
+
+**How to get recordId in borrower portal:**
+- React app: Available in URL params (`?recordId=...`) and passed via `salesforceRecordId` in context
+- Agentforce: Available in conversation context from the Salesforce record the user is viewing
+- The recordId is the Salesforce object ID for the `LOS_Loan__c` record
+
+This ensures Doc Gen, Sign, and all operations work on the loan the borrower is actually viewing, not a hardcoded demo loan.
 
 ### Available Metadata Templates
 
@@ -84,11 +114,11 @@ Which loan documents are flagged critical policy risk?
 **For Box AI Operations:**
 - Document QA → Box connector's `box_ai_ask`
 - Term extraction → Box connector's `box_ai_extract`
-- Hub/policy search → Box connector's `ai_qa_hub` with hub_id `1488378748`
+- Hub/policy search → Box connector's `ai_qa_hub` with hub_id `<CONFIGURED_ID>`
 
 **NEVER:**
-- Get file contents (Box AI works on file IDs without downloading)
-- List hubs (Hub ID is static: `1488378748`)
+- Get source file contents for analysis (use Box AI on IDs). Exception: inspect the exact Doc Gen output to verify merge completion before signing.
+- List hubs (Hub ID is static: `<CONFIGURED_ID>`)
 - List templates (metadata template is `losDocument`, Doc Gen template from Salesforce)
 
 **For Box Doc Gen:**
@@ -192,61 +222,11 @@ query_metadata(template="losDocument", query="borrowerEntity='Dockwright Logisti
 
 ---
 
-## Example: Beat 5 (Generate Commitment Letter) - Box MCP
+## Example: Beat 5 (Generate Commitment Letter)
 
-**Prompt:** Generate the commitment letter for this loan.
+Follow [the canonical Doc Gen contract](docs/DOCGEN-GUIDE.md) for `create_docgen_batch`. Resolve the template from Salesforce and the destination from the current loan package. Pass all 15 merge paths under `document_generation_data[].user_input`.
 
-**✅ CORRECT Tool Sequence (Box MCP):**
-1. LOS connector → `getLoanPackage('LN-2026-0042')` - get folder ID
-2. LOS connector → `extractLoanTerms` - get extracted terms & policy validation
-3. LOS connector → `listLoans(borrower='Dockwright Logistics', status='Closed')` - get precedent
-4. Query Salesforce for template ID:
-   ```sql
-   SELECT Commitment_Letter_Template_ID__c FROM LOS_Box_Config__c
-   ```
-5. Box connector → `create_document_from_template` with:
-   ```javascript
-   {
-     template_id: "2454763922014",  // From step 4
-     destination_folder_id: "416352496139",  // From step 1
-     output_name: "commitment-letter-LN-2026-0042",
-     fields: {
-       loan: {
-         id: "LN-2026-0042",
-         borrower: "Dockwright Logistics",
-         loanAmount: "4800000",
-         status: "Approved",
-         termSheetReference: "Term Sheet v3 dated 2026-08-15"
-       },
-       terms: {
-         policyAtIssue: "LTV and DSCR covenants per LOS-LTV-001, LOS-LTV-002, LOS-DSCR-001, LOS-DSCR-002",
-         requestedPosition: "Borrower requested: $4.8M at 6.85% for 120 months, 85% LTV, 1.10 DSCR",
-         approvedPosition: "Standard policy: 80% LTV maximum (LOS-LTV-001), 1.25 DSCR minimum (LOS-DSCR-001)",
-         exceptionPosition: "Exception approved: Up to 85% LTV for collateral values exceeding $5M (LOS-LTV-002), DSCR as low as 1.15 with compensating factors (LOS-DSCR-002)",
-         owner: "Credit Risk Committee",
-         risk: "High",  // From loan record
-         proposedTerms: "$4.8M at 6.85% for 120 months, subject to 82% LTV, 1.15 DSCR minimum, enhanced monitoring"
-       },
-       precedent: {
-         summary: "Prior executed loans: LN-2023-0311 ($1.5M @ 7.25%, 75% LTV, 1.35 DSCR) and LN-2025-0148 ($2.15M @ 6.95%, 78% LTV, 1.28 DSCR). Both within standard policy limits."
-       },
-       letter: {
-         preparedOn: "8 September 2026",
-         preparedBy: "Loan Copilot (draft)"
-       }
-     }
-   }
-   ```
-
-**Why Box MCP here:** 
-- Direct API access (MCP-first strategy)
-- Faster than going through Salesforce
-- Consistent with metadata-first approach
-
-**Critical:** All `fields` values must come from prior analysis (steps 2-3), NOT placeholder text. Empty fields result in unfilled `{{placeholders}}` in the PDF.
-
-**❌ DON'T:**
-- Call Doc Gen without complete analysis data (results in empty placeholders)
+A batch acceptance alone is not a generated letter. Use the output explicitly tied to this generation response or matching job, check its content in the background, and continue to preview and any already authorized signing. Do not add a separate manual job-status validation step when the exact populated output is available. Do not select a generated file by name or metadata search; earlier failed outputs can have nearly identical names. A successful retry does not update an existing Box Sign request.
 
 ## Performance Tips
 
@@ -276,7 +256,7 @@ query_metadata(template="losDocument", query="borrowerEntity='Dockwright Logisti
 6. **Scope Metadata Queries:** Use folder scope when loan is known, enterprise scope when searching portfolio-wide
    ```
    # Searching one loan's folder - faster
-   query_metadata(template="losDocument", folder_id="416352496139", query="policyRisk='Critical'")
+   query_metadata(template="losDocument", folder_id="<CONFIGURED_ID>", query="policyRisk='Critical'")
    
    # Searching entire portfolio
    query_metadata(template="losDocument", query="policyRisk='Critical'")
@@ -293,18 +273,13 @@ query_metadata(template="losDocument", query="borrowerEntity='Dockwright Logisti
 - File must be in the loan's governed folder
 
 **If Doc Gen has empty placeholders:**
-- Must provide ALL analysis fields from prior steps
-- `requestedPosition` from extractLoanTerms
-- `approvedPosition` from policy Hub validation
-- `exceptionPosition` from policy Hub
-- `precedentSummary` from portfolio research
-- `proposedTerms` from your analysis
-- See `docs/DOCGEN-GUIDE.md` for complete workflow
+- Follow [Doc Gen diagnosis and retry](skills/loan-origination/SKILL.md#doc-gen-troubleshooting).
+- Read the exact job's warnings and output file. Do not conclude that typed tags are invalid or blame the template without checking Box's recognized tags.
 
 **For Doc Gen:**
-- ✅ Use Box MCP `create_document_from_template` (direct API, MCP-first)
+- ✅ Use Box MCP `create_docgen_batch` (direct API, MCP-first)
 - ✅ Get template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`
-- ❌ NEVER call `list_docgen_templates` - template ID is static
+- If config reads are unavailable, follow the skill’s bounded template discovery fallback; never guess the configured ID.
 - Must provide complete analysis data to fill all placeholders
 
 ## Summary
@@ -331,7 +306,7 @@ Need to find documents?
 | **Box AI** | Box | `box_ai_ask`, `box_ai_extract` | Direct, faster |
 | **File Preview** | Box | `get_file_preview` | Show documents inline |
 | **Hub/Policy Search** | Box | Hub QA tools | Box Hubs, not Salesforce |
-| **Doc Gen** | Box | `create_document_from_template` | Direct API, MCP-first |
+| **Doc Gen** | Box | `create_docgen_batch` | Direct API, MCP-first |
 | **Loan Records** | LOS | `listLoans` | Salesforce SOQL |
 | **Governed Actions** | LOS | `extract/apply/sign` | Business rules + validation |
 

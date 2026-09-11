@@ -69,7 +69,7 @@ Map<String, Object> signer = new Map<String, Object>{
 ### Testing
 
 1. Update the Word template with tags
-2. Upload to Box as the commitment letter template (ID: `2454763922014`)
+2. Upload to Box as the commitment letter template (ID: `<CONFIGURED_ID>`)
 3. Generate a commitment letter via Doc Gen
 4. Verify the generated PDF shows the tags as text
 5. Create a sign request via `prepareSignatureRequest`

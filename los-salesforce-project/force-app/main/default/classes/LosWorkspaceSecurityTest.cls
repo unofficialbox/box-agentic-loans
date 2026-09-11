@@ -6,7 +6,7 @@ private class LosWorkspaceSecurityTest {
             HttpResponse res = new HttpResponse(); res.setStatusCode(200);
             if (req.getEndpoint().contains('/items')) {
                 res.setBody('{"total_count":3,"entries":['
-                    + '{"id":"101","name":"Shared.pdf","type":"file","metadata":{"enterprise":{"losDocument":{"versionStatus":"Draft","documentType":"Application","policyRisk":"Critical"}}}},'
+                    + '{"id":"101","name":"Shared.pdf","type":"file","metadata":{"enterprise":{"losDocument":{"versionStatus":"Draft","approvalStatus":"Approved","documentType":"Application","policyRisk":"Critical"}}}},'
                     + '{"id":"102","name":"Internal.pdf","type":"file","metadata":{"enterprise":{"losDocument":{"versionStatus":"Internal"}}}},'
                     + '{"id":"103","name":"Unclassified.pdf","type":"file"}]}');
             } else {
@@ -75,8 +75,9 @@ private class LosWorkspaceSecurityTest {
         Map<String,Object> result=(Map<String,Object>)JSON.deserializeUntyped(raw);
         System.assertEquals('base_upload',result.get('scope'));
         System.assertEquals(true,result.get('borrower'));
-        System.assertEquals(1,((List<Object>)result.get('files')).size());
-        System.assert(!raw.contains('Internal.pdf') && !raw.contains('Unclassified.pdf') && !raw.contains('Critical'));
+        System.assertEquals(2,((List<Object>)result.get('files')).size());
+        System.assert(raw.contains('"approvalStatus":"Approved"'));
+        System.assert(!raw.contains('Internal.pdf') && !raw.contains('Critical'));
         System.assert(mock.scopes[mock.scopes.size()-1].contains('scope=base_upload'));
     }
     @IsTest static void previewIsFileScopedAndInternalFilesAreDenied() {
@@ -133,4 +134,51 @@ private class LosWorkspaceSecurityTest {
         }
     }
 
+
+    private class SignedFileMock implements HttpCalloutMock {
+        String parent; String version; Integer code;
+        SignedFileMock(String parent, String version, Integer code) {this.parent=parent;this.version=version;this.code=code;}
+        public HttpResponse respond(HttpRequest req) {
+            System.assert(req.getEndpoint().contains('/files/111?'));
+            HttpResponse res=new HttpResponse();res.setStatusCode(code);
+            res.setBody(JSON.serialize(new Map<String,Object>{'id'=>'111','type'=>'file','name'=>'executed.pdf',
+                'path_collection'=>new Map<String,Object>{'entries'=>new List<Object>{new Map<String,Object>{'id'=>parent}}},
+                'metadata'=>new Map<String,Object>{'enterprise'=>new Map<String,Object>{'losDocument'=>new Map<String,Object>{
+                    'versionStatus'=>version,'policyRisk'=>'Critical'}}}}));return res;
+        }
+    }
+    private static String signingReceipt() {
+        return '{"111":{"folderId":"123456","documentType":"Signed Commitment Letter","requestId":"test"}}';
+    }
+    @IsTest static void signedOutputsUseExactReceiptAndSafeProjection() {
+        Test.setMock(HttpCalloutMock.class,new SignedFileMock('123456','Executed',200));
+        List<Object> visible=new List<Object>{new Map<String,Object>{'id'=>'111','name'=>'old.pdf'}};
+        Test.startTest();LosBorrowerDocuments.addSignedFiles(visible,'123456','example-token',signingReceipt());Test.stopTest();
+        System.assertEquals(1,visible.size());System.assert(LosBorrowerDocuments.containsFile(visible,'111'));
+        System.assert(JSON.serialize(visible).contains('Signed Commitment Letter'));
+        System.assert(!JSON.serialize(visible).contains('policyRisk'));
+    }
+    @IsTest static void movedSignedFileCannotBePreviewed() {
+        Test.setMock(HttpCalloutMock.class,new SignedFileMock('999','Executed',200));
+        List<Object> visible=new List<Object>();
+        LosBorrowerDocuments.addSignedFiles(visible,'123456','example-token',signingReceipt());
+        System.assertEquals(0,visible.size());
+    }
+    @IsTest static void internalSignedFileCannotBePreviewed() {
+        Test.setMock(HttpCalloutMock.class,new SignedFileMock('123456','Internal',200));
+        List<Object> visible=new List<Object>();
+        LosBorrowerDocuments.addSignedFiles(visible,'123456','example-token',signingReceipt());
+        System.assertEquals(0,visible.size());
+    }
+    @IsTest static void deletedSignedFileIsOmitted() {
+        Test.setMock(HttpCalloutMock.class,new SignedFileMock('123456','Executed',404));
+        List<Object> visible=new List<Object>();
+        LosBorrowerDocuments.addSignedFiles(visible,'123456','example-token',signingReceipt());
+        System.assertEquals(0,visible.size());
+    }
+    @IsTest static void otherLoanReceiptDoesNotGrantAccess() {
+        List<Object> visible=new List<Object>();
+        LosBorrowerDocuments.addSignedFiles(visible,'999','example-token',signingReceipt());
+        System.assertEquals(0,visible.size());
+    }
 }

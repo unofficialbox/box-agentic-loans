@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Generated binary documents must not be treated as text diffs.
+*.pdf binary
+*.docx binary

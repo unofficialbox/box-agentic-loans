@@ -272,7 +272,8 @@ global with sharing class LosCreateApplication {
             Loan_Amount__c = draft.loanAmount,
             Term_Months__c = draft.termMonths,
             Purpose__c = draft.purpose,
-            Collateral_Type__c = draft.collateralType
+            Collateral_Type__c = draft.collateralType,
+            Target_Closing_Date__c = Date.today().addDays(90)
         );
     }
 

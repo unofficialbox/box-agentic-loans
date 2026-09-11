@@ -112,14 +112,15 @@ describe("ApplicationForm", () => {
   test("shows a guest the door, not the form", () => {
     render(<ApplicationForm identity={{ isGuest: true, loginUrl: "https://example.invalid/login" }} onCreated={() => {}} />);
     expect(screen.getByTestId("apply-signed-out")).toBeVisible();
-    expect(screen.getByTestId("data-error-signin")).toHaveAttribute("href", "https://example.invalid/login");
+    expect(screen.getByTestId("data-error-signin")).toHaveAttribute("href", "https://example.invalid/login?startURL=%2F");
     expect(screen.queryByTestId("application-form")).not.toBeInTheDocument();
   });
 
   test("previews the documents a loan type will ask for", () => {
     render(<ApplicationForm identity={borrower} onCreated={() => {}} />);
-    expect(screen.queryByTestId("application-required-preview")).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Loan type"), { target: { value: "Commercial Real Estate" } });
     expect(screen.getByTestId("application-required-preview")).toHaveTextContent("Property appraisal");
+    fireEvent.change(screen.getByLabelText("Loan type"), { target: { value: "Line of Credit" } });
+    expect(screen.getByTestId("application-required-preview")).toHaveTextContent("Bank statements");
+    expect(screen.getByTestId("application-required-preview")).not.toHaveTextContent("Property appraisal");
   });
 });
