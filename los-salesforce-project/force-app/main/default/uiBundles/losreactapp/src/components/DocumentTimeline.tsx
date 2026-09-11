@@ -56,7 +56,7 @@ export function DocumentTimeline({ files }: { files: BoxFolderItem[] | null }) {
                     {facts.status ? (
                       <>
                         {" · "}
-                        <span className={`doc-status doc-status-${facts.status.toLowerCase()}`}>
+                        <span className={`doc-status doc-status-${facts.status.toLowerCase().replaceAll(" ", "-")}`}>
                           {facts.status}
                         </span>
                       </>

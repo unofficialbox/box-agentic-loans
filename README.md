@@ -14,6 +14,7 @@ A borrower applies through the Acme Borrower Portal. Documents uploaded to Box a
 
 **Key features:**
 - Governed loan files in Box, structured records in Salesforce
+- Box-confirmed signature completion closes the loan; signed letters and signing logs remain available in the borrower workspace
 - Box AI for document classification and term extraction
 - Credit policy validation via Box Hubs
 - Headless AI integration (works with Claude Desktop, ChatGPT, Slack, Agentforce)
@@ -70,16 +71,22 @@ python3 scripts/cleanup_demo.py --status Application --interactive
 
 ### Demo
 
+**[Open the public demo guide](https://unofficialbox.github.io/box-claudeforce-loans/)** · [Download portable HTML](https://unofficialbox.github.io/box-claudeforce-loans/docs/demo-storyboard/standalone.html)
+
+[Open the borrower portal login](https://agentforce-box.my.site.com/loansvforcesite/login)
+
 Run the demo beats with Claude Desktop (or any AI harness):
+- **Demo guide:** [Setup](docs/demo-storyboard/index.html#setup) · [Storyboard](docs/demo-storyboard/index.html#storyboard) · [Resources and sample files](docs/demo-storyboard/index.html#resources)
+- **Standalone HTML:** [Portable edition](docs/demo-storyboard/standalone.html) — embedded images/fonts; resource links open GitHub. Rebuild with `python3 scripts/build_standalone_storyboard.py`.
+- **Markdown storyboard:** [Tell / Show / Tell with screenshots](docs/demo-storyboard/storyboard.md)
 - **Prompts & walkthrough:** [DEMO-CLICKPATH.md](DEMO-CLICKPATH.md)
-- **Presenter skill:** [skills/loan-origination/SKILL.md](skills/loan-origination/SKILL.md)
+- **Presenter skill:** [skills/loan-origination/SKILL.md](skills/loan-origination/SKILL.md) — [package for Claude](docs/DOCGEN-GUIDE.md#distributing-the-claude-skill)
 - **Presenter guide:** [docs/PRESENTING.md](docs/PRESENTING.md)
 
 ## Documentation
 
 - **[docs/SETUP.md](docs/SETUP.md)** - Complete deployment guide
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System design and governance
-- **[docs/HANDOFF.md](docs/HANDOFF.md)** - Developer handoff guide
 - **[CLAUDE.md](CLAUDE.md)** - AI connector strategy (metadata-first, Box MCP vs LOS tools)
 - **[docs/SECURITY.md](docs/SECURITY.md)** - Borrower authorization and token scoping
 - **[docs/paved-path.md](docs/paved-path.md)** - MCP deployment guidance

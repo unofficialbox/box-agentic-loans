@@ -200,7 +200,7 @@
   <div class="shell layout">
     <aside class="toc">
       <strong>On this page</strong>
-      <nav aria-label="Guide sections"><a href="#1-prerequisites">1. Prerequisites</a><a href="#2-local-configuration">2. Local configuration</a><a href="#3-bootstrap">3. Bootstrap</a><a href="#4-box-preview">4. Box preview</a><a href="#5-loan-copilot">5. Loan Copilot</a><a href="#5a-connect-an-mcp-client-to-the-los-server">5a. Connect an MCP client to the LOS server</a><a href="#6-administrator-checklist">6. Administrator checklist</a><a href="#7-validate-and-record-readiness">7. Validate and record readiness</a><a href="#offline-reference-index">Offline reference index</a></nav>
+      <nav aria-label="Guide sections"><a href="#1-prerequisites">1. Prerequisites</a><a href="#2-local-configuration">2. Local configuration</a><a href="#3-bootstrap">3. Bootstrap</a><a href="#4-box-preview">4. Box preview</a><a href="#5-loan-copilot">5. Loan Copilot</a><a href="#5a-connect-an-mcp-client-to-the-los-server">5a. Connect an MCP client to the LOS server</a><a href="#6-administrator-checklist">6. Administrator checklist</a><a href="#7-validate-and-record-readiness">7. Validate and record readiness</a><a href="#8-maintenance">8. Maintenance</a><a href="#offline-reference-index">Offline reference index</a></nav>
     </aside>
     <main>
       <section class="hero" id="top">
@@ -276,8 +276,8 @@ sf agent activate --version &lt;n&gt; --target-org &lt;alias&gt;</code></pre>
 <p>The hosted server <code>LOSLoanTools</code> deploys with the metadata but is inert until three org-side steps run, none of which put a value in this repository.</p>
 <ol><li><strong>Activate the server.</strong> Deploying <code>mcpServerDefinitions/</code> creates the definition only. Activation is a Tooling record: create <code>McpServerAccess</code> with <code>DeveloperName = LOSLoanTools</code>, <code>MasterLabel</code>, <code>Active = true</code>, and <code>McpServerId</code> set to the definition&#x27;s Id. Setup → Integration → <strong>MCP Servers</strong> → LOS Loan Tools then shows Server Status Active and the Server URL, which for a production or Developer Edition org is <code>https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools</code> (sandboxes and scratch orgs insert <code>sandbox/</code> after <code>v1/</code>).</li><li><strong>Deploy the External Client App.</strong> <code>externalClientApps/LOS_Claude_MCP</code> with its OAuth settings (<code>MCP</code> and <code>RefreshToken</code> scopes), global OAuth set (callback <code>https://claude.ai/api/mcp/auth_callback</code>, PKCE required, consumer secret optional, named-user JWT tokens) and policy (admin pre-authorized users). Read the consumer key from Setup → External Client App Manager → LOS Claude MCP → Settings → OAuth; never retrieve <code>ExtlClntAppGlobalOauthSettings</code> into source, it carries the secret.</li><li><strong>Grant the user.</strong> Assign <code>LOS_MCP_Client</code> to every presenter, and add them to the app&#x27;s pre-authorized profiles or permission sets (Setup → External Client App Manager → LOS Claude MCP → Policies).</li></ol>
 <p>Then in the client:</p>
-<ul><li><strong>Claude Desktop or claude.ai:</strong> Customize → Connectors → + → Add custom connector. Name <code>LOS Loan Tools</code>, server URL from step 1, Advanced settings → OAuth Client ID = the consumer key, no secret. Click Connect; the org login completes the OAuth flow. Configure → all nine tools on. Load the Box connector alongside it.</li><li><strong>Box connector:</strong> in the Box Admin Console → Integrations → Box MCP Server, enable read and write tools for Box Doc Gen and Box AI (they are off by default), then disconnect and reconnect the Box connector in the client; a token issued before the change keeps the old grants and every Doc Gen call answers &quot;Access denied&quot;.</li><li><strong>ChatGPT:</strong> the same app with the ChatGPT callback URL added to the ECA; untested here.</li><li><strong>Slack:</strong> the workspace connected to the org with this server enabled; untested here.</li></ul>
-<p>Expect: the connector lists nine tools (<code>listLoans</code> through <code>prepareSignatureRequest</code>) and beat 2 of the clickpath answers from <code>findDocumentsByRisk</code>.</p>
+<ul><li><strong>Claude Desktop or claude.ai:</strong> Customize → Connectors → + → Add custom connector. Name <code>LOS Loan Tools</code>, server URL from step 1, Advanced settings → OAuth Client ID = the consumer key, no secret. Click Connect; the org login completes the OAuth flow. Configure → all six tools on. Load the Box connector alongside it.</li><li><strong>Box connector:</strong> in the Box Admin Console → Integrations → Box MCP Server, enable read and write tools for Box Doc Gen and Box AI (they are off by default), then disconnect and reconnect the Box connector in the client; a token issued before the change keeps the old grants and every Doc Gen call answers &quot;Access denied&quot;.</li><li><strong>ChatGPT:</strong> the same app with the ChatGPT callback URL added to the ECA; untested here.</li><li><strong>Slack:</strong> the workspace connected to the org with this server enabled; untested here.</li></ul>
+<p>Expect: the connector lists six tools (<code>listLoans</code>, <code>getLoanPackage</code>, <code>extractLoanTerms</code>, <code>applyLoanTerms</code>, <code>classifyDocument</code>, <code>prepareSignatureRequest</code>). Beat 2 uses Box MCP <code>query_metadata</code> directly.</p>
 </section>
 <section class="guide-section" id="6-administrator-checklist">
 <h2>6. Administrator checklist</h2>
@@ -290,6 +290,54 @@ sf agent activate --version &lt;n&gt; --target-org &lt;alias&gt;</code></pre>
 python3 scripts/demo_operator.py validate --scenario box-salesforce-los
 python3 scripts/validate_los.py</code></pre>
 <p>Then run the preflight in <code>DEMO-CLICKPATH.md</code>. When every check passes, copy <code>config/runtime/validation-receipts.example.json</code> to <code>validation-receipts.json</code>, record secret-free references to the run, and run <code>python3 scripts/validate_los.py --presenter-ready</code>. It fails closed until both platforms have current passed receipts. The machine-readable workflow is <code>config/operator/operator-workflow.bcl</code>.</p>
+</section>
+<section class="guide-section" id="8-maintenance">
+<h2>8. Maintenance</h2>
+<h3>Cleanup Demo Loans</h3>
+<p>Remove demo loans and their Box folders between presentations using <code>scripts/cleanup_demo.py</code>:</p>
+<pre><code class="language-bash"># Preview what would be deleted (safe dry-run)
+python3 scripts/cleanup_demo.py --status Application --dry-run
+
+# Delete all Application status loans
+python3 scripts/cleanup_demo.py --status Application --yes
+
+# Delete loans created today (useful for resetting between demos)
+python3 scripts/cleanup_demo.py --today --yes
+
+# Delete loans from the last 7 days
+python3 scripts/cleanup_demo.py --last-n-days 7 --yes
+
+# Delete specific loan by ID
+python3 scripts/cleanup_demo.py --loan-id LN-2026-0042 --yes
+
+# Delete loans for a specific borrower
+python3 scripts/cleanup_demo.py --borrower &quot;Harborview&quot; --yes
+
+# Interactive mode (prompts before each deletion)
+python3 scripts/cleanup_demo.py --status Application --interactive</code></pre>
+<p>The script:</p>
+<ul><li>Queries Salesforce for loans matching the specified criteria</li><li>Deletes the Salesforce loan records using bulk API</li><li>Deletes associated Box workspace folders recursively</li><li>Requires explicit confirmation (<code>--yes</code> or <code>--interactive</code>) unless using <code>--dry-run</code></li><li>Handles missing folders gracefully (warns but continues)</li></ul>
+<p><strong>Safety features:</strong></p>
+<ul><li>Always preview with <code>--dry-run</code> first</li><li>Must specify at least one filter (won&#x27;t delete all loans without criteria)</li><li><code>--interactive</code> mode prompts for each individual loan</li><li>Uses Salesforce bulk delete API (safer than record-by-record)</li></ul>
+<p><strong>Common workflows:</strong></p>
+<pre><code class="language-bash"># Reset between demo runs (delete test loans created today)
+python3 scripts/cleanup_demo.py --today --yes
+
+# Clean up abandoned applications (borrowers who started but didn&#x27;t finish)
+python3 scripts/cleanup_demo.py --status Application --yes
+
+# Remove specific borrower&#x27;s test applications
+python3 scripts/cleanup_demo.py --borrower &quot;Test Company&quot; --dry-run
+python3 scripts/cleanup_demo.py --borrower &quot;Test Company&quot; --yes</code></pre>
+<h3>Box Sign completion</h3>
+<p>Embedded requests omit <code>redirect_url</code>: Box redirects inside the signing frame, so a full workspace return URL nests the portal. The outer workspace polls the server’s Box-backed signing status and closes the frame only after confirmed completion. <code>Borrower_Portal_URL__c</code> is no longer required for signature creation. Existing requests retain their original redirect; return with <strong>Back to documents</strong> and refresh if one displays the nested portal.</p>
+<h3>Signing document classification</h3>
+<p>Keep these exact values in the <code>losDocument.documentType</code> enum and Box Extract instructions:</p>
+<div class="table-scroll"><table><thead><tr><th>Document type</th><th>Portal label</th><th>Supporting-document charts</th></tr></thead><tbody><tr><td>Commitment Letter</td><td>Signing document</td><td>Excluded</td></tr><tr><td>Signed Commitment Letter</td><td>Signed</td><td>Excluded</td></tr><tr><td>Signing Log</td><td>Completed</td><td>Excluded</td></tr></tbody></table></div>
+<p>Commitment letters are separate from term sheets. Classify actual signature evidence as a signed commitment letter; blank signature fields or a prefilled date do not prove completion. Signing logs are audit trails, not loan agreements.</p>
+<p>The document list and history retain all three types. Metadata takes precedence; filename matching is a compatibility fallback for unclassified/Other files and never proves completion. Existing files may need reclassification; changing Extract instructions does not itself update their stored metadata.</p>
+<p>These are display classifications, not authority to close a loan. The completion endpoint verifies <code>signed</code> with Box, retains the resulting signed files and signing log against the loan, then sets Salesforce status to <strong>Closed</strong>. The portal reconciles outstanding requests on workspace entry and during signing. The server sets the verified signed copies and log to their final document types, version Executed and signature status Signed before closure. It retains the request ID and exact artifact references; later visits fetch only those files and verify that they still belong to the mapped loan folder. Closed does not imply that the supporting documents were approved. Servicing is never regressed to Closed.</p>
+<p>The storyboard source is <code>docs/demo-storyboard/storyboard.json</code>. Regenerate its Markdown and HTML with <code>python3 scripts/build_demo_storyboard.py</code> after editing steps or screenshot provenance.</p>
 </section>
 
       </article>

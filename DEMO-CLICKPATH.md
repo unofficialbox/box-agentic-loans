@@ -25,30 +25,35 @@ Before starting:
 
 **Beat 2 (Claude Desktop):**
 ```
-Which documents are flagged critical policy risk?
+What's the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?
 ```
 
 **Beat 3 (Claude Desktop):**
 ```
-Extract loan terms from the marked-up term sheet, validate them against the Salesforce record and credit policy, and compare to Harborview's prior executed loans
+Extract loan terms from the marked-up term sheet for that loan and check them against credit policy.
 ```
 
-**Beat 4 (Claude Desktop):**
+**Beat 3a (Claude Desktop):**
+```
+Validate those terms against the Salesforce record.
+```
+
+**Beat 3b (Claude Desktop):**
 ```
 apply the amount, rate and term to the record, confirm
 ```
 
-**Beat 5 (Claude Desktop):**
+**Beat 4 (Claude Desktop):**
 ```
-Approve all pending documents for the latest Harborview Logistics loan
-```
-
-**Beat 6 (Claude Desktop):**
-```
-Generate the commitment letter and send it for signature
+Compare the covenant terms across Harborview's prior executed loans and this 2026 markup.
 ```
 
-**Beat 7 (Browser):** `https://<your-site>.my.site.com/loansvforcesite/login?startURL=%2Floans%2F`
+**Beat 5 (Claude Desktop — generate and send):**
+```
+Generate the commitment letter for this loan and send it for signature using the confirmed signer.
+```
+
+**Beat 6 (Browser):** `https://<your-site>.my.site.com/loansvforcesite/login?startURL=%2Floans%2F`
 
 ---
 
@@ -93,7 +98,7 @@ Expect both connectors listed under Context in the session. Box must offer folde
 sf data query -o <alias> -q "SELECT Loan_ID__c, Status__c FROM LOS_Loan__c WHERE Borrower__c='Harborview Logistics' ORDER BY Loan_ID__c"
 ```
 
-Expect LN-2023-0311 Closed, LN-2025-0148 Closed, and the most recent loan (e.g., LN-2026-0042 or higher) in Approved status. After running Beat 1, you'll have a new Application-status loan - manually update its status to Approved before running Beats 2-5.
+Expect LN-2023-0311 Closed, LN-2025-0148 Closed, and the most recent loan (e.g., LN-2026-0042 or higher) in Approved status. After Beat 1, the new loan remains Application. Record the authorized credit decision through the normal approval workflow before signature preparation; upload or extracted terms alone do not approve a loan.
 
 **P5. Box: required documents with metadata.** See [docs/DOCUMENTS-SETUP.md](docs/DOCUMENTS-SETUP.md) for explicit upload instructions:
 - **Latest Harborview loan** needs: Term sheet with borrower markup (policyRisk="Critical"), optional financials/appraisal
@@ -135,54 +140,71 @@ If asked: creating the record and provisioning its folder are two requests, beca
 ### 2. The portfolio already knows what's risky (Claude Desktop, to 4:05)
 
 ```text
-Which documents are flagged critical policy risk?
+What's the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?
 ```
 
-Expect `getLoanPackage` (query for latest Harborview loan) to get the folder ID, then Box metadata search for `policyRisk = Critical` with folder scope. One hit: `harborview-term-sheet-2026-borrower-markup.pdf`. **MUST call `get_file_preview` to show the document inline**. The document should appear on screen, not just a filename or link. Ask for High or above and the FY2025 financial statements and the appraisal join it.
+Expect `listLoans` with borrower filter to find the latest Harborview loan, then `getLoanPackage` to get the folder ID, then Box metadata search for `policyRisk = Critical` with folder scope. One hit: `harborview-term-sheet-2026-borrower-markup.pdf`. **MUST call `get_file_preview` to show the document inline**. The document should appear on screen, not just a filename or link. Ask for High or above and the FY2025 financial statements and the appraisal join it.
 
 **If the assistant only cites "Source: filename.pdf" without showing the document:** Say "show me the document" — P2 custom instructions require preview after citing. The beat is not complete until the document appears.
 
-### 3. Comprehensive analysis — extract, validate, policy, precedent (Claude Desktop, to 6:30)
+### 3. Extract the terms, then read them against policy (to 6:30)
 
-**ONE PROMPT** that produces comprehensive analysis with the validation table.
+Box reads; Salesforce compares and writes.
 
 ```text
-Extract loan terms from the marked-up term sheet, validate them against the Salesforce record and credit policy, and compare to Harborview's prior executed loans
+Extract loan terms from the marked-up term sheet for that loan and check them against credit policy.
 ```
 
-Expect comprehensive analysis: extraction ($4.8M, 6.85%/6.50% requested, 120mo, 1.10x DSCR), validation table (Document vs Record with gaps highlighted), policy check (LOS-LTV/DSCR IDs), precedent comparison (70% LTV, 1.30x DSCR in prior loans). Markup previewed inline showing red borrower changes.
+Expect `getLoanPackage` to name the folder, then Box AI structured extraction on the markup: $4,800,000; 6.85% bank rate and 6.50% requested; 120 months; DSCR proposed at 1.10x tested annually. Then Box AI over the policy Hub: LOS-LTV-001 (75%) with exception LOS-LTV-002 (80%, interest reserve), LOS-DSCR-001 (1.25x) with exception LOS-DSCR-002 (1.15x, cash reserve); 85% and 1.10x are outside even the exceptions, Credit Risk owns the deviation. **The markup MUST preview inline** with `get_file_preview` showing the red interest and guaranty changes.
 
-**Key insight:** Harborview's markup regresses their own CFO's twice-agreed positions.
+Land it: a CRM record cannot find this, because the borrower's number is what was typed into it, and the markup never uses the phrase "loan-to-value". Then the record:
 
-### 4. Apply the validated terms (Claude Desktop, to 7:00)
+```text
+Validate those terms against the Salesforce record.
+```
+
+Expect `extractLoanTerms` to report amount, rate and term matching the record and LTV and DSCR mismatching it, with nothing written. Then:
 
 ```text
 apply the amount, rate and term to the record, confirm
 ```
 
-Expect `applyLoanTerms` with confirm: updates amount/rate/term only. Never apply LTV or DSCR (policy thresholds, not borrower data). This is the one write in the demo.
+First request the same write without confirmation and verify the action refuses. Then use the explicit confirmation above and verify it updates only those fields. That is the one write in the demo, and a person just authorised it. Never apply the extracted LTV or DSCR: they are policy thresholds and markup requests, not the borrower's numbers on the record.
 
-### 5. Approve the reviewed documents (Claude Desktop, to 7:30)
+### 4. What they agreed the last two times (to 7:25)
 
-```text
-Approve all pending documents for the latest Harborview Logistics loan
-```
-
-Expect `listLoans(borrower='Harborview Logistics')` → `approveDocuments`. Tool updates all documents with `approvalStatus="Pending"` to `"Approved"`.
-
-**Response:** "Approved 7 documents"
-
-**Why here:** After analysis and validation, approve the document package. UI status pills change from "Pending" to "Approved".
-
-### 6. Generate letter and send for signature (Claude Desktop, to 9:20)
+Box does this beat across three files.
 
 ```text
-Generate the commitment letter and send it for signature
+Compare the covenant terms across Harborview's prior executed loans and this 2026 markup.
 ```
 
-Expect `getLoanPackage` → `create_docgen_batch` with template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`, fields filled from beat 3 → metadata query to find generated letter → preview inline → `prepareSignatureRequest`. Letter includes borrower/entity, amount, rate, term, policy IDs, exceptions, Credit Risk as owner, precedent. Embed URL stored on `LOS_Loan__c.Sign_Embed_URL__c`. Signature/date fields pre-placed via Box Sign tags.
+Expect `listLoans` or `getLoanPackage` for the two closed loans (LN-2023-0311, LN-2025-0148) to hand over the executed agreements, then one Box AI multi-file answer: both closed loans at 70% LTV and 1.30x DSCR tested quarterly, Section 8 and Schedule 1 of each executed agreement, signed by Jordan Pike for Harborview and Priya Shah for Acme Bank; the 2026 markup asks 1.10x tested annually. One table, then the 2025 agreement previewed at Schedule 1.
 
-### 7. Borrower signs in portal (Browser, to 11:00)
+Land it: Harborview's markup regresses two positions their own CFO agreed, in writing, twice.
+
+### 5. Generate the letter and send for signature (to 9:20)
+
+One request: Box generates the letter, the assistant checks the exact output in the background, and Salesforce governs signature preparation.
+
+```text
+Generate the commitment letter for this loan and send it for signature using the confirmed signer.
+```
+
+Expect `getLoanPackage` for the record and folder, then `create_docgen_batch` with template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c` into the loan folder with the letter's fields filled from beats 3 and 4. Doc Gen is asynchronous: follow the [Doc Gen contract](docs/DOCGEN-GUIDE.md), use the output explicitly associated with the current generation response or its matching job, then check and preview that exact file in the background. No separate manual job-status validation step is needed when the exact populated output is available. Stop on job warnings, unresolved tags, or incorrect loan terms. Do not select a similarly named file through metadata search; a previous failed output may still exist. Expect borrower and entity, amount, rate, term, the covenants at issue, the approved exceptions, Credit Risk as owner, the precedent, and approval wording consistent with the actual recorded decision. If the letter still says draft pending Credit Committee, resolve that conflict before sending.
+
+If the Box connector refuses Doc Gen: the Box Admin Console must have the Doc Gen MCP tools enabled and the connector reconnected afterwards (docs/SETUP.md §5a).
+
+Continue to `prepareSignatureRequest` with the same checked output and confirmed signer, without a second prompt or repeat authorization. Report success only if the action succeeds. The loan's Approved status passes the state check (`SIGNABLE = Approved, Commitment`). The sign request is created with:
+- `is_document_preparation_needed = false` (tags pre-placed in template)
+- `embed_url_external_user_id` = signer email (for embedded signing)
+- Embed URL stored on `LOS_Loan__c.Sign_Embed_URL__c`
+
+**What changed from old flow:** No prepare URL, no field placement. The borrower signs immediately in beat 6 via embedded iframe in their portal. Signature and date fields are pre-placed using Box Sign tags in the Doc Gen template.
+
+Stop only for a concrete generation, content, approval, or signer problem. Report the issue; do not bypass the action’s eligibility guard.
+
+### 6. The same platform, scoped to the other side (private window, to 11:00)
 
 ```text
 https://<your-site>.my.site.com/loansvforcesite/login?startURL=%2Floans%2F
@@ -192,15 +214,16 @@ Sign in as Dana Whitfield with the password from P6. Use the login path: `/loans
 
 Expect the header to name her, Dana Whitfield · Harborview Logistics, above the three seeded Harborview loans plus the beat 1 application, and no Pinecrest. Same code, different identity, different rows: a Salesforce sharing set on the borrower account, with upload-only folder access and separately authorized per-file preview tokens.
 
-Open the 2026 loan. **Expect to see the embedded Box Sign iframe** at the top of the workspace with the commitment letter ready to sign. The signature and date fields are interactive (converted from Box Sign tags). 
+Open the current loan. A **Review and sign** alert opens Box Sign in the full workspace canvas only when clicked. The signature and date fields are interactive.
 
 **Optional: Complete the signature flow in the demo**
 - Click signature field → draw or type signature
 - Date auto-fills when signed
 - Click "Finish" → document signed
-- Expect success message, iframe disappears, workspace refreshes
+- Wait for Box-confirmed completion and finalized outputs. The iframe closes and the workspace refreshes to **Closed**.
+- Open the **Signed Commitment Letter** and **Signing Log** from the full document list. Both remain in history after refresh and are excluded from supporting-document approval charts.
 
-Compare the document inventory with the officer package: the server omits Internal and unclassified documents and grants preview access one authorized file at a time, and her LTV, DSCR and risk rating are not in the projection at all.
+Compare the document inventory with the officer package: the server omits Internal and Bank Only documents and grants preview access one authorized file at a time, and her LTV, DSCR and risk rating are not in the projection at all.
 
 There is no Copilot on this page. A Service Agent runs as its own user and takes the loan name from the conversation, so it could be asked about another borrower's loan; it was left off rather than left for someone to find.
 

@@ -118,7 +118,10 @@ def check_secrets_and_runtime_ids(root: Path = ROOT) -> str:
         findings.extend(secret_findings(text, str(relative)))
         if LIVE_BOX_HOST.search(text):
             findings.append(f"{relative}: tenant-specific Box hostname")
-        if LIVE_SALESFORCE_HOST.search(text):
+        host_text = text
+        if relative.as_posix() in {"README.md", "docs/demo-storyboard/index.html", "docs/demo-storyboard/standalone.html", "docs/demo-storyboard/storyboard.md", "scripts/build_demo_storyboard.py", "scripts/validate_los.py"}:
+            host_text = host_text.replace("https://agentforce-box.my.site.com/loansvforcesite/login", "")
+        if LIVE_SALESFORCE_HOST.search(host_text):
             findings.append(f"{relative}: org-specific Salesforce hostname")
         if placeholder_marker in text.lower() and ".example." not in path.name:
             findings.append(f"{relative}: unresolved replace-with placeholder outside an example file")
@@ -436,22 +439,21 @@ def execute(name: str, action: Callable[[], str]) -> Result:
 
 
 def check_soql_field_permissions(root: Path = ROOT) -> str:
-    """Every LOS_Loan__c field the borrower site's REST projection selects must be readable.
+    """Check the authenticated projection without exposing signing links to guests.
 
-    Salesforce enforces field-level security inside SOQL for guest users, and reports a
-    field the guest cannot read as ``No such column`` -- a QueryException, not an empty
-    column. So adding a field to the projection without adding it to the permission sets
-    that serve the site does not degrade the response, it fails the whole request with a
-    500 that names no field. That is what happened when Borrower_Entity__c and
-    Maturity_Date__c were added: the class compiled, deployed, and worked for an administrator,
-    and broke only for a signed-out visitor.
-
-    Checked offline, against the metadata, because the browser is otherwise the first
-    place it shows up.
+    Guests must be rejected before the reader runs. Only authenticated borrowers
+    need projection field grants; new internal receipt fields are not in this list.
     """
     service = root / "los-salesforce-project/force-app/main/default/classes/LosLoanListService.cls"
     if not service.exists():
         raise ValidationError(f"missing {service.relative_to(root)}")
+
+    source = service.read_text()
+    guard_start = source.find("if (UserInfo.getUserType() == 'Guest')")
+    reader = source.find("new LoanReader().read()")
+    guard = source[guard_start:reader] if guard_start >= 0 and reader > guard_start else ""
+    if "response.statusCode = 401" not in guard or "return;" not in guard:
+        raise ValidationError("Guest rejection must precede the loan reader")
 
     match = re.search(r"SELECT\s+(.*?)\s+FROM\s+LOS_Loan__c", service.read_text(), re.IGNORECASE | re.DOTALL)
     if not match:
@@ -466,7 +468,7 @@ def check_soql_field_permissions(root: Path = ROOT) -> str:
 
     findings: list[str] = []
     permissions = root / "los-salesforce-project/force-app/main/default/permissionsets"
-    for name in ("LOS_Box_Preview_Guest", "LOS_Borrower_Portal"):
+    for name in ("LOS_Borrower_Portal",):
         path = permissions / f"{name}.permissionset-meta.xml"
         if not path.exists():
             findings.append(f"{name}: permission set not found")
@@ -479,7 +481,7 @@ def check_soql_field_permissions(root: Path = ROOT) -> str:
         raise ValidationError(
             "SOQL projection and permission sets disagree:\n" + "\n".join(findings)
         )
-    return f"{len(selected)} projected fields granted in 2 permission sets"
+    return f"{len(selected)} projected fields granted for authenticated borrowers"
 
 
 def validate(*, skip_react: bool, skip_playwright: bool, presenter_ready: bool, root: Path = ROOT) -> list[Result]:

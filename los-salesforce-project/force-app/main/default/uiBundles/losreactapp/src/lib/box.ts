@@ -1,5 +1,5 @@
 import { LOS_CONFIG } from "../config";
-import { apexFetch, apexRestUrl } from "./apexRest";
+import { apexFetch, apexRead, apexRestUrl } from "./apexRest";
 import { describeError, failed, firstLine, type Loaded } from "./loaded";
 
 declare global {
@@ -35,6 +35,23 @@ export interface BoxFolderItem {
   metadata?: { enterprise?: { losDocument?: { versionStatus?: string; documentType?: string; approvalStatus?: string } } };
 }
 
+/**
+ * What a borrower does not get to see.
+ *
+ * An Internal document is the bank's own underwriting work -- the credit memo, the
+ * analysis of the borrower's markup, and by implication what the bank was willing to
+ * accept. The loan folder is downscoped to one loan, which bounds *which* loan's
+ * documents are reachable, but not which documents within it, so the filter has to
+ * happen here.
+ *
+ * Matching on `versionStatus` rather than on the file name is the difference between a
+ * control and a coincidence: a credit memo named `v5-final.pdf` is still internal, and a
+ * legitimate document with "internal" in its name is not. Files with no losDocument
+ * instance are shown -- an untagged upload should be visible rather than silently
+ * disappearing, and the tagging is what governs, so an untagged file is a tagging gap to
+ * fix rather than a document to hide.
+ */
+const WITHHELD_VERSION_STATUS = "Internal";
 
 /**
  * List a folder with the downscoped token.
@@ -68,7 +85,11 @@ export async function listBoxFolderItems(
     const result = (await response.json()) as { entries?: BoxFolderItem[] };
     return {
       ok: true,
-      value: (result.entries || []).filter((entry) => entry.type === "file"),
+      value: (result.entries || []).filter(
+        (entry) =>
+          entry.type === "file" &&
+          entry.metadata?.enterprise?.losDocument?.versionStatus !== WITHHELD_VERSION_STATUS,
+      ),
     };
   } catch (error) {
     // A CORS rejection surfaces here as an opaque TypeError with no response to read.
@@ -186,7 +207,7 @@ interface TokenAttempt extends BoxWorkspaceToken {
 }
 
 async function requestToken(query: string, requestedFolderId: string): Promise<TokenAttempt> {
-  const response = await fetch(apexRestUrl(`/services/apexrest/los/box-token?${query}`), {
+  const response = await apexRead(apexRestUrl(`/services/apexrest/los/box-token?${query}`), {
     headers: { Accept: "application/json" },
   });
   if (!response.ok) {
@@ -256,7 +277,7 @@ export async function provisionBoxFolder(
 /** A fresh file-bound preview grant; the server rechecks loan access and metadata. */
 export async function fetchBoxPreviewToken(recordId: string, fileId: string): Promise<Loaded<string>> {
   try {
-    const response = await fetch(apexRestUrl(`/services/apexrest/los/box-token?recordId=${encodeURIComponent(recordId)}&fileId=${encodeURIComponent(fileId)}`), { headers: { Accept: "application/json" } });
+    const response = await apexRead(apexRestUrl(`/services/apexrest/los/box-token?recordId=${encodeURIComponent(recordId)}&fileId=${encodeURIComponent(fileId)}`), { headers: { Accept: "application/json" } });
     if (!response.ok) return failed("This document is not available for preview. Refresh the loan workspace.");
     const result = await response.json() as { accessToken?: string };
     return result.accessToken ? { ok: true, value: result.accessToken } : failed("No document preview token was returned.");

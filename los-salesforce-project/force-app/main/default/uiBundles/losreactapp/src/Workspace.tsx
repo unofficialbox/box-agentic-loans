@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { FilePlus2, FileStack, LayoutDashboard } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ArrowLeft, FilePlus2, FileStack, LayoutDashboard } from "lucide-react";
+import { DataError } from "./components/DataError";
+import { SESSION_CHECK } from "./lib/apexRest";
 import { ApplicationForm } from "./components/ApplicationForm";
 import { BoxWorkspace } from "./components/BoxWorkspace";
 import { DocumentTimeline } from "./components/DocumentTimeline";
@@ -12,8 +14,7 @@ import { EmbeddedSign } from "./components/EmbeddedSign";
 import { fetchIdentity, type LosIdentity } from "./lib/identity";
 import type { BoxFolderItem } from "./lib/box";
 import { formatLoanAmount, type LosLoanSummary } from "./lib/loans";
-import { getLosPageContext } from "./lib/box";
-import { COLLECTING_STATUSES } from "./lib/requiredDocuments";
+import { fetchDownscopedBoxToken, getLosPageContext } from "./lib/box";
 import { useLoans } from "./lib/useLoans";
 
 /**
@@ -110,12 +111,15 @@ export function Workspace() {
   /** True once the identity endpoint has answered, however it answered. */
   const [identitySettled, setIdentitySettled] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadBox, setUploadBox] = useState<{ token: string; folderId: string } | null>(null);
+  const uploadRequest = useRef(0);
   /** Bumped on upload close and after each classification so the listing catches up. */
   const [reloadKey, setReloadKey] = useState(0);
   /** What Box AI said about each upload, newest last. */
   const [notices, setNotices] = useState<Notice[]>([]);
-  /** Embed URL for pending signature request */
-  const [signEmbedUrl, setSignEmbedUrl] = useState<string | null>(null);
+  /** Keep a completed or declined request dismissed without retaining another loan's URL. */
+  const [dismissedSignUrl, setDismissedSignUrl] = useState<string | null>(null);
+  const [openSignUrl, setOpenSignUrl] = useState<string | null>(null);
   /** File selected for preview from RequiredDocuments table */
   const [previewFile, setPreviewFile] = useState<BoxFolderItem | null>(null);
   const loans = useLoans();
@@ -139,6 +143,11 @@ export function Workspace() {
     function syncToUrl() {
       setContext(getLosPageContext());
       setSelected(null);
+      uploadRequest.current += 1;
+      setUploading(false);
+      setUploadBox(null);
+      setBox(null);
+      setOpenSignUrl(null);
       setFiles(null);
       setBoxError("");
       setView(viewFromSearch());
@@ -150,14 +159,30 @@ export function Workspace() {
 
   useEffect(() => {
     let active = true;
-    (async () => {
+    let checking = false;
+    let pending = false;
+    async function checkSession() {
+      if (checking) { pending = true; return; }
+      checking = true;
       const who = await fetchIdentity();
+      checking = false;
       if (!active) return;
-      if (who.ok) setIdentity(who.value);
+      if (who.ok) setIdentity((previous) => ({ ...who.value, loginUrl: who.value.loginUrl ?? previous?.loginUrl }));
       setIdentitySettled(true);
-    })();
+      if (pending) { pending = false; void checkSession(); }
+    }
+    function onVisible() {
+      if (document.visibilityState === "visible") void checkSession();
+    }
+    void checkSession();
+    window.addEventListener(SESSION_CHECK, checkSession);
+    window.addEventListener("focus", checkSession);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       active = false;
+      window.removeEventListener(SESSION_CHECK, checkSession);
+      window.removeEventListener("focus", checkSession);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
 
@@ -186,11 +211,15 @@ export function Workspace() {
 
   const openLoan = useCallback((loan: LosLoanSummary) => {
     const search = loanSearch(loan);
+    uploadRequest.current += 1;
+    setUploading(false);
+    setUploadBox(null);
+    setBox(null);
     setFiles(null);
     setBoxError("");
     setNotices([]);
     setPreviewFile(null);
-    setSignEmbedUrl(loan.signEmbedUrl || null);
+    setOpenSignUrl(null);
     window.history.pushState({}, "", search ? `?${search}` : window.location.pathname);
     setSelected(loan);
     setView("workspace");
@@ -206,9 +235,13 @@ export function Workspace() {
    * the Workspace item return to it rather than becoming a dead control.
    */
   const showView = useCallback((next: View) => {
+    uploadRequest.current += 1;
+    setUploading(false);
+    setUploadBox(null);
     window.history.pushState({}, "", searchForView(next));
     setView(next);
     setPreviewFile(null);
+    setOpenSignUrl(null);
     setUrlChosen(true);
   }, []);
 
@@ -241,6 +274,21 @@ export function Workspace() {
     };
   }, [context, selected]);
 
+  // Resolve the destination at the action boundary. A previous loan's displayed
+  // workspace/token must never become the destination for a newly created loan.
+  const openUpload = useCallback(async () => {
+    const request = ++uploadRequest.current;
+    const granted = await fetchDownscopedBoxToken(workspaceContext);
+    if (request !== uploadRequest.current) return;
+    if (!granted.ok) {
+      setNotices([{ key: "upload-destination", text: granted.error, tone: "warning" }]);
+      return;
+    }
+    setUploadBox({ token: granted.value.accessToken, folderId: granted.value.folderId });
+    setUploading(true);
+  }, [workspaceContext]);
+
+
   /**
    * The loan the workspace is about. A row that was clicked, or -- when the page was
    * opened on a record -- the matching row from the reader's own list, so a reload or the
@@ -251,7 +299,10 @@ export function Workspace() {
     () => selected ?? loans.loans.find((loan) => loan.recordId === context.salesforceRecordId) ?? null,
     [selected, loans.loans, context.salesforceRecordId],
   );
-  const collecting = Boolean(current?.status && COLLECTING_STATUSES.has(current.status));
+
+  const signEmbedUrl = current?.signEmbedUrl !== dismissedSignUrl ? current?.signEmbedUrl : null;
+  const signing = Boolean(openSignUrl && openSignUrl === signEmbedUrl && !previewFile && view === "workspace");
+
   /** Whether the current user is a borrower (has an accountName) vs a bank user */
   const isBorrower = Boolean(identity?.accountName);
 
@@ -295,6 +346,18 @@ export function Workspace() {
 
   return (
     <div className="app-shell">
+      {!identity?.isGuest && view === "workspace" && signEmbedUrl && current && !signing ? (
+        <EmbeddedSign background embedUrl={signEmbedUrl} recordId={current.recordId}
+          onComplete={() => {
+            setDismissedSignUrl(signEmbedUrl);
+            setSelected(null);
+            reloadLoans();
+            setReloadKey(n => n + 1);
+          }}
+          onDecline={() => { setDismissedSignUrl(signEmbedUrl); setReloadKey(n => n + 1); }}
+        />
+      ) : null}
+
       {/*
         A rail, not a top bar of tabs. The brand and the three places a borrower can be
         sit down the left; the bar across the top says where they are and who they are.
@@ -311,7 +374,7 @@ export function Workspace() {
         </nav>
       </aside>
 
-      <div className="cb-page">
+      <div className={`cb-page${signing ? " cb-page-signing" : ""}`}>
         <header className="topbar">
           {/* Where the reader is, not which loan: the banner below names the loan, and
               two headings saying the same thing an inch apart is one too many. */}
@@ -334,7 +397,7 @@ export function Workspace() {
           The Salesforce record ID came out of the eyebrow at the same time. It is internal
           plumbing, and this page faces the borrower.
         */}
-        {current && view === "workspace" ? (
+        {!identity?.isGuest && current && view === "workspace" && !signing ? (
           <div className="loan-banner">
             <div>
               <span className="eyebrow">{current.loanId}</span>
@@ -351,15 +414,17 @@ export function Workspace() {
           </div>
         ) : null}
 
-        {view === "workspace" && !boxError && !previewFile ? (
+        {!identity?.isGuest && view === "workspace" && !boxError && !previewFile && !signing ? (
           <div className="workspace-metrics-row">
             <WorkspaceMetrics files={files} />
           </div>
         ) : null}
 
-        <div className={`content-grid${view === "workspace" && !boxError && !previewFile ? " content-grid-aside" : ""}`}>
+        <div className={`content-grid${signing ? " content-grid-signing" : ""}${!identity?.isGuest && view === "workspace" && !boxError && !previewFile && !signing ? " content-grid-aside" : ""}`}>
           <main>
-            {view === "apply" ? (
+            {identity?.isGuest && view === "workspace" ? (
+              <DataError title="Sign in to continue" detail="Your session has ended. Sign in to return to this loan." signInUrl={identity.loginUrl} testId="workspace-signed-out" />
+            ) : view === "apply" ? (
               <ApplicationForm identity={identity} onCreated={onCreated} />
             ) : view === "loans" ? (
               <LoanList
@@ -386,14 +451,33 @@ export function Workspace() {
                     ))}
                   </ul>
                 ) : null}
-                {signEmbedUrl ? (
-                  <div className="signature-panel">
-                    <h3>Signature Required</h3>
-                    <p>Please review and sign the commitment letter below.</p>
+                {signEmbedUrl && !previewFile && !signing ? (
+                  <section className="signature-alert" aria-label="Signature required">
+                    <div><strong>Signature required</strong><p>Your commitment letter is ready to review and sign.</p></div>
+                    <button type="button" className="upload-button" onClick={() => setOpenSignUrl(signEmbedUrl)}>Review and sign</button>
+                  </section>
+                ) : null}
+                {signing && openSignUrl ? (
+                  <section className="signature-pane" aria-label="Sign commitment letter">
+                    <div className="box-preview-bar">
+                      <button type="button" className="secondary-button" onClick={() => setOpenSignUrl(null)}><ArrowLeft size={15} /> Back to documents</button>
+                      <span className="box-preview-name">{current?.loanId} · Sign commitment letter</span>
+                    </div>
                     <EmbeddedSign
-                      embedUrl={signEmbedUrl}
+                      key={openSignUrl}
+                      embedUrl={openSignUrl}
+                      recordId={current?.recordId ?? workspaceContext.salesforceRecordId ?? ""}
                       onComplete={() => {
-                        setSignEmbedUrl(null);
+                        const destination = new URL(window.location.href);
+                        destination.searchParams.delete("view");
+                        if (current?.loanId) destination.searchParams.set("loanId", current.loanId);
+                        if (workspaceContext.salesforceRecordId) destination.searchParams.set("recordId", workspaceContext.salesforceRecordId);
+                        if (box?.folderId) destination.searchParams.set("folderId", box.folderId);
+                        window.history.replaceState({}, "", destination.pathname + destination.search);
+                        setOpenSignUrl(null);
+                        setSelected(null);
+                        reloadLoans();
+                        setDismissedSignUrl(openSignUrl);
                         setNotices((was) => [
                           ...was,
                           {
@@ -405,7 +489,7 @@ export function Workspace() {
                         setReloadKey((n) => n + 1);
                       }}
                       onDecline={() => {
-                        setSignEmbedUrl(null);
+                        setDismissedSignUrl(openSignUrl);
                         setNotices((was) => [
                           ...was,
                           {
@@ -416,6 +500,7 @@ export function Workspace() {
                         ]);
                       }}
                       onError={(error) => {
+                        setOpenSignUrl(null);
                         setNotices((was) => [
                           ...was,
                           {
@@ -426,28 +511,31 @@ export function Workspace() {
                         ]);
                       }}
                     />
-                  </div>
+                  </section>
                 ) : null}
+                <div hidden={signing} className="workspace-documents">
                 {isBorrower ? (
                   <>
-                    {!previewFile && collecting && !boxError ? (
+                    {!previewFile && !boxError ? (
                       <RequiredDocuments
+                        includeAllFiles
                         loanType={current?.loanType}
                         files={files}
                         canUpload={Boolean(box)}
-                        onUpload={() => setUploading(true)}
+                        onUpload={openUpload}
                         onPreview={setPreviewFile}
                       />
                     ) : null}
-                    {/* BoxWorkspace for borrowers - always mounted for data loading, but only shown for preview */}
-                    <div className={previewFile ? undefined : "visually-hidden"}>
+                    {/* Keep the loader mounted; the consolidated list owns document rows. */}
+                    <div hidden={!previewFile && !boxError}>
                       <BoxWorkspace
                         context={workspaceContext}
                         onFilesLoaded={setFiles}
                         onBoxReady={setBox}
                         reloadKey={reloadKey}
-                        onUpload={() => setUploading(true)}
+                        onUpload={openUpload}
                         onFailed={setBoxError}
+                        onSelectFile={setPreviewFile}
                         previewFile={previewFile}
                         onClosePreview={() => setPreviewFile(null)}
                       />
@@ -455,12 +543,12 @@ export function Workspace() {
                   </>
                 ) : (
                   <>
-                    {collecting && !boxError ? (
+                    {!boxError ? (
                       <RequiredDocuments
                         loanType={current?.loanType}
                         files={files}
                         canUpload={Boolean(box)}
-                        onUpload={() => setUploading(true)}
+                        onUpload={openUpload}
                         onPreview={setPreviewFile}
                       />
                     ) : null}
@@ -469,25 +557,28 @@ export function Workspace() {
                       onFilesLoaded={setFiles}
                       onBoxReady={setBox}
                       reloadKey={reloadKey}
-                      onUpload={() => setUploading(true)}
+                      onUpload={openUpload}
                       onFailed={setBoxError}
                       previewFile={previewFile}
                       onClosePreview={() => setPreviewFile(null)}
                     />
                   </>
                 )}
+                </div>
               </>
             )}
           </main>
-          {view === "workspace" && !boxError && !previewFile ? <DocumentTimeline files={files} /> : null}
+          {!identity?.isGuest && view === "workspace" && !boxError && !previewFile && !signing ? <DocumentTimeline files={files} /> : null}
         </div>
-        {uploading && box ? (
+        {!identity?.isGuest && view === "workspace" && uploading && uploadBox ? (
           <UploadDialog
-            folderId={box.folderId}
-            tokenProvider={() => box.token}
+            key={`${workspaceContext.salesforceRecordId || ""}:${uploadBox.folderId}`}
+            folderId={uploadBox.folderId}
+            tokenProvider={() => uploadBox.token}
             onUploaded={handleUploaded}
             onClose={() => {
               setUploading(false);
+              setUploadBox(null);
               setReloadKey((n) => n + 1);
             }}
           />

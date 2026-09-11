@@ -218,6 +218,18 @@ def term_sheet_markup():
     return doc
 
 
+def add_signing_fields(doc):
+    """Add fields for recipient 1 using Box Sign's documented tag syntax."""
+    signature = doc.add_paragraph()
+    signature.paragraph_format.keep_with_next = True
+    signature.add_run("Borrower signature\n")
+    tag = signature.add_run("[[s|1|id:borrower_signature                    ]]")
+    set_font(tag, size=18, color="FFFFFF")
+    date = doc.add_paragraph()
+    date.add_run("Date signed: ")
+    set_font(date.add_run("[[d|1|id:borrower_signed_date]]"), size=10, color="FFFFFF")
+
+
 def commitment_letter():
     """The document Acme sends once the terms are resolved on the loan record.
 
@@ -266,6 +278,7 @@ def commitment_letter():
         "This letter is a draft pending Credit Committee approval. It is not a commitment to lend, and it does "
         "not authorise signature or funding. {{terms.owner}} owns the decision on this exception.",
     )
+    add_signing_fields(doc)
     return doc
 
 

@@ -16,13 +16,13 @@ function file(id: string, documentType?: string): BoxFolderItem {
 describe("REQUIRED_DOCUMENTS", () => {
   test("lists exactly what the contract lists, per loan type", () => {
     const types = (loanType: string) => REQUIRED_DOCUMENTS[loanType].map((row) => row.documentType);
-    expect(types("Term Loan")).toEqual(["Application", "Financial Statement", "Tax Return", "Bank Statement"]);
-    expect(types("Line of Credit")).toEqual(["Application", "Financial Statement", "Bank Statement"]);
-    expect(types("Equipment Finance")).toEqual(["Application", "Financial Statement", "Tax Return"]);
+    expect(types("Term Loan")).toEqual(["Financial Statement", "Tax Return", "Bank Statement"]);
+    expect(types("Line of Credit")).toEqual(["Financial Statement", "Bank Statement"]);
+    expect(types("Equipment Finance")).toEqual(["Financial Statement", "Tax Return"]);
     expect(types("Commercial Real Estate")).toEqual([
-      "Application", "Financial Statement", "Tax Return", "Bank Statement", "Appraisal", "Insurance", "Environmental Report",
+      "Financial Statement", "Tax Return", "Bank Statement", "Appraisal", "Insurance", "Environmental Report",
     ]);
-    expect(types("SBA 7(a)")).toEqual(["Application", "Financial Statement", "Tax Return", "Bank Statement", "Insurance"]);
+    expect(types("SBA 7(a)")).toEqual(["Financial Statement", "Tax Return", "Bank Statement", "Insurance"]);
   });
 
   test("is written as plain JSON, so the repository's BCL comparison can parse it", () => {

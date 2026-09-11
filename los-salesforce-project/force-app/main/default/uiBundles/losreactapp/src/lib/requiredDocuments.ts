@@ -49,7 +49,7 @@ export const REQUIRED_DOCUMENTS: Record<string, RequiredDocument[]> = {
 };
 
 /** Loan statuses during which the bank is still collecting the borrower's documents. */
-export const COLLECTING_STATUSES = new Set(["Application", "Underwriting", "Approved"]);
+export const COLLECTING_STATUSES = new Set(["Application", "Underwriting"]);
 
 export interface ChecklistRow extends RequiredDocument {
   status: "received" | "missing";

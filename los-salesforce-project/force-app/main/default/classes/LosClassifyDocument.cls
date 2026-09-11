@@ -38,7 +38,7 @@ global with sharing class LosClassifyDocument {
     @TestVisible
     private static final List<String> DOCUMENT_TYPES = new List<String>{
         'Application', 'Financial Statement', 'Tax Return', 'Bank Statement', 'Appraisal',
-        'Term Sheet', 'Commitment Letter', 'Loan Agreement', 'Insurance', 'Credit Memo',
+        'Term Sheet', 'Commitment Letter', 'Signed Commitment Letter', 'Signing Log', 'Loan Application', 'Other', 'Loan Agreement', 'Insurance', 'Credit Memo',
         'Environmental Report'
     };
     @TestVisible
@@ -203,6 +203,7 @@ global with sharing class LosClassifyDocument {
 
         Map<String, Object> instance = new Map<String, Object>{
             'documentType' => documentType,
+            'versionStatus' => 'Draft',
             'aiSummaryStatus' => 'Complete',
             'approvalStatus' => 'Pending',
             'signatureStatus' => 'Not Required'

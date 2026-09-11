@@ -12,15 +12,15 @@
  */
 const ROW_WIDTHS = ["72%", "58%", "80%", "64%", "76%", "52%"];
 
-export function WorkspaceSkeleton() {
+export function WorkspaceSkeleton({ showHeader = true }: { showHeader?: boolean }) {
   return (
     <div className="skeleton" data-testid="box-loading" aria-busy="true" aria-live="polite">
       <span className="visually-hidden">Loading the loan documents</span>
 
-      <div className="skeleton-head" aria-hidden="true">
+      {showHeader && <div className="skeleton-head" aria-hidden="true">
         <span className="skeleton-bar skeleton-bar-title" />
         <span className="skeleton-bar skeleton-bar-button" />
-      </div>
+      </div>}
 
       <div className="skeleton-table" aria-hidden="true">
         {ROW_WIDTHS.map((width, index) => (

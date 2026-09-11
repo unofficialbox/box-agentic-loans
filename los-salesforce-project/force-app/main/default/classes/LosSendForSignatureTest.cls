@@ -23,6 +23,10 @@ private class LosSendForSignatureTest {
                 response.setBody('{"access_' + 'token":"' + PARENT_TOKEN + '","expires_in":3600}');
                 return response;
             }
+            Map<String,Object> sent=(Map<String,Object>)JSON.deserializeUntyped(request.getBody());
+            Map<String,Object> signer=(Map<String,Object>)((List<Object>)sent.get('signers'))[0];
+            System.assert(!sent.containsKey('redirect_url'), 'Keep completion in Box; never nest the portal.');
+            System.assert(!signer.containsKey('declined_redirect_url'));
             signCalled = true;
             response.setStatusCode(status);
             response.setBody(body);
@@ -32,7 +36,8 @@ private class LosSendForSignatureTest {
 
     private static void configure() {
         insert new LOS_Box_Config__c(
-            SetupOwnerId = UserInfo.getOrganizationId(), Box_User_Id__c = '100000001');
+            SetupOwnerId = UserInfo.getOrganizationId(), Box_User_Id__c = '100000001',
+            Borrower_Portal_URL__c = 'https://example.my.site.com/loans/');
     }
 
     private static void seedLoan(String status) {
@@ -108,14 +113,16 @@ private class LosSendForSignatureTest {
     }
 
     @IsTest
-    static void preparesWithoutSendingWhenTheLoanIsApproved() {
-        // The success path, and the distinction the whole action exists to preserve: Box
-        // returns a prepare URL, nothing is sent, and the summary says so.
+    static void storesTheRequestedSignersIframeUrlWhenTheLoanIsApproved() {
+        // Box can return a sender before the requested signer and two different URLs.
         configure();
         seedLoan('Approved');
         LosLoanPackage.documentIdsOverride = new Set<String>{ '700000001' };
         BoxMock mock = new BoxMock(200,
-            '{"id":"sign-1","prepare_url":"https://app.box.com/sign/prepare/abc"}');
+            '{"id":"sign-1","signers":['
+            + '{"email":"sender@example.com","role":"final_copy_reader","iframeable_embed_url":"https://app.box.com/embed/sign/sender"},'
+            + '{"email":"signer@example.com","role":"signer","embed_url":"https://app.box.com/sign/not-frameable",'
+            + '"iframeable_embed_url":"https://app.box.com/embed/sign/document/test"}]}');
         Test.setMock(HttpCalloutMock.class, mock);
 
         Test.startTest();
@@ -124,8 +131,9 @@ private class LosSendForSignatureTest {
 
         System.assertEquals(true, result.prepared, result.summary);
         System.assertEquals('sign-1', result.requestId);
-        System.assertEquals('https://app.box.com/sign/prepare/abc', result.prepareUrl);
-        System.assert(result.summary.contains('Nothing has been sent'), result.summary);
+        System.assertEquals('https://app.box.com/embed/sign/document/test', result.embedUrl);
+        System.assertEquals(result.embedUrl, [SELECT Sign_Embed_URL__c FROM LOS_Loan__c LIMIT 1].Sign_Embed_URL__c);
+        System.assert(result.summary.contains('ready for embedded signing'), result.summary);
     }
 
     @IsTest
@@ -134,13 +142,30 @@ private class LosSendForSignatureTest {
         seedLoan('Commitment');
         LosLoanPackage.documentIdsOverride = new Set<String>{ '700000001' };
         Test.setMock(HttpCalloutMock.class, new BoxMock(200,
-            '{"id":"sign-2","prepare_url":"https://app.box.com/sign/prepare/def"}'));
+            '{"id":"sign-2","signers":[{"email":"signer@example.com","role":"signer",'
+            + '"iframeable_embed_url":"https://app.box.com/embed/sign/document/test"}]}'));
 
         Test.startTest();
         LosSendForSignature.Result result = run('LN-TEST-0001', '700000001', 'signer@example.com');
         Test.stopTest();
 
         System.assertEquals(true, result.prepared, result.summary);
+    }
+
+    @IsTest
+    static void doesNotClaimIframeIsReadyWhenOnlyTheNonIframeUrlExists() {
+        configure();
+        seedLoan('Approved');
+        LosLoanPackage.documentIdsOverride = new Set<String>{ '700000001' };
+        Test.setMock(HttpCalloutMock.class, new BoxMock(201,
+            '{"id":"sign-converting","signers":[{"email":"signer@example.com","role":"signer",'
+            + '"embed_url":"https://app.box.com/sign/not-frameable"}]}'));
+        Test.startTest();
+        LosSendForSignature.Result result = run('LN-TEST-0001', '700000001', 'signer@example.com');
+        Test.stopTest();
+        System.assertEquals(false, result.prepared);
+        System.assertEquals(null, result.embedUrl);
+        System.assert(result.summary.contains('Do not create a duplicate'), result.summary);
     }
 
     @IsTest
@@ -198,4 +223,23 @@ private class LosSendForSignatureTest {
         System.assertEquals(false, result.prepared);
         System.assert(result.summary.contains('Box file ID'), result.summary);
     }
+    @IsTest
+    static void createsRequestWithoutPortalRedirectConfiguration() {
+        configure();
+        seedLoan('Approved');
+        LosLoanPackage.documentIdsOverride = new Set<String>{ '700000001' };
+        LOS_Box_Config__c config = LOS_Box_Config__c.getOrgDefaults();
+        config.Borrower_Portal_URL__c = null;
+        update config;
+        Test.setMock(HttpCalloutMock.class, new BoxMock(200,
+            '{"id":"sign-without-redirect","signers":[{"email":"signer@example.com","role":"signer",'
+            + '"iframeable_embed_url":"https://app.box.com/embed/sign/document/test"}]}'));
+        Test.startTest();
+        LosSendForSignature.Result result = run('LN-TEST-0001', '700000001', 'signer@example.com');
+        Test.stopTest();
+        System.assertEquals(true, result.prepared, result.summary);
+        System.assertEquals('sign-without-redirect', result.requestId);
+
+    }
+
 }

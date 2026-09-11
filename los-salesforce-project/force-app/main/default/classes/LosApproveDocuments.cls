@@ -1,195 +1,128 @@
 /**
- * Approves pending loan documents.
- *
- * Simple workflow: update all documents with approvalStatus="Pending" to
- * approvalStatus="Approved". No hiding mechanism - all uploaded documents are
- * visible from the start.
- *
- * Bounded like classify and extract: the loan must exist and the caller must be
- * able to read it. The Box credential stays in Apex.
+ * Approves all pending documents for a loan by updating approvalStatus from Pending to Approved.
  */
-global with sharing class LosApproveDocuments {
+public with sharing class LosApproveDocuments {
 
-    private static final String METADATA_ENDPOINT = 'callout:LOS_Box/2.0/files/';
-    private static final String TEMPLATE_SCOPE = 'enterprise';
-    private static final String TEMPLATE_KEY = 'losDocument';
-
-    global class Request {
+    public class Request {
         @InvocableVariable(
             label='Loan ID or record ID'
             description='The loan whose documents should be approved, for example LN-2026-0042 or the record ID.'
             required=true
         )
-        global String loanReference;
+        public String loanReference;
     }
 
-    global class Result {
+    public class Result {
+        @InvocableVariable(label='Outcome')
+        public String summary;
         @InvocableVariable(label='Number of documents approved')
-        global Integer approvedCount;
-        @InvocableVariable(label='What happened, in a sentence')
-        global String summary;
+        public Integer approvedCount;
     }
 
     @InvocableMethod(
         label='Approve pending loan documents'
         description='Approves all pending documents for a loan by updating approvalStatus from Pending to Approved.'
     )
-    global static List<Result> approve(List<Request> requests) {
+    public static List<Result> approve(List<Request> requests) {
         List<Result> results = new List<Result>();
         for (Request req : requests) {
-            Outcome outcome = approveOne(
-                req == null ? null : req.loanReference
-            );
-            results.add(outcome.result);
+            results.add(approveOne(req));
         }
         return results;
     }
 
-    private class Outcome {
-        private Result result;
-        private Integer status;
-        private String error;
-    }
+    private static Result approveOne(Request req) {
+        Result result = new Result();
+        result.approvedCount = 0;
 
-    private static Outcome refuse(Integer status, String error, String detail) {
-        Outcome outcome = new Outcome();
-        outcome.status = status;
-        outcome.error = error;
-        outcome.result = new Result();
-        outcome.result.approvedCount = 0;
-        outcome.result.summary = detail;
-        return outcome;
-    }
-
-    private static Outcome resolved(Integer approvedCount, String summary) {
-        Outcome outcome = new Outcome();
-        outcome.status = 200;
-        outcome.result = new Result();
-        outcome.result.approvedCount = approvedCount;
-        outcome.result.summary = summary;
-        return outcome;
-    }
-
-    private static Outcome approveOne(String loanReference) {
-        if (String.isBlank(loanReference)) {
-            return refuse(400, 'invalid_request', 'I need to know which loan to approve documents for.');
+        if (req == null || String.isBlank(req.loanReference)) {
+            result.summary = 'I need to know which loan to approve documents for.';
+            return result;
         }
 
-        LosLoanPackage.Located found = LosLoanPackage.locate(loanReference);
-        if (found.loan == null || !canRead(found.loan.Id)) {
-            return refuse(404, 'loan_not_found', 'I could not find a loan matching "' + loanReference.trim() + '".');
+        LosLoanPackage.Located found = LosLoanPackage.locate(req.loanReference.trim());
+        if (found.loan == null) {
+            result.summary = 'I could not find a LOS loan matching "' + req.loanReference.trim() + '".';
+            return result;
         }
         if (String.isBlank(found.folderId)) {
-            return refuse(409, 'no_box_folder', 'This loan has no document folder yet, so there are no documents to approve.');
+            result.summary = 'Loan ' + found.loan.Loan_ID__c + ' has no Box folder, so there are no documents to approve.';
+            return result;
         }
 
-        String token = LosBoxAuth.parentToken();
-        if (String.isBlank(token)) {
-            return refuse(500, 'box_not_configured', 'Box did not issue a token; this is a configuration problem, not something to retry.');
-        }
+        try {
+            String token = LosBoxAuth.parentToken();
+            Set<String> fileIds = LosLoanPackage.documentIdsFor(req.loanReference.trim());
 
-        // Get all documents in the loan folder
-        Set<String> documentIds = LosLoanPackage.documentIdsFor(String.valueOf(found.loan.Id));
-        if (documentIds == null || documentIds.isEmpty()) {
-            return resolved(0, 'No documents found to approve.');
-        }
-
-        // Approve all documents with approvalStatus="Pending"
-        Integer approvedCount = 0;
-
-        for (String fileId : documentIds) {
-            FileMetadata meta = getFileMetadata(token, fileId);
-            if (meta == null) {
-                continue;
+            if (fileIds == null || fileIds.isEmpty()) {
+                result.summary = 'No documents found for ' + found.loan.Loan_ID__c + '.';
+                return result;
             }
 
-            // Approve if currently pending
-            if ('Pending'.equalsIgnoreCase(meta.approvalStatus)) {
-                if (updateApprovalStatus(token, fileId, 'Approved')) {
-                    approvedCount++;
+            Integer approvedCount = 0;
+            for (String fileId : fileIds) {
+                // Get current metadata
+                Map<String, Object> meta = getMetadata(token, fileId);
+                if (meta != null && 'Pending'.equalsIgnoreCase((String)meta.get('approvalStatus'))) {
+                    if (updateApprovalStatus(token, fileId, 'Approved')) {
+                        approvedCount++;
+                    }
                 }
             }
-        }
 
-        String summary = 'Approved ' + approvedCount + ' document' + (approvedCount == 1 ? '' : 's') + '.';
-        return resolved(approvedCount, summary);
-    }
-
-    private static Boolean canRead(Id loanId) {
-        List<LOS_Loan__c> visible = [SELECT Id FROM LOS_Loan__c WHERE Id = :loanId LIMIT 1];
-        return !visible.isEmpty();
-    }
-
-    private class FileMetadata {
-        String fileId;
-        String documentType;
-        String approvalStatus;
-    }
-
-    /**
-     * Get metadata for a single file.
-     */
-    private static FileMetadata getFileMetadata(String token, String fileId) {
-        HttpRequest req = new HttpRequest();
-        req.setEndpoint(METADATA_ENDPOINT + fileId + '/metadata/' + TEMPLATE_SCOPE + '/' + TEMPLATE_KEY);
-        req.setMethod('GET');
-        req.setHeader('Authorization', 'Bearer ' + token);
-        req.setTimeout(30000);
-
-        HttpResponse res = send(req);
-        if (res == null || res.getStatusCode() != 200) {
-            return null;
-        }
-
-        try {
-            Map<String, Object> metadata = (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
-            FileMetadata meta = new FileMetadata();
-            meta.fileId = fileId;
-            meta.documentType = (String) metadata.get('documentType');
-            meta.approvalStatus = (String) metadata.get('approvalStatus');
-            return meta;
+            result.approvedCount = approvedCount;
+            result.summary = 'Approved ' + approvedCount + ' document' + (approvedCount == 1 ? '' : 's')
+                + ' for ' + found.loan.Loan_ID__c + '.';
+            return result;
         } catch (Exception e) {
-            System.debug(LoggingLevel.WARN, 'LOS approve: failed to parse metadata for ' + fileId + ': ' + e.getMessage());
-            return null;
+            System.debug(LoggingLevel.WARN, 'LOS approve documents failed: ' + e.getMessage());
+            result.summary = 'Could not approve documents: ' + e.getMessage();
+            return result;
         }
     }
 
-    /**
-     * Update the approvalStatus field on a file's metadata.
-     */
-    private static Boolean updateApprovalStatus(String token, String fileId, String newStatus) {
-        HttpRequest req = new HttpRequest();
-        req.setEndpoint(METADATA_ENDPOINT + fileId + '/metadata/' + TEMPLATE_SCOPE + '/' + TEMPLATE_KEY);
-        req.setMethod('PUT');
-        req.setHeader('Authorization', 'Bearer ' + token);
-        req.setHeader('Content-Type', 'application/json-patch+json');
-        req.setTimeout(30000);
+    private static Map<String, Object> getMetadata(String token, String fileId) {
+        try {
+            HttpRequest req = new HttpRequest();
+            req.setEndpoint('https://api.box.com/2.0/files/' + fileId + '/metadata/enterprise/losDocument');
+            req.setMethod('GET');
+            req.setHeader('Authorization', 'Bearer ' + token);
+            req.setTimeout(30000);
 
-        List<Object> operations = new List<Object>{
-            new Map<String, Object>{
-                'op' => 'add',
-                'path' => '/approvalStatus',
-                'value' => newStatus
+            HttpResponse res = new Http().send(req);
+            if (res.getStatusCode() == 200) {
+                return (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
             }
-        };
-        req.setBody(JSON.serialize(operations));
-
-        HttpResponse res = send(req);
-        if (res == null || res.getStatusCode() != 200) {
-            System.debug(LoggingLevel.WARN, 'LOS approve: metadata update for ' + fileId + ' returned ' +
-                (res == null ? 'no response' : res.getStatusCode() + ' ' + res.getBody()));
-            return false;
+            return null;
+        } catch (Exception e) {
+            System.debug('Failed to get metadata for file ' + fileId + ': ' + e.getMessage());
+            return null;
         }
-
-        return true;
     }
 
-    private static HttpResponse send(HttpRequest req) {
+    private static Boolean updateApprovalStatus(String token, String fileId, String status) {
         try {
-            return new Http().send(req);
+            HttpRequest req = new HttpRequest();
+            req.setEndpoint('https://api.box.com/2.0/files/' + fileId + '/metadata/enterprise/losDocument');
+            req.setMethod('PUT');
+            req.setHeader('Authorization', 'Bearer ' + token);
+            req.setHeader('Content-Type', 'application/json-patch+json');
+            req.setTimeout(30000);
+
+            List<Map<String, Object>> operations = new List<Map<String, Object>>{
+                new Map<String, Object>{
+                    'op' => 'replace',
+                    'path' => '/approvalStatus',
+                    'value' => status
+                }
+            };
+            req.setBody(JSON.serialize(operations));
+
+            HttpResponse res = new Http().send(req);
+            return res.getStatusCode() == 200;
         } catch (Exception e) {
-            System.debug(LoggingLevel.WARN, 'LOS approve: request to ' + req.getEndpoint() + ' failed: ' + e.getMessage());
-            return null;
+            System.debug('Failed to update approval status for file ' + fileId + ': ' + e.getMessage());
+            return false;
         }
     }
 }

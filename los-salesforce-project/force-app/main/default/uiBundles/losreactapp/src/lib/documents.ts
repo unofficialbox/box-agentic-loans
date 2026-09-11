@@ -11,15 +11,37 @@ export interface DocumentFacts {
   changedAt?: string;
   /** Who Box records as having made that change. */
   changedBy?: string;
-  /** Draft, Internal, Approved, Executed -- whatever the losDocument instance carries. */
+  /** Pending, Approved, Rejected, Not Required -- whatever the losDocument approvalStatus carries. */
   status?: string;
   /** True only when the document has actually been approved, not merely drafted. */
   approved: boolean;
 }
 
+/** Signing types group presentation only; they never authorize loan closure. */
+const signingStatuses: Record<string, string> = {
+  "Commitment Letter": "Signing document",
+  "Signed Commitment Letter": "Signed",
+  "Signing Log": "Completed",
+};
+
+function signingStatus(file: BoxFolderItem): string | undefined {
+  const type = file.metadata?.enterprise?.losDocument?.documentType?.trim();
+  if (type && Object.hasOwn(signingStatuses, type)) return signingStatuses[type];
+  // Compatibility for older or not-yet-classified outputs. Never infer completion
+  // from a filename, or override a specific supporting-document classification.
+  if (!type || type === "Other" || type === "Unclassified") {
+    if (/commitment[ _-]letter|signing[ _-]log/i.test(file.name)) return "Signing document";
+  }
+  return undefined;
+}
+
+export function isSigningDocument(file: BoxFolderItem): boolean {
+  return signingStatus(file) !== undefined;
+}
+
 export function documentFacts(file: BoxFolderItem): DocumentFacts {
   const los = file.metadata?.enterprise?.losDocument;
-  const status = los?.approvalStatus;
+  const status = signingStatus(file) ?? los?.approvalStatus;
   return {
     changedAt: file.content_modified_at || file.modified_at,
     changedBy: file.modified_by?.name,
@@ -64,10 +86,11 @@ export interface DocumentTotals {
 }
 
 export function documentTotals(files: BoxFolderItem[]): DocumentTotals {
-  const facts = files.map(documentFacts);
+  const reviewFiles = files.filter((file) => !isSigningDocument(file));
+  const facts = reviewFiles.map(documentFacts);
   const dates = facts.map((f) => f.changedAt).filter((d): d is string => Boolean(d));
   return {
-    documents: files.length,
+    documents: reviewFiles.length,
     approved: facts.filter((f) => f.approved).length,
     open: facts.filter((f) => !f.approved).length,
     lastChangedAt: dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0],
@@ -83,7 +106,7 @@ export function documentTotals(files: BoxFolderItem[]): DocumentTotals {
  */
 export function byDocumentType(files: BoxFolderItem[]): Array<{ label: string; value: number }> {
   const counts = new Map<string, number>();
-  for (const file of files) {
+  for (const file of files.filter((file) => !isSigningDocument(file))) {
     const label = file.metadata?.enterprise?.losDocument?.documentType?.trim() || "Unclassified";
     counts.set(label, (counts.get(label) || 0) + 1);
   }
@@ -95,7 +118,7 @@ export function byDocumentType(files: BoxFolderItem[]): Array<{ label: string; v
 /**
  * Documents by review status, largest first, ties broken on label.
  *
- * Reads the same `versionStatus` the table's pill and the timeline read, so the three
+ * Reads the same `approvalStatus` the table's pill and the timeline read, so the three
  * cannot disagree about what state a document is in. A document with no losDocument
  * instance is "Unclassified" rather than dropped -- the point of the chart is to show how
  * much of a package has actually landed, and silently omitting the untagged ones would
@@ -103,7 +126,7 @@ export function byDocumentType(files: BoxFolderItem[]): Array<{ label: string; v
  */
 export function byDocumentStatus(files: BoxFolderItem[]): Array<{ label: string; value: number }> {
   const counts = new Map<string, number>();
-  for (const file of files) {
+  for (const file of files.filter((file) => !isSigningDocument(file))) {
     const label = documentFacts(file).status?.trim() || "Unclassified";
     counts.set(label, (counts.get(label) || 0) + 1);
   }

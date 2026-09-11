@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { TableSkeleton, WorkspaceSkeleton } from "./WorkspaceSkeleton";
+import { TableSkeleton } from "./WorkspaceSkeleton";
 import { ExternalLink, Upload } from "lucide-react";
 import { LOS_CONFIG } from "../config";
 import { DataError } from "./DataError";
@@ -23,12 +23,14 @@ export function BoxWorkspace({
   onFailed,
   previewFile,
   onClosePreview,
+  onSelectFile,
 }: {
   context: LosPageContext;
   /** File to preview - when set, opens preview immediately */
   previewFile?: BoxFolderItem | null;
   /** Called when preview is closed */
   onClosePreview?: () => void;
+  onSelectFile?: (file: BoxFolderItem) => void;
   /**
    * Hands the loaded listing up so the timeline beside this panel is built from the same
    * array, already filtered. A second fetch could disagree with what the table shows.
@@ -217,6 +219,7 @@ export function BoxWorkspace({
           recordId={context.salesforceRecordId}
           previewFile={previewFile}
           onClosePreview={onClosePreview}
+          onSelectFile={onSelectFile}
         />
       </Suspense>
     </section>

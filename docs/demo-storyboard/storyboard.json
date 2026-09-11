@@ -1,0 +1,221 @@
+[
+  {
+    "number": 1,
+    "title": "Start with the business need",
+    "phase": "TELL",
+    "persona": "Presenter",
+    "screenshot": "screenshots/current-application.png",
+    "origin": "Fresh capture · current portal · September 10, 2026",
+    "tell": "Harborview needs warehouse financing; the bank needs evidence and a clear decision.",
+    "show": "Follow the borrower, then the loan officer.",
+    "land": "Shorten the path from application to funding.",
+    "click": "Portal → Start an application → pause on the form.",
+    "details": "Box holds the documents; Salesforce holds the loan record; Claude guides the officer."
+  },
+  {
+    "number": 2,
+    "title": "Create the application",
+    "phase": "SHOW",
+    "persona": "Dana Whitfield · Borrower",
+    "screenshot": "screenshots/current-application.png",
+    "origin": "Fresh capture · form only; no application submitted in this capture",
+    "tell": "Start with the business need.",
+    "show": "Enter $4.8 million, 120 months, and real estate collateral.",
+    "land": "Reduce intake rework with one shared loan record.",
+    "click": "Commercial Real Estate → 4,800,000 → 120 months → purpose → Real Estate → Submit application.",
+    "details": "Keep the newly created loan selected for the rest of the demo."
+  },
+  {
+    "number": 3,
+    "title": "Upload the documents",
+    "phase": "SHOW",
+    "persona": "Dana Whitfield · Borrower",
+    "screenshot": "screenshots/10-upload-success.png",
+    "origin": "Earlier September 10 rehearsal · upload success · older table styling",
+    "tell": "Deliver the package without labeling every file manually.",
+    "show": "Upload the documents; watch classification update the checklist.",
+    "land": "Reduce document chasing with a complete loan file.",
+    "click": "Upload document → select six supporting PDFs → Upload → wait for success → Close. Add the markup.",
+    "details": "Upload six supporting PDFs plus the marked-up term sheet. Confirm the files appear on the same Salesforce loan."
+  },
+  {
+    "number": 4,
+    "title": "Preview the appraisal",
+    "phase": "SHOW",
+    "persona": "Dana Whitfield · Borrower",
+    "screenshot": "screenshots/current-appraisal-preview.png",
+    "origin": "Fresh capture · current loan appraisal preview",
+    "tell": "Keep the supporting evidence within reach.",
+    "show": "Open the appraisal directly in the workspace.",
+    "land": "Resolve questions faster with the source in view.",
+    "click": "harborview-appraisal-2026.pdf → inspect valuation → All documents.",
+    "details": "The appraisal values the property at $5.65 million and excludes personal property."
+  },
+  {
+    "number": 5,
+    "title": "Find critical risks",
+    "phase": "SHOW",
+    "persona": "Loan officer · Claude",
+    "screenshot": "screenshots/claude-risk-result.png",
+    "origin": "Claude conversation c7cecfcd-ba6e-4967-bac8-669f54a9d4d9, messages 1–2",
+    "tell": "Find the risky changes first.",
+    "show": "Open the flagged term sheet.",
+    "land": "Prioritize critical risks before they delay closing.",
+    "click": "Claude: “What’s the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?”",
+    "details": "Use the application just created and scope the search to its folder.",
+    "captures": [
+      {
+        "label": "Prompt",
+        "path": "screenshots/claude-risk-prompt.png"
+      },
+      {
+        "label": "Result",
+        "path": "screenshots/claude-risk-result.png"
+      }
+    ]
+  },
+  {
+    "number": 6,
+    "title": "Check credit policy",
+    "phase": "SHOW",
+    "persona": "Credit analyst",
+    "screenshot": "screenshots/claude-policy-result.png",
+    "origin": "Claude conversation c7cecfcd-ba6e-4967-bac8-669f54a9d4d9, messages 3–4",
+    "tell": "Separate borrower requests from bank policy.",
+    "show": "Compare the markup with cited policy requirements.",
+    "land": "Catch policy exceptions before they become costly rework.",
+    "click": "Claude: “Extract loan terms from the marked-up term sheet for that loan and check them against credit policy.”",
+    "details": "Compare borrower requests with cited policy; keep requested and approved terms distinct.",
+    "captures": [
+      {
+        "label": "Prompt",
+        "path": "screenshots/claude-policy-prompt.png"
+      },
+      {
+        "label": "Result",
+        "path": "screenshots/claude-policy-result.png"
+      }
+    ]
+  },
+  {
+    "number": 7,
+    "title": "Confirm record changes",
+    "phase": "SHOW",
+    "persona": "Loan officer",
+    "screenshot": "screenshots/current-workspace.png",
+    "origin": "Fresh capture · current record summary; not proof of a write in this capture",
+    "tell": "Analysis should not silently change the record.",
+    "show": "Review the proposed values, confirm the write, then check the result.",
+    "land": "Reduce rekeying errors while keeping people in control.",
+    "click": "Claude: “Validate those terms against the Salesforce record.” Review, then: “Apply only the reviewed amount, rate and term to this loan, confirm.”",
+    "details": "Apply only the reviewed amount, rate and term. Re-read the record to confirm the changes."
+  },
+  {
+    "number": 8,
+    "title": "Compare prior loans",
+    "phase": "SHOW",
+    "persona": "Credit analyst",
+    "screenshot": "screenshots/claude-precedent-result.png",
+    "origin": "Claude conversation c7cecfcd-ba6e-4967-bac8-669f54a9d4d9, messages 9–10",
+    "tell": "Check what this borrower previously accepted.",
+    "show": "Compare the executed agreements with today’s markup.",
+    "land": "Strengthen credit decisions with relevant precedent.",
+    "click": "Claude: “Compare the covenant terms across Harborview’s prior executed loans and this 2026 markup.”",
+    "details": "Compare covenant thresholds, test frequency, guaranties and signatories.",
+    "captures": [
+      {
+        "label": "Prompt",
+        "path": "screenshots/claude-precedent-prompt.png"
+      },
+      {
+        "label": "Result",
+        "path": "screenshots/claude-precedent-result.png"
+      }
+    ]
+  },
+  {
+    "number": 9,
+    "title": "Record approval",
+    "phase": "SHOW",
+    "persona": "Credit approver",
+    "screenshot": "screenshots/current-workspace.png",
+    "origin": "Fresh capture · six documents approved and loan Approved; decisions not performed in this capture",
+    "tell": "Document review and loan approval are separate decisions.",
+    "show": "Check both statuses before proceeding.",
+    "land": "Keep the loan moving with accountable approvals.",
+    "click": "Review document statuses → confirm the intended approval scope → verify authorized loan approval → refresh workspace.",
+    "details": "Document approval and loan approval are separate. Confirm both before sending for signature."
+  },
+  {
+    "number": 10,
+    "title": "Generate and send the letter",
+    "phase": "SHOW",
+    "persona": "Loan officer",
+    "screenshot": "screenshots/current-merged-letter.png",
+    "origin": "Fresh capture · successfully populated retry PDF in Box",
+    "tell": "Turn approved terms into a populated letter and a governed signature request.",
+    "show": "Continue the combined generation-and-signing recommendation.",
+    "land": "Reduce paperwork and accelerate borrower acceptance.",
+    "click": "Claude: Generate the commitment letter for this loan and send it for signature using the confirmed signer. → continue or confirm the recommended action when needed → inspect the exact generated output",
+    "details": "The assistant checks the generated letter before sending it to the confirmed signer.",
+    "captures": [
+      {
+        "label": "Confirm and send",
+        "path": "screenshots/claude-signature-confirmation.png"
+      },
+      {
+        "label": "Commitment letter",
+        "path": "screenshots/current-merged-letter.png"
+      }
+    ]
+  },
+  {
+    "number": 11,
+    "title": "Sign the letter",
+    "phase": "SHOW",
+    "persona": "Dana Whitfield · Borrower",
+    "screenshot": "screenshots/26-full-canvas-signing.png",
+    "origin": "Earlier September 10 rehearsal · full-canvas signing before submission",
+    "tell": "The borrower explicitly opens the signing ceremony.",
+    "show": "Dana chooses Review and sign to open the signing workspace.",
+    "land": "Make signing convenient and speed up closing.",
+    "click": "Portal: Review and sign → accept disclosure → Begin → enter signature → Sign & Finish → return to workspace",
+    "details": "Box confirms completion before the portal closes the signing pane and updates the loan."
+  },
+  {
+    "number": 12,
+    "title": "Open the signed documents",
+    "phase": "SHOW",
+    "persona": "Dana Whitfield · Borrower",
+    "screenshot": "screenshots/step-12-signed-letter.png",
+    "origin": "Live borrower portal capture: retained signed letter and Closed loan.",
+    "tell": "Signing completes this loan, and the borrower keeps access to the records.",
+    "show": "Verify Closed, then open the signed commitment letter and signing log.",
+    "land": "Give borrowers lasting access to their signed records.",
+    "click": "Wait for the workspace to return → verify loan status Closed → open Signed Commitment Letter → return to documents → open Signing Log → refresh and verify both remain",
+    "details": "The loan is Closed. The signed letter and signing log remain available; supporting-document review totals stay separate.",
+    "evidence": [
+      {
+        "label": "Signed commitment letter preview",
+        "path": "screenshots/current-signed-letter-preview.png"
+      },
+      {
+        "label": "Signing log preview",
+        "path": "screenshots/current-signing-log-preview.png"
+      }
+    ]
+  },
+  {
+    "number": 13,
+    "title": "Close the story",
+    "phase": "TELL",
+    "persona": "Presenter",
+    "screenshot": "screenshots/current-closed-workspace.png",
+    "origin": "Live deployed portal: one consolidated document list and Closed loan.",
+    "tell": "We started with an application and a document package.",
+    "show": "Review the Closed loan, document list, and retained signing history.",
+    "land": "Close loans faster with traceable decisions and documents.",
+    "click": "Return to workspace → point to Closed, Documents, and Document history.",
+    "details": "Box connects the evidence, Salesforce records the decisions, and people authorize the actions."
+  }
+]

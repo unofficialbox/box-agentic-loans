@@ -141,6 +141,10 @@ global with sharing class LosBoxTokenService {
             TokenResponse payload;
             if (borrower) {
                 List<Object> visible = LosBorrowerDocuments.listFiles(folderId, parentToken);
+                if (String.isNotBlank(recordId)) {
+                    LOS_Loan__c receipt = [SELECT Signing_Receipt__c FROM LOS_Loan__c WHERE Id = :recordId];
+                    LosBorrowerDocuments.addSignedFiles(visible, folderId, parentToken, receipt.Signing_Receipt__c);
+                }
                 if (String.isNotBlank(fileId)) {
                     if (!LosBorrowerDocuments.containsFile(visible, fileId)) {
                         fail(response, 403, 'file_not_allowed', 'That document is not available in this loan workspace.');
@@ -185,6 +189,11 @@ global with sharing class LosBoxTokenService {
      *
      * `without sharing` only for the managed-package mapping after loan authorization. The caller is authorized against the loan before entering this helper.
      */
+    public static String mappedFolder(Id recordId) {
+        if (LosWorkspaceAccess.loan(recordId) == null) return null;
+        return new FolderMapping().forRecord(recordId);
+    }
+
     private without sharing class FolderMapping {
         private String forRecord(Id recordId) {
             try {
