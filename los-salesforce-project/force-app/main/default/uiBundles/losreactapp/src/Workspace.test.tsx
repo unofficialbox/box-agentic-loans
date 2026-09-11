@@ -436,7 +436,7 @@ describe("Where a borrower lands", () => {
     vi.stubGlobal("fetch", apiDouble(borrower, []));
     render(<Workspace />);
     expect(await screen.findByTestId("application-form")).toBeVisible();
-    expect(new URLSearchParams(window.location.search).get("view")).toBe("apply");
+    await waitFor(() => expect(new URLSearchParams(window.location.search).get("view")).toBe("apply"));
     expect(screen.queryByTestId("loans-empty")).not.toBeInTheDocument();
   });
 
@@ -448,7 +448,7 @@ describe("Where a borrower lands", () => {
 
     fireEvent.click(screen.getByTestId("start-application"));
     expect(await screen.findByTestId("application-form")).toBeVisible();
-    expect(new URLSearchParams(window.location.search).get("view")).toBe("apply");
+    await waitFor(() => expect(new URLSearchParams(window.location.search).get("view")).toBe("apply"));
   });
 
   test("a URL that names the list is honoured even with no loans", async () => {
@@ -466,7 +466,7 @@ describe("Where a borrower lands", () => {
     render(<Workspace />);
     expect(await screen.findByTestId("loans-signed-out")).toBeVisible();
     expect(screen.queryByTestId("loans-error")).not.toBeInTheDocument();
-    expect(screen.getByTestId("data-error-signin")).toHaveAttribute("href", "https://example.invalid/login");
+    expect(screen.getByTestId("data-error-signin")).toHaveAttribute("href", "https://example.invalid/login?startURL=%2F");
   });
 
   test("a signed-in reader refused with 403 is told so rather than sent to sign in again", async () => {
@@ -599,4 +599,43 @@ describe("Server-authorized borrower documents", () => {
     expect(screen.queryByText("Loan Officer")).not.toBeInTheDocument();
     expect(fetcher.mock.calls.some(([url]) => String(url).includes("api.box.com"))).toBe(false);
   });
+});
+
+
+test("an expired workspace session replaces API errors with a return-to-loan sign in", async () => {
+  window.history.replaceState({}, "", "/?recordId=a01xx0000009newAAA&loanId=LN-2026-0089");
+  vi.stubGlobal("fetch", apiDouble(borrower, [applicationLoan]));
+  render(<Workspace />);
+  await waitFor(() => expect(screen.getByText("Dana Whitfield")).toBeVisible());
+  vi.stubGlobal("fetch", apiDouble(guest, { status: 403, body: "Forbidden" }));
+  fireEvent(window, new Event("los:check-session"));
+  const prompt = await screen.findByTestId("workspace-signed-out");
+  expect(prompt).toHaveTextContent("Sign in to continue");
+  const href = screen.getByTestId("data-error-signin").getAttribute("href")!;
+  expect(new URL(href).searchParams.get("startURL")).toBe("/?recordId=a01xx0000009newAAA&loanId=LN-2026-0089");
+  expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
+});
+
+
+test("focus detects an expired identity session and preserves its known sign-in URL", async () => {
+  window.history.replaceState({}, "", "/?recordId=a01xx0000009newAAA");
+  vi.stubGlobal("fetch", apiDouble(borrower, [applicationLoan]));
+  render(<Workspace />);
+  await waitFor(() => expect(screen.getByText("Dana Whitfield")).toBeVisible());
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 401 })));
+  fireEvent(window, new Event("focus"));
+  await screen.findByTestId("workspace-signed-out");
+  expect(screen.getByTestId("data-error-signin")).toHaveAttribute("href", "https://example.invalid/login?startURL=%2F%3FrecordId%3Da01xx0000009newAAA");
+});
+
+
+test("session expiry hides an already loaded loan list", async () => {
+  window.history.replaceState({}, "", "/?view=loans");
+  vi.stubGlobal("fetch", apiDouble(borrower, [applicationLoan]));
+  render(<Workspace />);
+  await screen.findByTestId("loan-row");
+  vi.stubGlobal("fetch", apiDouble(guest, []));
+  fireEvent(window, new Event("focus"));
+  await screen.findByTestId("loans-signed-out");
+  expect(screen.queryByTestId("loan-row")).not.toBeInTheDocument();
 });

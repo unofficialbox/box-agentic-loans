@@ -38,7 +38,7 @@ global with sharing class LosClassifyDocument {
     @TestVisible
     private static final List<String> DOCUMENT_TYPES = new List<String>{
         'Application', 'Financial Statement', 'Tax Return', 'Bank Statement', 'Appraisal',
-        'Term Sheet', 'Commitment Letter', 'Loan Agreement', 'Insurance', 'Credit Memo',
+        'Term Sheet', 'Commitment Letter', 'Signed Commitment Letter', 'Signing Log', 'Loan Application', 'Other', 'Loan Agreement', 'Insurance', 'Credit Memo',
         'Environmental Report'
     };
     @TestVisible

@@ -219,3 +219,26 @@ python3 scripts/cleanup_demo.py --status Application --yes
 python3 scripts/cleanup_demo.py --borrower "Test Company" --dry-run
 python3 scripts/cleanup_demo.py --borrower "Test Company" --yes
 ```
+
+
+### Box Sign completion
+
+Embedded requests omit `redirect_url`: Box redirects inside the signing frame, so a full workspace return URL nests the portal. The outer workspace polls the server’s Box-backed signing status and closes the frame only after confirmed completion. `Borrower_Portal_URL__c` is no longer required for signature creation. Existing requests retain their original redirect; return with **Back to documents** and refresh if one displays the nested portal.
+
+### Signing document classification
+
+Keep these exact values in the `losDocument.documentType` enum and Box Extract instructions:
+
+| Document type | Portal label | Supporting-document charts |
+|---|---|---|
+| Commitment Letter | Signing document | Excluded |
+| Signed Commitment Letter | Signed | Excluded |
+| Signing Log | Completed | Excluded |
+
+Commitment letters are separate from term sheets. Classify actual signature evidence as a signed commitment letter; blank signature fields or a prefilled date do not prove completion. Signing logs are audit trails, not loan agreements.
+
+The document list and history retain all three types. Metadata takes precedence; filename matching is a compatibility fallback for unclassified/Other files and never proves completion. Existing files may need reclassification; changing Extract instructions does not itself update their stored metadata.
+
+These are display classifications, not authority to close a loan. The completion endpoint verifies `signed` with Box, retains the resulting signed files and signing log against the loan, then sets Salesforce status to **Closed**. The portal reconciles outstanding requests on workspace entry and during signing. The server sets the verified signed copies and log to their final document types, version Executed and signature status Signed before closure. It retains the request ID and exact artifact references; later visits fetch only those files and verify that they still belong to the mapped loan folder. Closed does not imply that the supporting documents were approved. Servicing is never regressed to Closed.
+
+The storyboard source is `docs/demo-storyboard/storyboard.json`. Regenerate its Markdown and HTML with `python3 scripts/build_demo_storyboard.py` after editing steps or screenshot provenance.

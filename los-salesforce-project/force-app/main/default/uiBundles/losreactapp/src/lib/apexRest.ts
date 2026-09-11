@@ -45,11 +45,23 @@ export async function apexFetch(path: string, init?: RequestInit): Promise<Respo
     try {
       const sdk = await createDataSDK();
       if (sdk?.fetch) {
-        return sdk.fetch(path, init);
+        return sdk.fetch(path, init).then(observeAuth);
       }
     } catch (error) {
       console.info("[LOS] Platform SDK unavailable for this request; using the bundle API path.", error);
     }
   }
-  return fetch(apexRestUrl(path), init);
+  return apexRead(apexRestUrl(path), init);
+}
+
+/** Only Salesforce failures trigger a session check; Box permission failures do not. */
+export const SESSION_CHECK = "los:check-session";
+function observeAuth(response: Response): Response {
+  if (response.status === 401 || response.status === 403) {
+    window.dispatchEvent(new Event(SESSION_CHECK));
+  }
+  return response;
+}
+export async function apexRead(url: string, init?: RequestInit): Promise<Response> {
+  return observeAuth(await fetch(url, init));
 }

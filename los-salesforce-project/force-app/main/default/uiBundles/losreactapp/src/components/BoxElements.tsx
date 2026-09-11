@@ -100,6 +100,7 @@ export function BoxElements({
   recordId,
   previewFile,
   onClosePreview,
+  onSelectFile,
 }: {
   folderId: string;
   token: string;
@@ -110,6 +111,7 @@ export function BoxElements({
   previewFile?: BoxFolderItem | null;
   /** Called when preview is closed */
   onClosePreview?: () => void;
+  onSelectFile?: (file: BoxFolderItem) => void;
 }) {
   const [selected, setSelected] = useState<BoxFolderItem | null>(null);
 
@@ -194,7 +196,7 @@ export function BoxElements({
           </div>
         ) : (
           <div className="box-table-host">
-            <BoxDocumentTable files={files} onSelect={setSelected} />
+            <BoxDocumentTable files={files} onSelect={onSelectFile ?? setSelected} />
           </div>
         )}
       </section>

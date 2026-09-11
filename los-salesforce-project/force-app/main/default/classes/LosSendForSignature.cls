@@ -134,22 +134,37 @@ public with sharing class LosSendForSignature {
                 result.prepareUrl = parsed.get('prepare_url') == null
                     ? null : String.valueOf(parsed.get('prepare_url'));
 
-                // Extract embed URL from first signer
+                // Box may return the sender first. Use the requested signer's iframe URL.
                 List<Object> signers = (List<Object>) parsed.get('signers');
-                if (signers != null && !signers.isEmpty()) {
-                    Map<String, Object> firstSigner = (Map<String, Object>) signers[0];
-                    result.embedUrl = firstSigner.get('embed_url') == null
-                        ? null : String.valueOf(firstSigner.get('embed_url'));
+                if (signers != null) {
+                    for (Object entry : signers) {
+                        Map<String, Object> signer = (Map<String, Object>)entry;
+                        if (req.signerEmail.trim().equalsIgnoreCase((String)signer.get('email'))
+                            && 'signer'.equals(signer.get('role'))) {
+                            result.embedUrl = (String)signer.get('iframeable_embed_url');
+                            break;
+                        }
+                    }
 
                     // Store embed URL on the loan record for borrower portal access
                     if (result.embedUrl != null) {
                         try {
                             found.loan.Sign_Embed_URL__c = result.embedUrl;
+                            found.loan.Sign_Request_ID__c = result.requestId;
                             update found.loan;
                         } catch (Exception updateEx) {
                             System.debug(LoggingLevel.WARN, 'Could not update embed URL: ' + updateEx.getMessage());
+                            result.summary = 'Box Sign created request ' + result.requestId
+                                + ', but its signing URL could not be saved to the loan. Do not create a duplicate request.';
+                            return result;
                         }
                     }
+                }
+
+                if (String.isBlank(result.embedUrl)) {
+                    result.summary = 'Box Sign created request ' + result.requestId
+                        + ', but has not returned an iframe signing URL for the requested signer. Do not create a duplicate request.';
+                    return result;
                 }
 
                 result.prepared = true;
@@ -191,4 +206,5 @@ public with sharing class LosSendForSignature {
                 : req.subject.trim()
         };
     }
+
 }

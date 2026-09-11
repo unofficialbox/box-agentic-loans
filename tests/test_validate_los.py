@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shutil
 import sys
 import tempfile
 import unittest
@@ -19,6 +20,20 @@ SPEC.loader.exec_module(validation)
 
 
 class LOSValidationTests(unittest.TestCase):
+    def test_borrower_projection_rejects_guests_first(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            base = Path("los-salesforce-project/force-app/main/default")
+            for relative in [base / "classes/LosLoanListService.cls", base / "permissionsets/LOS_Borrower_Portal.permissionset-meta.xml"]:
+                target = root / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(ROOT / relative, target)
+            validation.check_soql_field_permissions(root)
+            service = root / base / "classes/LosLoanListService.cls"
+            service.write_text(service.read_text().replace("response.statusCode = 401", "response.statusCode = 200"))
+            with self.assertRaisesRegex(validation.ValidationError, "Guest rejection"):
+                validation.check_soql_field_permissions(root)
+
     def test_json_schema_and_link_checks_cover_repository_sources(self) -> None:
         json_detail = validation.check_json_and_schemas()
         link_detail = validation.check_local_links()

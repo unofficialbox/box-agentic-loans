@@ -22,7 +22,9 @@ export async function fetchIdentity(): Promise<Loaded<LosIdentity>> {
   try {
     const response = await fetch(apexRestUrl("/services/apexrest/los/whoami"), {
       headers: { Accept: "application/json" },
+      cache: "no-store",
     });
+    if (response.status === 401) return { ok: true, value: { isGuest: true } };
     if (!response.ok) {
       return failed(`Salesforce returned ${response.status} for the signed-in user.`);
     }
@@ -44,4 +46,11 @@ export function initialsFor(name: string): string {
   if (parts.length === 0) return "?";
   const letters = parts.length === 1 ? [parts[0][0]] : [parts[0][0], parts[parts.length - 1][0]];
   return letters.join("").toUpperCase();
+}
+
+/** Keep the return target on this site; never accept a caller-supplied redirect. */
+export function signInReturnUrl(loginUrl: string): string {
+  const url = new URL(loginUrl, window.location.origin);
+  url.searchParams.set("startURL", window.location.pathname + window.location.search + window.location.hash);
+  return url.href;
 }

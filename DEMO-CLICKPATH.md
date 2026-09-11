@@ -98,7 +98,7 @@ Expect both connectors listed under Context in the session. Box must offer folde
 sf data query -o <alias> -q "SELECT Loan_ID__c, Status__c FROM LOS_Loan__c WHERE Borrower__c='Harborview Logistics' ORDER BY Loan_ID__c"
 ```
 
-Expect LN-2023-0311 Closed, LN-2025-0148 Closed, and the most recent loan (e.g., LN-2026-0042 or higher) in Approved status. After running Beat 1, you'll have a new Application-status loan - manually update its status to Approved before running Beats 2-5.
+Expect LN-2023-0311 Closed, LN-2025-0148 Closed, and the most recent loan (e.g., LN-2026-0042 or higher) in Approved status. After Beat 1, the new loan remains Application. Record the authorized credit decision through the normal approval workflow before signature preparation; upload or extracted terms alone do not approve a loan.
 
 **P5. Box: required documents with metadata.** See [docs/DOCUMENTS-SETUP.md](docs/DOCUMENTS-SETUP.md) for explicit upload instructions:
 - **Latest Harborview loan** needs: Term sheet with borrower markup (policyRisk="Critical"), optional financials/appraisal
@@ -183,30 +183,26 @@ Expect `listLoans` or `getLoanPackage` for the two closed loans (LN-2023-0311, L
 
 Land it: Harborview's markup regresses two positions their own CFO agreed, in writing, twice.
 
-### 5. Put the terms on paper, then stop (to 9:20)
+### 5. Generate the letter and send for signature (to 9:20)
 
-Box generates; Salesforce refuses.
+One request: Box generates the letter, the assistant checks the exact output in the background, and Salesforce governs signature preparation.
 
 ```text
-Generate the commitment letter for this loan.
+Generate the commitment letter for this loan and send it for signature using the confirmed signer.
 ```
 
-Expect `getLoanPackage` for the record and folder, then `create_docgen_batch` with template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c` into the loan folder with the letter's fields filled from beats 3 and 4. Doc Gen is asynchronous: follow the [Doc Gen contract](docs/DOCGEN-GUIDE.md), read the matching batch job until `completed`, then inspect and preview its exact `output_file.id`. Stop on job warnings, unresolved tags, or incorrect loan terms. Do not select a similarly named file through metadata search; a previous failed output may still exist. Expect borrower and entity, amount, rate, term, the covenants at issue, the approved exceptions, Credit Risk as owner, the precedent, and on its face that it is a draft pending Credit Committee.
+Expect `getLoanPackage` for the record and folder, then `create_docgen_batch` with template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c` into the loan folder with the letter's fields filled from beats 3 and 4. Doc Gen is asynchronous: follow the [Doc Gen contract](docs/DOCGEN-GUIDE.md), use the output explicitly associated with the current generation response or its matching job, then check and preview that exact file in the background. No separate manual job-status validation step is needed when the exact populated output is available. Stop on job warnings, unresolved tags, or incorrect loan terms. Do not select a similarly named file through metadata search; a previous failed output may still exist. Expect borrower and entity, amount, rate, term, the covenants at issue, the approved exceptions, Credit Risk as owner, the precedent, and approval wording consistent with the actual recorded decision. If the letter still says draft pending Credit Committee, resolve that conflict before sending.
 
 If the Box connector refuses Doc Gen: the Box Admin Console must have the Doc Gen MCP tools enabled and the connector reconnected afterwards (docs/SETUP.md §5a).
 
-```text
-Send the commitment letter for signature.
-```
-
-Expect `prepareSignatureRequest` to be called and succeed. The loan's Approved status passes the state check (`SIGNABLE = Approved, Commitment`). The sign request is created with:
+Continue to `prepareSignatureRequest` with the same checked output and confirmed signer, without a second prompt or repeat authorization. Report success only if the action succeeds. The loan's Approved status passes the state check (`SIGNABLE = Approved, Commitment`). The sign request is created with:
 - `is_document_preparation_needed = false` (tags pre-placed in template)
 - `embed_url_external_user_id` = signer email (for embedded signing)
 - Embed URL stored on `LOS_Loan__c.Sign_Embed_URL__c`
 
 **What changed from old flow:** No prepare URL, no field placement. The borrower signs immediately in beat 6 via embedded iframe in their portal. Signature and date fields are pre-placed using Box Sign tags in the Doc Gen template.
 
-If the assistant declines without calling the action, the beat has not happened. Say "call it anyway and show me what it returns".
+Stop only for a concrete generation, content, approval, or signer problem. Report the issue; do not bypass the action’s eligibility guard.
 
 ### 6. The same platform, scoped to the other side (private window, to 11:00)
 
@@ -218,15 +214,16 @@ Sign in as Dana Whitfield with the password from P6. Use the login path: `/loans
 
 Expect the header to name her, Dana Whitfield · Harborview Logistics, above the three seeded Harborview loans plus the beat 1 application, and no Pinecrest. Same code, different identity, different rows: a Salesforce sharing set on the borrower account, with upload-only folder access and separately authorized per-file preview tokens.
 
-Open the 2026 loan. **Expect to see the embedded Box Sign iframe** at the top of the workspace with the commitment letter ready to sign. The signature and date fields are interactive (converted from Box Sign tags). 
+Open the current loan. A **Review and sign** alert opens Box Sign in the full workspace canvas only when clicked. The signature and date fields are interactive.
 
 **Optional: Complete the signature flow in the demo**
 - Click signature field → draw or type signature
 - Date auto-fills when signed
 - Click "Finish" → document signed
-- Expect success message, iframe disappears, workspace refreshes
+- Wait for Box-confirmed completion and finalized outputs. The iframe closes and the workspace refreshes to **Closed**.
+- Open the **Signed Commitment Letter** and **Signing Log** from the full document list. Both remain in history after refresh and are excluded from supporting-document approval charts.
 
-Compare the document inventory with the officer package: the server omits Internal and unclassified documents and grants preview access one authorized file at a time, and her LTV, DSCR and risk rating are not in the projection at all.
+Compare the document inventory with the officer package: the server omits Internal and Bank Only documents and grants preview access one authorized file at a time, and her LTV, DSCR and risk rating are not in the projection at all.
 
 There is no Copilot on this page. A Service Agent runs as its own user and takes the loan name from the conversation, so it could be asked about another borrower's loan; it was left off rather than left for someone to find.
 
@@ -264,5 +261,3 @@ Every run of beat 1 creates a real `LOS_Loan__c` in Application status and a rea
 - **The tagging on seeded files is manual.** Portal uploads are classified by Box AI as they land; the seeded Harborview files were tagged by the seed script and by hand. A metadata cascade policy on the loan folder is what would make it survive the next loan.
 
 **Pre-seeded loans:** LN-2023-0311 (Harborview, Closed), LN-2025-0148 (Harborview, Closed), Pinecrest LN-2026-0088 (different borrower). Each rehearsal of Beat 1 creates a new Harborview loan in Application status that becomes the demo loan for Beats 2-5. Use `python3 scripts/cleanup_demo.py` to remove test loans between presentations.
-
-The borrower’s Documents table lists supporting files and signing artifacts once, alongside any missing requirements. Signed Commitment Letter and Signing Log remain accessible without adding to supporting-document approval totals.

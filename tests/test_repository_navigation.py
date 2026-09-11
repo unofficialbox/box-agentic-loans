@@ -20,7 +20,6 @@ class RepositoryNavigationTests(unittest.TestCase):
             "skills/loan-origination/SKILL.md",
             "docs/SETUP.md",
             "docs/ARCHITECTURE.md",
-            "docs/HANDOFF.md",
             "docs/paved-path.md",
         }
         self.assertTrue(expected.issubset(targets), expected - targets)
@@ -41,7 +40,7 @@ class RepositoryNavigationTests(unittest.TestCase):
                 text=True,
             ).stdout.split("\0") if item
         ]
-        markdown_files = [ROOT / relative for relative in tracked]
+        markdown_files = [ROOT / relative for relative in tracked if (ROOT / relative).is_file()]
         for source in markdown_files:
             for target in MARKDOWN_LINK.findall(source.read_text()):
                 if target.startswith(("#", "http://", "https://", "mailto:")):

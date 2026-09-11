@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { LogIn, LogOut } from "lucide-react";
-import { initialsFor, type LosIdentity } from "../lib/identity";
+import { initialsFor, signInReturnUrl, type LosIdentity } from "../lib/identity";
 
 /**
  * Who is looking at this page.
@@ -42,7 +42,7 @@ export function ProfileMenu({ identity }: { identity: LosIdentity | null }) {
 
   if (identity.isGuest) {
     return identity.loginUrl ? (
-      <a className="signin-button" href={identity.loginUrl} data-testid="profile-signin">
+      <a className="signin-button" href={signInReturnUrl(identity.loginUrl)} data-testid="profile-signin">
         <LogIn size={15} aria-hidden="true" /> Sign in
       </a>
     ) : (

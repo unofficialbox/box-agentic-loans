@@ -46,6 +46,8 @@ locals {
                   "key" = "status"
                   "options" = [
                     "Application"
+                    "Loan Application"
+                    "Other"
                     "Underwriting"
                     "Credit Review"
                     "Approved"
@@ -143,6 +145,8 @@ locals {
                     "Appraisal"
                     "Term Sheet"
                     "Commitment Letter"
+                    "Signed Commitment Letter"
+                    "Signing Log"
                     "Loan Agreement"
                     "Insurance"
                     "Credit Memo"

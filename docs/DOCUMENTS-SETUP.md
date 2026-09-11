@@ -6,8 +6,8 @@
 
 ## Folder 1: LN-2026-0042 (Harborview Logistics - Current Loan)
 
-**Box Folder ID:** `416352496139`  
-**Direct Upload Link:** https://app.box.com/folder/416352496139
+**Box Folder ID:** `<CONFIGURED_ID>`
+**Direct Upload Link:** https://app.box.com/folder/<CONFIGURED_ID>
 
 ### Required Files:
 
@@ -21,13 +21,13 @@
   - Term: 120 months (10 years)
   - Section 8.1 LTV: 75% maximum (bank standard)
   - Section 8.2 DSCR: 1.25x minimum (bank standard)
-  
+
 - Borrower's markup (must be clearly labeled as "HARBORVIEW MARKUP" in red):
   - Section 3.1: Requested Rate: 6.50% (vs. bank's 6.85%)
   - Section 6.1: Limited guaranty capped at $1M each (vs. unlimited)
   - Section 9.3: Annual testing and 1.10x DSCR (vs. quarterly 1.25x)
   - Schedule A: Include FF&E in collateral valuation
-  
+
 - Document dated: July 21, 2026
 - Shows borrower asking for MORE AGGRESSIVE terms than their 70%/1.30x precedent
 
@@ -44,9 +44,9 @@
 ```
 
 **How to Apply Metadata:**
-1. Upload the file to Box folder 416352496139
+1. Upload the file to Box folder <CONFIGURED_ID>
 2. Right-click file → More Actions → Apply Metadata
-3. Select template "losDocument" (enterprise_1023254676.losDocument)
+3. Select template "losDocument" (enterprise_<CONFIGURED_ID>.losDocument)
 4. Fill in the fields exactly as shown above
 5. Save
 
@@ -90,8 +90,8 @@
 
 ## Folder 2: LN-2023-0311 (Harborview Logistics - Closed Loan #1)
 
-**Box Folder ID:** `416383268715`  
-**Direct Upload Link:** https://app.box.com/folder/416383268715
+**Box Folder ID:** `<CONFIGURED_ID>`
+**Direct Upload Link:** https://app.box.com/folder/<CONFIGURED_ID>
 
 ### Required Files:
 
@@ -133,8 +133,8 @@
 
 ## Folder 3: LN-2025-0148 (Harborview Logistics - Closed Loan #2)
 
-**Box Folder ID:** `416381677501`  
-**Direct Upload Link:** https://app.box.com/folder/416381677501
+**Box Folder ID:** `<CONFIGURED_ID>`
+**Direct Upload Link:** https://app.box.com/folder/<CONFIGURED_ID>
 
 ### Required Files:
 
@@ -197,19 +197,19 @@
 
 ## Quick Setup Checklist
 
-Upload to **LN-2026-0042** (416352496139):
+Upload to **LN-2026-0042** (<CONFIGURED_ID>):
 - [ ] Term sheet with borrower markup ($4.8M, 6.50%, 1.10 DSCR)
 - [ ] Metadata: documentType="Term Sheet", policyRisk="Critical"
 - [ ] Optional: FY2025 financials (policyRisk="High")
 - [ ] Optional: Appraisal (policyRisk="High")
 
-Upload to **LN-2023-0311** (416383268715):
+Upload to **LN-2023-0311** (<CONFIGURED_ID>):
 - [ ] ✅ `harborview-loan-agreement-2023-executed.pdf` from /output/pdf
 - [ ] Loan: $1.5M @ 7.25%, 70% LTV, 1.30x DSCR quarterly (Section 8 & Schedule 1)
 - [ ] Signatures: Pike (Borrower) / Shah (Bank) dated Sept 15, 2023
 - [ ] Metadata: documentType="Loan Agreement", versionStatus="Executed"
 
-Upload to **LN-2025-0148** (416381677501):
+Upload to **LN-2025-0148** (<CONFIGURED_ID>):
 - [ ] ✅ `harborview-loan-agreement-2025-executed.pdf` from /output/pdf
 - [ ] Loan: $2.15M @ 6.95%, 70% LTV, 1.30x DSCR quarterly (Section 8 & Schedule 1)
 - [ ] Signatures: Pike (Borrower) / Shah (Bank) dated May 20, 2025
@@ -264,7 +264,7 @@ Should return all documents for that loan with their metadata fields.
 
 ## Metadata Template Reference
 
-The `losDocument` template (enterprise_1023254676.losDocument) has these fields:
+The `losDocument` template (enterprise_<CONFIGURED_ID>.losDocument) has these fields:
 
 | Field | Type | Possible Values | Required |
 |-------|------|----------------|----------|

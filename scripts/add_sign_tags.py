@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Ensure a Doc Gen template carries valid Box Sign fields for recipient 1.
 
-https://support.box.com/hc/en-us/articles/4404085855251-Creating-Templates-Using-Tags
+https://docs.box.com/en/box-sign/templates/creating-templates-using-tags
 """
 from pathlib import Path
 import sys
