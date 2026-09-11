@@ -69,6 +69,7 @@
         <layoutColumns>
             <layoutItems><behavior>Readonly</behavior><field>OwnerId</field></layoutItems>
             <layoutItems><behavior>Readonly</behavior><field>Box_Workspace_Folder_ID__c</field></layoutItems>
+            <layoutItems><behavior>Readonly</behavior><field>Sign_Embed_URL__c</field></layoutItems>
         </layoutColumns>
         <style>TwoColumnsTopToBottom</style>
     </layoutSections>

@@ -105,7 +105,7 @@ private class LosCreateApplicationTest {
         LOS_Loan__c created = [
             SELECT Name, Loan_ID__c, Status__c, Record_Source__c, Borrower_Account__c, Borrower__c,
                    Borrower_Entity__c, Applicant_Name__c, Applicant_Email__c, Loan_Type__c, Loan_Amount__c,
-                   Term_Months__c, Purpose__c, Collateral_Type__c, Interest_Rate__c, LTV__c, DSCR__c,
+                   Term_Months__c, Purpose__c, Collateral_Type__c, Target_Closing_Date__c, Interest_Rate__c, LTV__c, DSCR__c,
                    Collateral_Value__c, Risk_Rating__c, Loan_Officer__c
             FROM LOS_Loan__c WHERE Id = :createdId
         ];
@@ -118,6 +118,7 @@ private class LosCreateApplicationTest {
         System.assertEquals(UserInfo.getUserEmail(), created.Applicant_Email__c);
         System.assertEquals(4800000, created.Loan_Amount__c);
         System.assertEquals(120, created.Term_Months__c);
+        System.assertEquals(Date.today().addDays(90), created.Target_Closing_Date__c);
         System.assertEquals('Real Estate', created.Collateral_Type__c);
         System.assert(created.Purpose__c.startsWith('Acquire and fit out'), created.Purpose__c);
         // The bank's side of the record is untouched: the borrower proposes, the bank assesses.

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <McpServerDefinition xmlns="http://soap.sforce.com/2006/04/metadata">
-    <description>Governed Apex: list loans, get loan package, classify documents, extract and apply terms, prepare signature requests. Use Box MCP for metadata search, AI, and Doc Gen.</description>
+    <description>Governed Apex: list loans, get loan package, classify and approve documents, extract and apply terms, prepare signature requests. Use Box MCP for metadata search, AI, and Doc Gen.</description>
     <masterLabel>LOS Loan Tools</masterLabel>
     <tools>
         <apiDefinition>
