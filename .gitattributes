@@ -4,3 +4,6 @@
 # Generated binary documents must not be treated as text diffs.
 *.pdf binary
 *.docx binary
+
+# Sample PDF static resources are binary.
+los-salesforce-project/force-app/main/default/staticresources/Los_Sample_*.resource binary
