@@ -166,3 +166,6 @@ los-salesforce-project/force-app/main/default/genAiPlannerBundles/
 
 # Local browser test output
 /test-results/
+
+# Built skill archives
+output/*.skill

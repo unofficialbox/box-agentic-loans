@@ -46,7 +46,7 @@ A borrower applies through the Acme Borrower Portal. Documents uploaded to Box a
    ```
 
 3. **Configure Box preview, Loan Copilot, and MCP connectors**  
-   See [docs/SETUP.md](docs/SETUP.md) for detailed instructions.
+   See [docs/SETUP.md](docs/SETUP.md) for the admin steps. Presenters connect their own AI client with [docs/CLIENT-SETUP.md](docs/CLIENT-SETUP.md) (no code).
 
 ### Cleanup
 
@@ -82,11 +82,14 @@ Run the demo beats with Claude Desktop (or any AI harness):
 - **Prompts & walkthrough:** [DEMO-CLICKPATH.md](DEMO-CLICKPATH.md)
 - **Presenter skill:** [skills/loan-origination/SKILL.md](skills/loan-origination/SKILL.md) — [package for Claude](docs/DOCGEN-GUIDE.md#distributing-the-claude-skill)
 - **Amazon Quick:** [skills/loan-origination-quick/SKILL.md](skills/loan-origination-quick/SKILL.md) plus the agent manifest in [config/quick/](config/quick/agent.json) — setup in [docs/SETUP.md §5b](docs/SETUP.md#5b-amazon-quick)
+- **Slack (Slackbot):** [skills/loan-origination-slack/SKILL.md](skills/loan-origination-slack/SKILL.md) — a paste-in primer, since Slackbot loads no skills; app manifest in [config/slack/](config/slack/los-loan-tools.manifest.json) — setup in [docs/SETUP.md §5c](docs/SETUP.md#5c-slack-slackbot)
+- **Connect your client (all harnesses):** [docs/CLIENT-SETUP.md](docs/CLIENT-SETUP.md)
 - **Presenter guide:** [docs/PRESENTING.md](docs/PRESENTING.md)
 
 ## Documentation
 
 - **[docs/SETUP.md](docs/SETUP.md)** - Complete deployment guide
+- **[docs/CLIENT-SETUP.md](docs/CLIENT-SETUP.md)** - Connect Claude, Amazon Quick, Slack, or ChatGPT to the demo (for presenters)
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System design and governance
 - **[CLAUDE.md](CLAUDE.md)** - AI connector strategy (metadata-first, Box MCP vs LOS tools)
 - **[docs/SECURITY.md](docs/SECURITY.md)** - Borrower authorization and token scoping

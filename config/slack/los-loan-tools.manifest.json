@@ -1,0 +1,32 @@
+{
+  "_comment": "Slack app manifest for the LOS Loan Tools MCP server. Create the app at api.slack.com/apps with Create New App, From a manifest. The OAuth client ID, client secret, authorization URL, token URL, and PKCE setting are entered afterwards under Features, MCP Servers (docs/CLIENT-SETUP.md, For admins); they are never committed here. Replace the URL if the org is a sandbox or scratch org (sandbox/ after v1/).",
+  "display_information": {
+    "name": "LOS Loan Tools",
+    "description": "Acme Bank loan origination demo: governed Salesforce loan records for Slackbot. Pair with the Box app for documents.",
+    "background_color": "#0b3d91"
+  },
+  "features": {
+    "bot_user": {
+      "display_name": "LOS Loan Tools",
+      "always_online": false
+    }
+  },
+  "oauth_config": {
+    "scopes": {
+      "bot": [
+        "mcp:connect"
+      ]
+    }
+  },
+  "mcp_servers": {
+    "los_loan_tools": {
+      "url": "https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools",
+      "auth_type": "manual_auth"
+    }
+  },
+  "settings": {
+    "org_deploy_enabled": false,
+    "socket_mode_enabled": false,
+    "token_rotation_enabled": false
+  }
+}
