@@ -81,6 +81,7 @@ Run the demo beats with Claude Desktop (or any AI harness):
 - **Markdown storyboard:** [Tell / Show / Tell with screenshots](docs/demo-storyboard/storyboard.md)
 - **Prompts & walkthrough:** [DEMO-CLICKPATH.md](DEMO-CLICKPATH.md)
 - **Presenter skill:** [skills/loan-origination/SKILL.md](skills/loan-origination/SKILL.md) — [package for Claude](docs/DOCGEN-GUIDE.md#distributing-the-claude-skill)
+- **Amazon Quick skill:** [skills/loan-origination-quick/SKILL.md](skills/loan-origination-quick/SKILL.md) — same beats, with Quick tool prefixes, no code execution, and no decision cards that write
 - **Presenter guide:** [docs/PRESENTING.md](docs/PRESENTING.md)
 
 ## Documentation
