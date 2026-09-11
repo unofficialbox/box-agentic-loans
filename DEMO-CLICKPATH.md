@@ -48,14 +48,9 @@ apply the amount, rate and term to the record, confirm
 Compare the covenant terms across Harborview's prior executed loans and this 2026 markup.
 ```
 
-**Beat 5 (Claude Desktop):**
+**Beat 5 (Claude Desktop — generate and send):**
 ```
-Generate the commitment letter for this loan.
-```
-
-**Beat 5b (Claude Desktop):**
-```
-Send the commitment letter for signature.
+Generate the commitment letter for this loan and send it for signature using the confirmed signer.
 ```
 
 **Beat 6 (Browser):** `https://<your-site>.my.site.com/loansvforcesite/login?startURL=%2Floans%2F`
