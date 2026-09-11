@@ -187,8 +187,8 @@
     "title": "Open the signed documents",
     "phase": "SHOW",
     "persona": "Dana Whitfield · Borrower",
-    "screenshot": "screenshots/current-closed-workspace.png",
-    "origin": "Fresh deployed-portal verification · September 10, 2026 · Closed status, retained signed documents and unchanged six-document review totals",
+    "screenshot": "screenshots/step-12-signed-letter.png",
+    "origin": "Live borrower portal capture: retained signed letter and Closed loan.",
     "tell": "Signing completes this loan, and the borrower keeps access to the records.",
     "show": "Verify Closed, then open the signed commitment letter and signing log.",
     "land": "Give borrowers lasting access to their signed records.",
@@ -210,12 +210,12 @@
     "title": "Close the story",
     "phase": "TELL",
     "persona": "Presenter",
-    "screenshot": "screenshots/current-closed-workspace.png",
-    "origin": "Fresh deployed-portal verification · September 10, 2026 · Closed status, retained signed documents and unchanged six-document review totals",
+    "screenshot": "screenshots/step-13-closed-loan.png",
+    "origin": "Live borrower portal capture: completed loan in Your loans.",
     "tell": "We started with an application and a document package.",
-    "show": "Review the evidence, decisions, and populated letter.",
+    "show": "Return to Your loans and point to the Closed record.",
     "land": "Close loans faster with traceable decisions and documents.",
-    "click": "Return to workspace → point to record summary, document status, and history.",
+    "click": "Your loans → identify the completed loan → point to Closed.",
     "details": "Box connects the evidence, Salesforce records the decisions, and people authorize the actions."
   }
 ]

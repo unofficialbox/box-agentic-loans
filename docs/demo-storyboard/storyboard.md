@@ -339,7 +339,7 @@
 
 ### Open the signed documents
 
-![Open the signed documents](screenshots/current-closed-workspace.png)
+![Open the signed documents](screenshots/step-12-signed-letter.png)
 
 ### What to click
 
@@ -369,19 +369,20 @@
 |---|---|
 | Persona | Presenter |
 | Tell — goal | We started with an application and a document package. |
-| Show — action | Review the evidence, decisions, and populated letter. |
+| Show — action | Return to Your loans and point to the Closed record. |
 | Tell — business value | Close loans faster with traceable decisions and documents. |
 
 ### Close the story
 
-![Close the story](screenshots/current-closed-workspace.png)
+![Close the story](screenshots/step-13-closed-loan.png)
 
 ### What to click
 
 | Order | Click / prompt |
 |---|---|
-| 1 | Return to workspace |
-| 2 | point to record summary, document status, and history. |
+| 1 | Your loans |
+| 2 | identify the completed loan |
+| 3 | point to Closed. |
 
 ### Details
 
