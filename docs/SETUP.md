@@ -129,12 +129,33 @@ The hosted server `LOSLoanTools` deploys with the metadata but is inert until th
 
 Then in the client:
 
-- **Claude Desktop or claude.ai:** Customize → Connectors → + → Add custom connector. Name `LOS Loan Tools`, server URL from step 1, Advanced settings → OAuth Client ID = the consumer key, no secret. Click Connect; the org login completes the OAuth flow. Configure → all six tools on. Load the Box connector alongside it.
+- **Claude Desktop or claude.ai:** Customize → Connectors → + → Add custom connector. Name `LOS Loan Tools`, server URL from step 1, Advanced settings → OAuth Client ID = the consumer key, no secret. Click Connect; the org login completes the OAuth flow. Configure → all seven tools on. Load the Box connector alongside it.
 - **Box connector:** in the Box Admin Console → Integrations → Box MCP Server, enable read and write tools for Box Doc Gen and Box AI (they are off by default), then disconnect and reconnect the Box connector in the client; a token issued before the change keeps the old grants and every Doc Gen call answers "Access denied".
 - **ChatGPT:** the same app with the ChatGPT callback URL added to the ECA; untested here.
 - **Slack:** the workspace connected to the org with this server enabled; untested here.
 
-Expect: the connector lists six tools (`listLoans`, `getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `classifyDocument`, `prepareSignatureRequest`). Beat 2 uses Box MCP `query_metadata` directly.
+Expect: the connector lists seven tools (`listLoans`, `getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `classifyDocument`, `approveDocuments`, `prepareSignatureRequest`). Beat 2 uses Box MCP `query_metadata` directly.
+
+## 5b. Amazon Quick
+
+Amazon Quick on desktop runs the same two servers through a chat agent scoped to one skill. Nothing org-side changes; the three steps in 5a must already be done, and the Quick callback URL must be added to the External Client App's global OAuth set.
+
+1. **Connectors.** Customize → Connectors → Create → Cloud connector → MCP server: name `Salesforce Loan Origination`, server URL from 5a step 1, OAuth Client ID = the consumer key. Install the Box connector from the catalog after enabling the Doc Gen and Box AI tools in the Box Admin Console (5a); reconnect if the connector predates that change. Quick exposes tools as `<connector>__<tool>`; the skill assumes the installed names `salesforce_loan_origination` and `box_agent`, so use those or edit the prefixes in the skill.
+2. **Runtime defaults.** `cp config/runtime/quick-demo-defaults.example.json config/runtime/quick-demo-defaults.json` and fill the Box enterprise ID, Credit Policy Hub ID, Doc Gen commitment-letter template ID, and signer email for this environment. The file is gitignored.
+3. **Skill.** Customize → Skills → Create → From file → [skills/loan-origination-quick/SKILL.md](../skills/loan-origination-quick/SKILL.md), or the archive from `python3 scripts/package_loan_skill.py --skill loan-origination-quick --output /tmp/loan-origination-quick.skill`. In the editor, reference the tools of both connectors, replace the four placeholders in the Demo Setup table from the runtime defaults file, and Publish. Repository edits never reach Quick; re-import whenever the `Skill revision` line at the top of the file changes, and check the skill panel shows the current one.
+4. **Agent.** Customize → Agents → Create. Paste [config/quick/instructions.md](../config/quick/instructions.md) into Instructions; on Capabilities attach both connectors, limit Skills to `loan-origination-quick`, turn Web search off. [config/quick/agent.json](../config/quick/agent.json) is the manifest of that configuration for review, not a Quick import file. Publish.
+5. **Tool permissions.** Leave `applyLoanTerms`, `approveDocuments`, `prepareSignatureRequest`, and `create_docgen_batch` at Ask Each Time. The consent pause is part of the demo.
+6. **Demo Setup.** Before the show, send `Demo Setup` once in the agent chat. The skill presents the four bindings as one confirmation and caches them for the session.
+
+Expect: the same seven LOS tools as 5a; the document stages (metadata search, Box AI, Doc Gen, preview) run on the Box connector. Quick has no project custom instructions, so the answer-style rules in DEMO-CLICKPATH P2 live inside the skill and the agent instructions.
+
+| Symptom | Fix |
+|---|---|
+| Agent fails to publish with a "malformed wrapper ARN" error | Discard the draft and recreate the connector attachment fresh; detach and re-add does not fix it. If it recurs, create the agent fresh rather than editing the existing one. |
+| The risk stage answers with `extractLoanTerms`, or letter generation asks for a separate Doc Gen guide | A stale skill import. Re-import the current file and Publish; confirm the `Skill revision` line. |
+| A stage runs on the LOS connector alone and shows no previews | The skill does not reference the Box connector's tools. Edit the skill, reference both connectors, Publish. |
+| `prepareSignatureRequest` or `create_docgen_batch` times out after 60 seconds | The call may have completed. The skill re-reads the loan package before any retry; do not retry by hand. |
+| `applyLoanTerms` reports `Status__c` in `fieldsUpdated` | The deployed Apex differs from source, which never writes status. Redeploy `LosApplyLoanTerms` and hold signature preparation until the approval state is verified. |
 
 ## 6. Administrator checklist
 

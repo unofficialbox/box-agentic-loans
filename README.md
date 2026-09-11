@@ -17,7 +17,7 @@ A borrower applies through the Acme Borrower Portal. Documents uploaded to Box a
 - Box-confirmed signature completion closes the loan; signed letters and signing logs remain available in the borrower workspace
 - Box AI for document classification and term extraction
 - Credit policy validation via Box Hubs
-- Headless AI integration (works with Claude Desktop, ChatGPT, Slack, Agentforce)
+- Headless AI integration (works with Claude Desktop, Amazon Quick, ChatGPT, Slack, Agentforce)
 - Multi-connector strategy: Box MCP for Box operations, LOS tools for Salesforce governance
 
 ## Quick Start
@@ -81,7 +81,7 @@ Run the demo beats with Claude Desktop (or any AI harness):
 - **Markdown storyboard:** [Tell / Show / Tell with screenshots](docs/demo-storyboard/storyboard.md)
 - **Prompts & walkthrough:** [DEMO-CLICKPATH.md](DEMO-CLICKPATH.md)
 - **Presenter skill:** [skills/loan-origination/SKILL.md](skills/loan-origination/SKILL.md) — [package for Claude](docs/DOCGEN-GUIDE.md#distributing-the-claude-skill)
-- **Amazon Quick skill:** [skills/loan-origination-quick/SKILL.md](skills/loan-origination-quick/SKILL.md) — same beats, with Quick tool prefixes, no code execution, and no decision cards that write
+- **Amazon Quick:** [skills/loan-origination-quick/SKILL.md](skills/loan-origination-quick/SKILL.md) plus the agent manifest in [config/quick/](config/quick/agent.json) — setup in [docs/SETUP.md §5b](docs/SETUP.md#5b-amazon-quick)
 - **Presenter guide:** [docs/PRESENTING.md](docs/PRESENTING.md)
 
 ## Documentation
