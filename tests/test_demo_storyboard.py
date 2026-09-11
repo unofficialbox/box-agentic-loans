@@ -37,7 +37,11 @@ class DemoStoryboardTests(unittest.TestCase):
 
     def test_three_sections_and_all_steps(self):
         tabs = [a for _,a in self.page.tags if a.get('role') == 'tab']
-        self.assertEqual([a['data-panel'] for a in tabs], ['setup','storyboard','resources'])
+        self.assertEqual([a['data-panel'] for a in tabs], ['storyboard','setup','resources'])
+        self.assertEqual([a['aria-selected'] for a in tabs], ['true','false','false'])
+        panels = {a['id']: a for _,a in self.page.tags if a.get('role') == 'tabpanel'}
+        self.assertNotIn('hidden', panels['storyboard'])
+        self.assertIn('hidden', panels['setup'])
         steps = json.loads((GUIDE/'storyboard.json').read_text())
         ids = [a.get('id') for _,a in self.page.tags]
         for step in steps:
@@ -67,8 +71,8 @@ class DemoStoryboardTests(unittest.TestCase):
         script = self.content.split('<script>')[1].split('</script>')[0]
         harness = r'''
 const assert = require('node:assert/strict');
-const names = ['setup','storyboard','resources'];
-const panels = Object.fromEntries(names.map(id => [id,{hidden:id!=='setup'}]));
+const names = ['storyboard','setup','resources'];
+const panels = Object.fromEntries(names.map(id => [id,{hidden:id!=='storyboard'}]));
 let focused;
 const tabs = names.map(name => ({dataset:{panel:name}, attrs:{}, events:{},
  setAttribute(k,v){this.attrs[k]=v}, addEventListener(k,v){this.events[k]=v}, focus(){focused=name}}));
@@ -82,12 +86,13 @@ function selected(name){
  assert.equal(mockTabs.filter(t=>t.attrs['aria-selected']==='true').length,1);
  for(const t of mockTabs)assert.equal(panels[t.dataset.panel].hidden,t.dataset.panel!==name);
 }
-selected('setup');
+selected('storyboard');
 mockTabs[2].events.click();selected('resources');assert.equal(location.hash,'#resources');
-mockTabs[2].events.keydown({key:'ArrowRight',preventDefault(){}});selected('setup');assert.equal(focused,'setup');
+mockTabs[2].events.keydown({key:'ArrowRight',preventDefault(){}});selected('storyboard');assert.equal(focused,'storyboard');
 mockTabs[0].events.keydown({key:'End',preventDefault(){}});selected('resources');
+location.hash='#setup';events.hashchange();selected('setup');
 location.hash='#storyboard';events.hashchange();selected('storyboard');
-location.hash='#invalid';events.hashchange();selected('setup');
+location.hash='#invalid';events.hashchange();selected('storyboard');
 '''
         result = subprocess.run(['node','-e',harness+'\n'+script+'\n'+assertions],capture_output=True,text=True)
         self.assertEqual(result.returncode,0,result.stderr)
