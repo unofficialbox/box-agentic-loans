@@ -188,51 +188,51 @@
     "files": [
       [
         "Financial statements (recorded demo)",
-        "../../output/pdf/harborview-financial-statements-fy2025.pdf"
+        "legacy/pdf/harborview-financial-statements-fy2025.pdf"
       ],
       [
         "Tax return (recorded demo)",
-        "../../output/pdf/harborview-tax-return-summary-2025.pdf"
+        "legacy/pdf/harborview-tax-return-summary-2025.pdf"
       ],
       [
         "Bank statements (recorded demo)",
-        "../../output/pdf/harborview-bank-statements-q2-2026.pdf"
+        "legacy/pdf/harborview-bank-statements-q2-2026.pdf"
       ],
       [
         "Appraisal (recorded demo)",
-        "../../output/pdf/harborview-appraisal-2026.pdf"
+        "legacy/pdf/harborview-appraisal-2026.pdf"
       ],
       [
         "Insurance (recorded demo)",
-        "../../output/pdf/harborview-insurance-certificate.pdf"
+        "legacy/pdf/harborview-insurance-certificate.pdf"
       ],
       [
         "Environmental report (recorded demo)",
-        "../../output/pdf/harborview-environmental-report-2026.pdf"
+        "legacy/pdf/harborview-environmental-report-2026.pdf"
       ],
       [
         "Borrower markup (recorded demo)",
-        "../../output/pdf/harborview-term-sheet-2026-borrower-markup.pdf"
+        "legacy/pdf/harborview-term-sheet-2026-borrower-markup.pdf"
       ],
       [
         "2023 executed loan (recorded demo)",
-        "../../output/pdf/harborview-loan-agreement-2023-executed.pdf"
+        "legacy/pdf/harborview-loan-agreement-2023-executed.pdf"
       ],
       [
         "2025 executed loan (recorded demo)",
-        "../../output/pdf/harborview-loan-agreement-2025-executed.pdf"
+        "legacy/pdf/harborview-loan-agreement-2025-executed.pdf"
       ],
       [
         "Editable term sheet (recorded demo)",
-        "../../output/docgen/harborview-term-sheet-2026-markup.docx"
+        "legacy/docgen/harborview-term-sheet-2026-markup.docx"
       ],
       [
         "Loan seed data (recorded demo)",
-        "../../output/json/harborview-los-records.json"
+        "legacy/json/harborview-los-records.json"
       ],
       [
         "Sample loan application (recorded demo)",
-        "../../output/pdf/harborview-loan-application-2026.pdf"
+        "legacy/pdf/harborview-loan-application-2026.pdf"
       ]
     ]
   }

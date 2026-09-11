@@ -15,5 +15,9 @@ class DemoPagesTests(unittest.TestCase):
             self.assertIn(PUBLIC_URL + 'skills/loan-origination/SKILL.md', portable)
             self.assertTrue((site / 'skills/loan-origination/SKILL.md').is_file())
             self.assertTrue((site / '.env.sample').is_file())
+            self.assertEqual(
+                (site / 'output/pdf/harborview-appraisal-2026.pdf').read_bytes(),
+                (site / GUIDE / 'legacy/pdf/harborview-appraisal-2026.pdf').read_bytes(),
+            )
             for path in ['.git', '.env', 'los-salesforce-project', 'scripts']:
                 self.assertFalse((site / path).exists(), path)
