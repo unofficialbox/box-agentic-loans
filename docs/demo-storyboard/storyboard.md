@@ -369,20 +369,19 @@
 |---|---|
 | Persona | Presenter |
 | Tell — goal | We started with an application and a document package. |
-| Show — action | Return to Your loans and point to the Closed record. |
+| Show — action | Review the Closed loan, document list, and retained signing history. |
 | Tell — business value | Close loans faster with traceable decisions and documents. |
 
 ### Close the story
 
-![Close the story](screenshots/step-13-closed-loan.png)
+![Close the story](screenshots/current-closed-workspace.png)
 
 ### What to click
 
 | Order | Click / prompt |
 |---|---|
-| 1 | Your loans |
-| 2 | identify the completed loan |
-| 3 | point to Closed. |
+| 1 | Return to workspace |
+| 2 | point to Closed, Documents, and Document history. |
 
 ### Details
 
