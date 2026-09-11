@@ -17,8 +17,8 @@ locals {
               "exceptionSummary" = "Loan-to-value closes at 80% under LOS-LTV-002 with a 12-month interest reserve and an additional guaranty; debt service coverage closes at 1.15x under LOS-DSCR-002 with a six-month cash reserve."
             }
             "loan" = {
-              "borrower" = "Harborview Logistics"
-              "borrowerEntity" = "Harborview Logistics Holdings LLC"
+              "borrower" = "Dockwright Logistics"
+              "borrowerEntity" = "Dockwright Logistics Holdings LLC"
               "id" = "LN-2026-0042"
             }
             "terms" = {
@@ -27,7 +27,7 @@ locals {
               "collateral" = "First-priority mortgage on 1200 Harbor Way; appraised value $5,650,000; personal property excluded"
               "covenants" = "LTV not to exceed 80%; DSCR not less than 1.15x tested quarterly on trailing-twelve-month NOI"
               "currency" = "$"
-              "guaranty" = "Unlimited personal guaranties from Jordan Pike and Renata Voss; additional guaranty from Harborview Logistics"
+              "guaranty" = "Unlimited personal guaranties from Jordan Pike and Renata Voss; additional guaranty from Dockwright Logistics"
               "interestRate" = "6.85% fixed"
               "loanAmount" = 4520000
               "maturityDate" = "2036-11-30"
@@ -47,7 +47,7 @@ locals {
               "currency" = "$"
               "id" = "LN-2026-0042"
               "loanOfficer" = "Alex Bennett"
-              "borrower" = "Harborview Logistics"
+              "borrower" = "Dockwright Logistics"
               "region" = "Northeast"
               "targetClosingDate" = "2026-11-30"
               "type" = "Commercial Real Estate"
@@ -76,13 +76,13 @@ locals {
               "maturityDate" = "2026-09-30"
               "noticeDeadline" = "2026-08-31"
               "noticeText" = "Acme Bank provides notice that the revolving line of credit identified above matures on the date shown. All outstanding principal and accrued interest is due at maturity unless the facility is renewed."
-              "requestedAction" = "Please confirm whether Harborview Logistics intends to renew, refinance, or repay the facility before the response date."
+              "requestedAction" = "Please confirm whether Dockwright Logistics intends to renew, refinance, or repay the facility before the response date."
             }
             "notice" = {
               "date" = "2026-08-01"
             }
             "recipient" = {
-              "company" = "Harborview Logistics"
+              "company" = "Dockwright Logistics"
               "email" = "kadams@boxdemo.com"
               "name" = "Jordan Pike"
               "title" = "Chief Financial Officer"

@@ -1,6 +1,6 @@
 ---
 name: loan-origination
-description: Present the Acme Bank loan origination demo from an AI harness (Claude Desktop first; the same rules apply in ChatGPT or Slack) with the LOS and Box MCP connectors. Use when asked to run, rehearse, or answer questions during the Harborview demo.
+description: Present the Acme Bank loan origination demo from an AI harness (Claude Desktop first; the same rules apply in ChatGPT or Slack) with the LOS and Box MCP connectors. Use when asked to run, rehearse, or answer questions during the Dockwright demo.
 ---
 
 # LOS demo presenter
@@ -52,7 +52,7 @@ Use only capabilities exposed by the connected tools. If a capability is missing
 
 **All LOS tools accept EITHER loan ID or Salesforce record ID:**
 
-- **Demo beats**: Query for the latest Harborview loan with `listLoans(borrower='Harborview Logistics')` and use that loan's ID
+- **Demo beats**: Query for the latest Dockwright loan with `listLoans(borrower='Dockwright Logistics')` and use that loan's ID
 - **Borrower portal**: Use `recordId` from React app URL params - NEVER hardcode the loan ID when the portal is passing a dynamic recordId
 - **Dynamic scenarios**: Use Salesforce record ID from context
 
@@ -104,7 +104,7 @@ The tools (`getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `prepareSigna
     },
     {
       "key": "borrowerRequestedRate",
-      "prompt": "the rate the borrower requests in its HARBORVIEW MARKUP notes"
+      "prompt": "the rate the borrower requests in its DOCKWRIGHT MARKUP notes"
     },
     {
       "key": "termMonths",
@@ -130,7 +130,7 @@ The tools (`getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `prepareSigna
 ```json
 {
   "file_ids": ["<CURRENT_TERM_SHEET_ID>", "<EXECUTED_2023_AGREEMENT_ID>", "<EXECUTED_2025_AGREEMENT_ID>"],
-  "prompt": "Compare the LTV and DSCR covenants across these three loan agreements. What did Harborview actually agree before, where in each agreement, and who signed?"
+  "prompt": "Compare the LTV and DSCR covenants across these three loan agreements. What did Dockwright actually agree before, where in each agreement, and who signed?"
 }
 ```
 
@@ -218,26 +218,26 @@ If an unfilled version already has a signature request, identify that request an
 
 ## Extraction prompts that return the borrower's numbers
 
-For `ai_extract_structured_from_fields` on the markup, name the fields so Box AI distinguishes the bank's terms from the borrower's markup: "the fixed interest rate the bank states", "the rate the borrower requests in its HARBORVIEW MARKUP notes", "the debt service coverage ratio the borrower proposes in its markup", "how often the borrower proposes the DSCR be tested". Without that wording the extract returns the policy thresholds the term sheet quotes (75%, 1.25x) instead of the borrower's positions.
+For `ai_extract_structured_from_fields` on the markup, name the fields so Box AI distinguishes the bank's terms from the borrower's markup: "the fixed interest rate the bank states", "the rate the borrower requests in its DOCKWRIGHT MARKUP notes", "the debt service coverage ratio the borrower proposes in its markup", "how often the borrower proposes the DSCR be tested". Without that wording the extract returns the policy thresholds the term sheet quotes (75%, 1.25x) instead of the borrower's positions.
 
 ## The beats
 
-Demo uses the latest Harborview loan (created in Beat 1). Query with `listLoans(borrower='Harborview Logistics')` to get the most recent loan ID. Beats 1 and 6 happen in browser.
+Demo uses the latest Dockwright loan (created in Beat 1). Query with `listLoans(borrower='Dockwright Logistics')` to get the most recent loan ID. Beats 1 and 6 happen in browser.
 
 | Beat | Tool behavior and expected evidence |
 |---|---|
-| 2 | `listLoans(borrower='Harborview Logistics')` → get latest loan ID → `getLoanPackage` → get folder ID → `search_files_metadata` with template `losDocument`, folder scope, query `policyRisk = :risk`. One hit: borrower-marked term sheet, opened inline. "High or above" adds FY2025 financials and appraisal. |
+| 2 | `listLoans(borrower='Dockwright Logistics')` → get latest loan ID → `getLoanPackage` → get folder ID → `search_files_metadata` with template `losDocument`, folder scope, query `policyRisk = :risk`. One hit: borrower-marked term sheet, opened inline. "High or above" adds FY2025 financials and appraisal. |
 | 3 | `getLoanPackage` → `ai_extract_structured_from_fields` on markup (loan amount, bank rate, borrower requested rate, term, DSCR as borrower proposes). Then `ai_qa_hub` on credit policy library (LTV/DSCR within policy or exception, cite IDs). Expected: $4.8M, 6.85% bank / 6.50% requested, 120mo, 1.10x DSCR annual. Hub: LOS-LTV-001/002, LOS-DSCR-001/002 - outside exceptions. Preview markup inline. |
 | 3a | `extractLoanTerms`: amount/rate/term match, LTV/DSCR mismatch, nothing written. |
 | 3b | `applyLoanTerms` refuses without "confirm". With confirm: updates amount/rate/term only. Never apply LTV or DSCR. Re-read the record and inspect `fieldsUpdated`; if status or another unexpected field changed, flag the discrepancy and hold signature preparation until the approval state is independently verified. An unexpected Approved status is not evidence of credit authorization. |
-| 4 | Resolve ambiguous duplicate agreements by loan identity, execution date, and signature evidence; a filename alone is not authoritative. Then `getLoanPackage` for LN-2023-0311 and LN-2025-0148 (two closed loans) → `ai_qa_multi_file` comparing LTV/DSCR covenants across executed agreements and 2026 markup (what Harborview agreed before, where in agreements, who signed). Expected: 70% LTV, 1.30x DSCR quarterly, Section 8 & Schedule 1, Pike/Shah signatures. Table format. Preview 2025 agreement at Schedule 1. |
+| 4 | Resolve ambiguous duplicate agreements by loan identity, execution date, and signature evidence; a filename alone is not authoritative. Then `getLoanPackage` for LN-2023-0311 and LN-2025-0148 (two closed loans) → `ai_qa_multi_file` comparing LTV/DSCR covenants across executed agreements and 2026 markup (what Dockwright agreed before, where in agreements, who signed). Expected: 70% LTV, 1.30x DSCR quarterly, Section 8 & Schedule 1, Pike/Shah signatures. Table format. Preview 2025 agreement at Schedule 1. |
 | 5 | One request covers generation and signing: complete nested input → exact output → background content check → preview → `prepareSignatureRequest` with the same file and confirmed signer. No second prompt or manual validation beat. Respect the loan-status guard and report the actual result. |
 
 ## Beat prompts (offer after completing each beat)
 
 **Beat 2:**
 ```
-What's the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?
+What's the latest loan for Dockwright Logistics? Which documents in that loan are flagged critical policy risk?
 ```
 
 **Beat 3:**
@@ -257,7 +257,7 @@ apply the amount, rate and term to the record, confirm
 
 **Beat 4:**
 ```
-Compare the covenant terms across Harborview's prior executed loans and this 2026 markup.
+Compare the covenant terms across Dockwright's prior executed loans and this 2026 markup.
 ```
 
 **Beat 5 — generate and send:**

@@ -5,7 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
  * answer, it answers at the network layer with exactly the JSON the Apex contract
  * specifies -- never with data the app might have invented for itself.
  */
-const borrower = { isGuest: false, name: "Dana Whitfield", accountName: "Harborview Logistics", loginUrl: "https://example.invalid/login" };
+const borrower = { isGuest: false, name: "Dana Whitfield", accountName: "Dockwright Logistics", loginUrl: "https://example.invalid/login" };
 const guest = { isGuest: true, loginUrl: "https://example.invalid/login" };
 
 async function answerIdentity(page: Page, identity: unknown) {
@@ -65,7 +65,7 @@ test("a borrower with no loans lands on the application form", async ({ page }) 
   await page.goto("/");
   await expect(page.getByTestId("application-form")).toBeVisible();
   await expect(page).toHaveURL(/view=apply/);
-  await expect(page.getByLabel("Borrowing entity")).toHaveValue("Harborview Logistics");
+  await expect(page.getByLabel("Borrowing entity")).toHaveValue("Dockwright Logistics");
 });
 
 test("a guest is shown the sign-in prompt rather than a raw 403", async ({ page }) => {
@@ -86,9 +86,9 @@ test("starting an application creates the record, provisions its folder, and ope
   const created = {
     recordId: "a01xx0000009newAAA",
     loanId: "LN-2026-0089",
-    name: "Harborview Logistics Commercial Real Estate 2026",
-    borrower: "Harborview Logistics",
-    borrowerEntity: "Harborview Logistics",
+    name: "Dockwright Logistics Commercial Real Estate 2026",
+    borrower: "Dockwright Logistics",
+    borrowerEntity: "Dockwright Logistics",
     loanType: "Commercial Real Estate",
     status: "Application",
     loanAmount: 2400000,
@@ -107,7 +107,7 @@ test("starting an application creates the record, provisions its folder, and ope
       loanAmount: 2400000,
       termMonths: 120,
       purpose: "Purchase of the distribution facility at the port.",
-      borrowerEntity: "Harborview Logistics",
+      borrowerEntity: "Dockwright Logistics",
       collateralType: "Real Estate",
     });
     await route.fulfill({ status: 201, json: created });

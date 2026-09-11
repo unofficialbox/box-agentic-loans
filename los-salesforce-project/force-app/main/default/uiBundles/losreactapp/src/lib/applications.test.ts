@@ -7,7 +7,7 @@ const valid: ApplicationInput = {
   loanAmount: 2_400_000,
   termMonths: 120,
   purpose: "Purchase of the distribution facility at the port.",
-  borrowerEntity: "Harborview Logistics",
+  borrowerEntity: "Dockwright Logistics",
   collateralType: "Real Estate",
 };
 
@@ -42,7 +42,7 @@ describe("createApplication", () => {
       json: async () => ({
         recordId: "a01xx0000009abcAAA",
         loanId: "LN-2026-0089",
-        name: "Harborview Logistics Commercial Real Estate 2026",
+        name: "Dockwright Logistics Commercial Real Estate 2026",
         status: "Application",
         loanType: "Commercial Real Estate",
         purpose: valid.purpose,
@@ -62,7 +62,7 @@ describe("createApplication", () => {
       loanAmount: 2_400_000,
       termMonths: 120,
       purpose: valid.purpose,
-      borrowerEntity: "Harborview Logistics",
+      borrowerEntity: "Dockwright Logistics",
       collateralType: "Real Estate",
     });
     expect(result.ok && result.value.loanId).toBe("LN-2026-0089");

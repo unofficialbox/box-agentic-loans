@@ -3,8 +3,8 @@ private class LosLoanListTest {
 
     private static void seed() {
         insert new List<LOS_Loan__c>{
-            new LOS_Loan__c(Name = 'Harborview Distribution Facility Loan', Loan_ID__c = 'LN-A',
-                Borrower__c = 'Harborview Logistics', Status__c = 'Underwriting', Risk_Rating__c = 'High'),
+            new LOS_Loan__c(Name = 'Dockwright Distribution Facility Loan', Loan_ID__c = 'LN-A',
+                Borrower__c = 'Dockwright Logistics', Status__c = 'Underwriting', Risk_Rating__c = 'High'),
             new LOS_Loan__c(Name = 'Pinecrest Practice Expansion', Loan_ID__c = 'LN-B',
                 Borrower__c = 'Pinecrest Dental Group', Status__c = 'Underwriting', Risk_Rating__c = 'Medium'),
             new LOS_Loan__c(Name = 'Meridian Equipment Loan', Loan_ID__c = 'LN-C',
@@ -29,7 +29,7 @@ private class LosLoanListTest {
 
         System.assertEquals(3, result.outputCount);
         System.assert(result.outputSummary.contains('LN-A'), result.outputSummary);
-        System.assert(result.outputSummary.contains('Harborview Logistics'), result.outputSummary);
+        System.assert(result.outputSummary.contains('Dockwright Logistics'), result.outputSummary);
         System.assert(result.outputSummary.contains('Status: Underwriting'), result.outputSummary);
     }
 

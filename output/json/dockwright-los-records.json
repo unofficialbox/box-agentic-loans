@@ -1,0 +1,113 @@
+{
+  "loan": {
+    "loanId": "LN-2026-0042",
+    "name": "Dockwright Logistics Distribution Facility Loan 2026",
+    "borrower": "Dockwright Logistics",
+    "borrowerEntity": "Dockwright Logistics Holdings LLC",
+    "applicantName": "Jordan Pike",
+    "applicantEmail": "jordan.pike@dockwrightlogistics.example",
+    "loanType": "Commercial Real Estate",
+    "status": "Underwriting",
+    "loanAmount": 4800000,
+    "termMonths": 120,
+    "amortizationMonths": 300,
+    "interestRate": 6.85,
+    "collateralType": "Real Estate",
+    "collateralValue": 5650000,
+    "borrowerStatedCollateralValue": 6000000,
+    "ltv": 85,
+    "dscr": 1.12,
+    "region": "Northeast",
+    "loanOfficerName": "Alex Bennett",
+    "underwriter": "Credit Risk",
+    "riskRating": "High",
+    "targetClosingDate": "2026-11-30",
+    "maturityDate": null,
+    "covenantReviewDate": "2027-03-31",
+    "boxWorkspace": "LOS-2026-Dockwright"
+  },
+  "salesforceOpportunity": {
+    "id": "006-demo-dockwright",
+    "accountName": "Dockwright Logistics",
+    "name": "Dockwright Logistics - Distribution Facility Acquisition",
+    "stage": "Proposal/Price Quote",
+    "amount": 4800000,
+    "closeDate": "2026-11-30",
+    "loanOfficer": "Alex Bennett",
+    "products": [
+      "Commercial Real Estate Term Loan"
+    ]
+  },
+  "priorLoans": [
+    {
+      "loanId": "LN-2023-0311",
+      "name": "Dockwright Logistics Revolving Line of Credit 2023",
+      "loanType": "Line of Credit",
+      "status": "Closed",
+      "loanAmount": 1500000,
+      "termMonths": 36,
+      "interestRate": 7.25,
+      "collateralType": "Receivables",
+      "collateralValue": 2150000,
+      "ltv": 70,
+      "dscr": 1.34,
+      "maturityDate": "2026-09-30",
+      "negotiatedCovenants": {
+        "ltvMax": 70,
+        "dscrMin": 1.3,
+        "testFrequency": "quarterly"
+      }
+    },
+    {
+      "loanId": "LN-2025-0148",
+      "name": "Dockwright Logistics Equipment Term Loan 2025",
+      "loanType": "Equipment Finance",
+      "status": "Closed",
+      "loanAmount": 2150000,
+      "termMonths": 60,
+      "interestRate": 6.95,
+      "collateralType": "Equipment",
+      "collateralValue": 3075000,
+      "ltv": 70,
+      "dscr": 1.31,
+      "maturityDate": "2030-05-31",
+      "negotiatedCovenants": {
+        "ltvMax": 70,
+        "dscrMin": 1.3,
+        "testFrequency": "quarterly"
+      }
+    }
+  ],
+  "creditApprovalMatrix": [
+    {
+      "condition": "loanAmount > 2500000",
+      "approver": "Credit Committee",
+      "slaHours": 72
+    },
+    {
+      "condition": "ltv > 75",
+      "approver": "Chief Credit Officer",
+      "slaHours": 48
+    },
+    {
+      "condition": "dscr < 1.25",
+      "approver": "Chief Credit Officer",
+      "slaHours": 48
+    },
+    {
+      "condition": "collateralType = Real Estate",
+      "approver": "Collateral Review",
+      "slaHours": 48
+    },
+    {
+      "condition": "interestRate < floor",
+      "approver": "Pricing Committee",
+      "slaHours": 24
+    },
+    {
+      "condition": "riskRating in High,Critical",
+      "approver": "Chief Credit Officer",
+      "slaHours": 48
+    }
+  ]
+}

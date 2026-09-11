@@ -13,15 +13,15 @@ private class LosBorrowerLoansTest {
 
     @TestSetup
     static void makeData() {
-        Account harborview = new Account(Name = 'Harborview Logistics');
+        Account dockwright = new Account(Name = 'Dockwright Logistics');
         Account pinecrest = new Account(Name = 'Pinecrest Dental Group');
-        insert new List<Account>{ harborview, pinecrest };
+        insert new List<Account>{ dockwright, pinecrest };
 
         insert new List<LOS_Loan__c>{
-            new LOS_Loan__c(Name = 'Harborview Logistics Revolving Line of Credit 2023', Loan_ID__c = 'LN-2023-0311',
-                Borrower_Account__c = harborview.Id, Status__c = 'Closed', Term_Months__c = 36),
-            new LOS_Loan__c(Name = 'Harborview Logistics Distribution Facility Loan 2026', Loan_ID__c = 'LN-2026-0042',
-                Borrower_Account__c = harborview.Id, Status__c = 'Underwriting'),
+            new LOS_Loan__c(Name = 'Dockwright Logistics Revolving Line of Credit 2023', Loan_ID__c = 'LN-2023-0311',
+                Borrower_Account__c = dockwright.Id, Status__c = 'Closed', Term_Months__c = 36),
+            new LOS_Loan__c(Name = 'Dockwright Logistics Distribution Facility Loan 2026', Loan_ID__c = 'LN-2026-0042',
+                Borrower_Account__c = dockwright.Id, Status__c = 'Underwriting'),
             new LOS_Loan__c(Name = 'Pinecrest Dental Group Practice Expansion 2026', Loan_ID__c = 'LN-2026-0088',
                 Borrower_Account__c = pinecrest.Id, Status__c = 'Application')
         };
@@ -41,7 +41,7 @@ private class LosBorrowerLoansTest {
     @IsTest
     static void returnsOnlyTheSignedInBorrowersLoans() {
         Test.startTest();
-        LosBorrowerLoans.Result result = asBorrower('Harborview Logistics', null);
+        LosBorrowerLoans.Result result = asBorrower('Dockwright Logistics', null);
         Test.stopTest();
 
         System.assertEquals(2, result.outputCount, result.outputSummary);
@@ -53,9 +53,9 @@ private class LosBorrowerLoansTest {
     @IsTest
     static void refusesALoanBelongingToAnotherBorrower() {
         // The case the reference input exists to fail. Naming Pinecrest's loan from a
-        // Harborview session must not return it, however it is asked for.
+        // Dockwright session must not return it, however it is asked for.
         Test.startTest();
-        LosBorrowerLoans.Result result = asBorrower('Harborview Logistics', 'LN-2026-0088');
+        LosBorrowerLoans.Result result = asBorrower('Dockwright Logistics', 'LN-2026-0088');
         Test.stopTest();
 
         System.assertEquals(0, result.outputCount);
@@ -67,7 +67,7 @@ private class LosBorrowerLoansTest {
     @IsTest
     static void narrowsToOneOfTheirOwnWhenNamed() {
         Test.startTest();
-        LosBorrowerLoans.Result result = asBorrower('Harborview Logistics', 'LN-2026-0042');
+        LosBorrowerLoans.Result result = asBorrower('Dockwright Logistics', 'LN-2026-0042');
         Test.stopTest();
 
         System.assertEquals(1, result.outputCount);

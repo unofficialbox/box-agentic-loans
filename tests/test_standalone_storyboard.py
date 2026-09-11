@@ -30,7 +30,7 @@ class StandaloneStoryboardTests(unittest.TestCase):
                 for key in ('src','href'):
                     if key in attrs: self.assertTrue(attrs[key].startswith(('https://','#','data:')),attrs[key])
             self.assertIn(REPO_URL+'skills/loan-origination/SKILL.md', content)
-            self.assertIn(REPO_URL+'output/pdf/harborview-appraisal-2026.pdf',content)
+            self.assertIn(REPO_URL+'output/pdf/dockwright-appraisal-2026.pdf',content)
             self.assertNotIn('data-embedded-href',content)
             for url in re.findall(r'url\("([^"]+)"\)',content):self.assertTrue(url.startswith('data:'))
             self.assertEqual(sum(a.get('role') == 'tabpanel' for a in tags),3)

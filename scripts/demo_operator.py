@@ -68,12 +68,12 @@ FOLDER_BINDINGS = {
     "policies": "Credit Policies",
 }
 FILE_BINDINGS = {
-    "loanApplication": "harborview-loan-application-2026.pdf",
-    "termSheetMarkup": "harborview-term-sheet-2026-borrower-markup.pdf",
-    "financialStatements": "harborview-financial-statements-fy2025.pdf",
-    "taxReturns": "harborview-tax-return-summary-2025.pdf",
-    "appraisal": "harborview-appraisal-2026.pdf",
-    "insurance": "harborview-insurance-certificate.pdf",
+    "loanApplication": "dockwright-loan-application-2026.pdf",
+    "termSheetMarkup": "dockwright-term-sheet-2026-borrower-markup.pdf",
+    "financialStatements": "dockwright-financial-statements-fy2025.pdf",
+    "taxReturns": "dockwright-tax-return-summary-2025.pdf",
+    "appraisal": "dockwright-appraisal-2026.pdf",
+    "insurance": "dockwright-insurance-certificate.pdf",
     "docgenCommitmentLetter": "los-commitment-letter-template.docx",
 }
 PORTABLE_SPECS = [
@@ -86,12 +86,12 @@ PORTABLE_SPECS = [
 ]
 UPLOADS = {
     "02 - Borrower Documents": [
-        "output/pdf/harborview-loan-application-2026.pdf",
-        "output/pdf/harborview-term-sheet-2026-borrower-markup.pdf",
-        "output/pdf/harborview-financial-statements-fy2025.pdf",
-        "output/pdf/harborview-tax-return-summary-2025.pdf",
-        "output/pdf/harborview-appraisal-2026.pdf",
-        "output/pdf/harborview-insurance-certificate.pdf",
+        "output/pdf/dockwright-loan-application-2026.pdf",
+        "output/pdf/dockwright-term-sheet-2026-borrower-markup.pdf",
+        "output/pdf/dockwright-financial-statements-fy2025.pdf",
+        "output/pdf/dockwright-tax-return-summary-2025.pdf",
+        "output/pdf/dockwright-appraisal-2026.pdf",
+        "output/pdf/dockwright-insurance-certificate.pdf",
     ],
     "08 - DocGen Templates": [
         "output/docgen/los-commitment-letter-template.docx",
@@ -393,13 +393,13 @@ def box_foundation(config_path: Path, *, dry_run: bool) -> None:
 
     root_id = folders.get("workspace")
     if not root_id:
-        existing_root = None if dry_run else find_box_item(parent_id, "LOS-2026-Harborview", "folder")
+        existing_root = None if dry_run else find_box_item(parent_id, "LOS-2026-Dockwright", "folder")
         if existing_root:
             root_id = existing_root
             print(f"REUSE    existing Box workspace: {root_id}")
         else:
             root_output = run(
-                ["box", "folders:create", parent_id, "LOS-2026-Harborview", "--json", "--yes"],
+                ["box", "folders:create", parent_id, "LOS-2026-Dockwright", "--json", "--yes"],
                 dry_run=dry_run,
             )
             root_id = parse_id(root_output)
@@ -497,7 +497,7 @@ def seed_metadata(config_path: Path, *, dry_run: bool) -> None:
 
     seeds: list[tuple[str, str, str, dict[str, Any]]] = [
         ("folder", "workspace", "losLoan", {
-            "loanId": "LN-2026-0042", "borrower": "Harborview Logistics",
+            "loanId": "LN-2026-0042", "borrower": "Dockwright Logistics",
             "loanType": "Commercial Real Estate", "status": "Underwriting", "loanAmount": 4800000,
             "termMonths": 120, "interestRate": 6.85, "ltv": 85, "dscr": 1.12,
             "region": "Northeast", "collateralType": "Real Estate", "owner": "Alex Bennett",
@@ -515,12 +515,12 @@ def seed_metadata(config_path: Path, *, dry_run: bool) -> None:
     # sheet markup is Internal: the bank's analysis of the borrower's paper never reaches
     # the borrower portal, which filters on that value.
     document_values = {
-        "harborview-loan-application-2026.pdf": ("Application", "Draft", "Medium", "Complete", "Pending"),
-        "harborview-term-sheet-2026-borrower-markup.pdf": ("Term Sheet", "Internal", "Critical", "Needs Review", "Pending"),
-        "harborview-financial-statements-fy2025.pdf": ("Financial Statement", "Draft", "High", "Complete", "Pending"),
-        "harborview-tax-return-summary-2025.pdf": ("Tax Return", "Draft", "Low", "Complete", "Pending"),
-        "harborview-appraisal-2026.pdf": ("Appraisal", "Approved", "High", "Complete", "Approved"),
-        "harborview-insurance-certificate.pdf": ("Insurance", "Approved", "Low", "Complete", "Approved"),
+        "dockwright-loan-application-2026.pdf": ("Application", "Draft", "Medium", "Complete", "Pending"),
+        "dockwright-term-sheet-2026-borrower-markup.pdf": ("Term Sheet", "Internal", "Critical", "Needs Review", "Pending"),
+        "dockwright-financial-statements-fy2025.pdf": ("Financial Statement", "Draft", "High", "Complete", "Pending"),
+        "dockwright-tax-return-summary-2025.pdf": ("Tax Return", "Draft", "Low", "Complete", "Pending"),
+        "dockwright-appraisal-2026.pdf": ("Appraisal", "Approved", "High", "Complete", "Approved"),
+        "dockwright-insurance-certificate.pdf": ("Insurance", "Approved", "Low", "Complete", "Approved"),
     }
     for filename, values in document_values.items():
         seeds.append(("file", filename, "losDocument", {

@@ -53,31 +53,31 @@
     "files": [
       [
         "Financial statements",
-        "../../output/pdf/harborview-financial-statements-fy2025.pdf"
+        "../../output/pdf/dockwright-financial-statements-fy2025.pdf"
       ],
       [
         "Tax return",
-        "../../output/pdf/harborview-tax-return-summary-2025.pdf"
+        "../../output/pdf/dockwright-tax-return-summary-2025.pdf"
       ],
       [
         "Bank statements",
-        "../../output/pdf/harborview-bank-statements-q2-2026.pdf"
+        "../../output/pdf/dockwright-bank-statements-q2-2026.pdf"
       ],
       [
         "Appraisal",
-        "../../output/pdf/harborview-appraisal-2026.pdf"
+        "../../output/pdf/dockwright-appraisal-2026.pdf"
       ],
       [
         "Insurance",
-        "../../output/pdf/harborview-insurance-certificate.pdf"
+        "../../output/pdf/dockwright-insurance-certificate.pdf"
       ],
       [
         "Environmental report",
-        "../../output/pdf/harborview-environmental-report-2026.pdf"
+        "../../output/pdf/dockwright-environmental-report-2026.pdf"
       ],
       [
         "Borrower markup",
-        "../../output/pdf/harborview-term-sheet-2026-borrower-markup.pdf"
+        "../../output/pdf/dockwright-term-sheet-2026-borrower-markup.pdf"
       ]
     ]
   },
@@ -90,11 +90,11 @@
       ],
       [
         "2023 executed loan",
-        "../../output/pdf/harborview-loan-agreement-2023-executed.pdf"
+        "../../output/pdf/dockwright-loan-agreement-2023-executed.pdf"
       ],
       [
         "2025 executed loan",
-        "../../output/pdf/harborview-loan-agreement-2025-executed.pdf"
+        "../../output/pdf/dockwright-loan-agreement-2025-executed.pdf"
       ],
       [
         "Commitment letter template",
@@ -102,11 +102,11 @@
       ],
       [
         "Editable term sheet",
-        "../../output/docgen/harborview-term-sheet-2026-markup.docx"
+        "../../output/docgen/dockwright-term-sheet-2026-markup.docx"
       ],
       [
         "Loan seed data",
-        "../../output/json/harborview-los-records.json"
+        "../../output/json/dockwright-los-records.json"
       ],
       [
         "Credit policy data",
@@ -146,7 +146,7 @@
       ],
       [
         "Sample loan application",
-        "../../output/pdf/harborview-loan-application-2026.pdf"
+        "../../output/pdf/dockwright-loan-application-2026.pdf"
       ]
     ]
   },
@@ -180,6 +180,59 @@
       [
         "Credit approver portrait",
         "personas/credit-approver.png"
+      ]
+    ]
+  },
+  {
+    "title": "Recorded Harborview walkthrough files",
+    "files": [
+      [
+        "Financial statements (recorded demo)",
+        "../../output/pdf/harborview-financial-statements-fy2025.pdf"
+      ],
+      [
+        "Tax return (recorded demo)",
+        "../../output/pdf/harborview-tax-return-summary-2025.pdf"
+      ],
+      [
+        "Bank statements (recorded demo)",
+        "../../output/pdf/harborview-bank-statements-q2-2026.pdf"
+      ],
+      [
+        "Appraisal (recorded demo)",
+        "../../output/pdf/harborview-appraisal-2026.pdf"
+      ],
+      [
+        "Insurance (recorded demo)",
+        "../../output/pdf/harborview-insurance-certificate.pdf"
+      ],
+      [
+        "Environmental report (recorded demo)",
+        "../../output/pdf/harborview-environmental-report-2026.pdf"
+      ],
+      [
+        "Borrower markup (recorded demo)",
+        "../../output/pdf/harborview-term-sheet-2026-borrower-markup.pdf"
+      ],
+      [
+        "2023 executed loan (recorded demo)",
+        "../../output/pdf/harborview-loan-agreement-2023-executed.pdf"
+      ],
+      [
+        "2025 executed loan (recorded demo)",
+        "../../output/pdf/harborview-loan-agreement-2025-executed.pdf"
+      ],
+      [
+        "Editable term sheet (recorded demo)",
+        "../../output/docgen/harborview-term-sheet-2026-markup.docx"
+      ],
+      [
+        "Loan seed data (recorded demo)",
+        "../../output/json/harborview-los-records.json"
+      ],
+      [
+        "Sample loan application (recorded demo)",
+        "../../output/pdf/harborview-loan-application-2026.pdf"
       ]
     ]
   }

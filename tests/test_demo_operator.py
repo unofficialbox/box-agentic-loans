@@ -257,7 +257,7 @@ class DemoOperatorTests(unittest.TestCase):
             set(demo_operator.FOLDER_BINDINGS),
             {"workspace", "intake", "borrowerDocs", "underwriting", "creditApproval", "closing", "executed", "covenants", "docgen", "policies"},
         )
-        self.assertEqual(demo_operator.FILE_BINDINGS["termSheetMarkup"], "harborview-term-sheet-2026-borrower-markup.pdf")
+        self.assertEqual(demo_operator.FILE_BINDINGS["termSheetMarkup"], "dockwright-term-sheet-2026-borrower-markup.pdf")
         self.assertEqual(demo_operator.FILE_BINDINGS["docgenCommitmentLetter"], "los-commitment-letter-template.docx")
         policies = [Path(path).name for path in demo_operator.UPLOADS["Credit Policies"]]
         self.assertEqual(len([name for name in policies if name.startswith("LOS-")]), 8)

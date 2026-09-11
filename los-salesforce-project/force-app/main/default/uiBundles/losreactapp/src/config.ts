@@ -3,7 +3,7 @@ const workspaceFolderId = import.meta.env.VITE_BOX_FOLDER_ID || "demo-workspace"
 
 export const LOS_CONFIG = {
   workspace: {
-    name: "LOS-2026-Harborview",
+    name: "LOS-2026-Dockwright",
     folderId: workspaceFolderId,
     boxHostname,
     boxUrl: boxHostname && workspaceFolderId !== "demo-workspace"

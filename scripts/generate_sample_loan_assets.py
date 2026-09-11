@@ -118,7 +118,7 @@ def section(title: str):
 
 def markup(text: str):
     """The borrower's proposed change, in red, the way a marked-up term sheet reads."""
-    return p(f"<font color='#b91c1c'><b>HARBORVIEW MARKUP:</b> {text}</font>")
+    return p(f"<font color='#b91c1c'><b>DOCKWRIGHT MARKUP:</b> {text}</font>")
 
 
 def table(rows, widths=None, header=True):
@@ -161,7 +161,7 @@ def synthetic_note(kind: str):
 
 BANK = "Acme Bank"
 BANK_ADDRESS = "200 Commerce Street, Suite 900, Boston, Massachusetts 02109"
-BORROWER_2026 = "Harborview Logistics Holdings LLC"
+BORROWER_2026 = "Dockwright Logistics Holdings LLC"
 PROPERTY = "1200 Harbor Way, Everett, Massachusetts 02149"
 
 
@@ -179,10 +179,10 @@ def build_loan_application():
     what turns 80% into 85%, so this document has to state the borrower's figure plainly
     rather than the corrected one.
     """
-    path = PDF_OUT / "harborview-loan-application-2026.pdf"
+    path = PDF_OUT / "dockwright-loan-application-2026.pdf"
     story = doc_header(
         "Commercial Loan Application - Summary",
-        f"{BORROWER_2026} | Distribution Facility Acquisition | Received by {BANK} | LOS-2026-Harborview",
+        f"{BORROWER_2026} | Distribution Facility Acquisition | Received by {BANK} | LOS-2026-Dockwright",
     )
     story += [
         section("1. Applicant"),
@@ -190,9 +190,9 @@ def build_loan_application():
             [
                 ["Field", "Value"],
                 ["Borrowing entity", BORROWER_2026],
-                ["Parent / operating company", "Harborview Logistics (Transportation and third-party logistics)"],
+                ["Parent / operating company", "Dockwright Logistics (Transportation and third-party logistics)"],
                 ["Principal place of business", "48 Pier Road, Everett, Massachusetts 02149"],
-                ["Primary contact", "Jordan Pike, Chief Financial Officer, jordan.pike@harborviewlogistics.example"],
+                ["Primary contact", "Jordan Pike, Chief Financial Officer, jordan.pike@dockwrightlogistics.example"],
                 ["Years in operation", "14"],
                 ["Existing relationship", "Revolving line of credit (2023) and equipment term loan (2025), both current"],
             ],
@@ -221,7 +221,7 @@ def build_loan_application():
                 ["Owner", "Ownership", "Guaranty offered"],
                 ["Jordan Pike", "35%", "Personal guaranty"],
                 ["Renata Voss", "35%", "Personal guaranty"],
-                ["Harborview Employee Holdings LP", "30%", "None proposed"],
+                ["Dockwright Employee Holdings LP", "30%", "None proposed"],
             ],
             widths=[2.6 * inch, 1.4 * inch, 2.9 * inch],
         ),
@@ -304,7 +304,7 @@ def build_term_sheet_markup():
     A keyword search for "loan-to-value" returns nothing in the markup. Only reading the
     document against the credit policy library does.
     """
-    path = PDF_OUT / "harborview-term-sheet-2026-borrower-markup.pdf"
+    path = PDF_OUT / "dockwright-term-sheet-2026-borrower-markup.pdf"
     reporting = (
         "Borrower shall deliver to the Bank (a) annual financial statements reviewed by an independent "
         "accountant within 120 days after each fiscal year end and (b) quarterly financial statements within "
@@ -315,7 +315,7 @@ def build_term_sheet_markup():
     sections = loan_agreement_sections(executed=False, ltv_pct=75, dscr="1.25x", reporting=reporting)
     story = doc_header(
         "Term Sheet - Commercial Real Estate Loan (Borrower Markup)",
-        f"{BANK} and {BORROWER_2026} | Term sheet dated July 21, 2026 | LOS-2026-Harborview",
+        f"{BANK} and {BORROWER_2026} | Term sheet dated July 21, 2026 | LOS-2026-Dockwright",
     )
     story += [
         p(
@@ -331,7 +331,7 @@ def build_term_sheet_markup():
         ),
         section("1. PARTIES"),
         p(f"Lender: {BANK}. Borrower: {BORROWER_2026}, a Massachusetts limited liability company and wholly "
-          "owned subsidiary of Harborview Logistics. Guarantors: as set out in Section 6."),
+          "owned subsidiary of Dockwright Logistics. Guarantors: as set out in Section 6."),
         section("2. LOAN AMOUNT AND PURPOSE"),
         p(f"2.1 A term loan of up to $4,800,000 (the <b>Loan</b>) to finance the acquisition of the distribution "
           f"facility at {PROPERTY} (the <b>Real Property</b>) for owner occupancy."),
@@ -351,7 +351,7 @@ def build_term_sheet_markup():
         section("6. GUARANTY"),
         p("6.1 Unlimited personal guaranty from each owner of twenty percent or more of the Borrower."),
         markup("Borrower proposes a limited guaranty from Jordan Pike and Renata Voss capped at $1,000,000 each, "
-               "and no guaranty from Harborview Employee Holdings LP."),
+               "and no guaranty from Dockwright Employee Holdings LP."),
         section("7. CONDITIONS PRECEDENT"),
         p("Satisfactory appraisal, title insurance, survey, Phase I environmental site assessment, evidence of "
           "insurance, formation documents, and executed loan documents."),
@@ -412,10 +412,10 @@ def build_term_sheet_markup():
 
 
 def build_financial_statements():
-    path = PDF_OUT / "harborview-financial-statements-fy2025.pdf"
+    path = PDF_OUT / "dockwright-financial-statements-fy2025.pdf"
     story = doc_header(
         "Financial Statements - Fiscal Year 2025",
-        "Harborview Logistics and subsidiaries | Reviewed, not audited | Year ended December 31, 2025",
+        "Dockwright Logistics and subsidiaries | Reviewed, not audited | Year ended December 31, 2025",
     )
     story += [
         section("Income Statement"),
@@ -474,10 +474,10 @@ def build_financial_statements():
 
 
 def build_tax_return_summary():
-    path = PDF_OUT / "harborview-tax-return-summary-2025.pdf"
+    path = PDF_OUT / "dockwright-tax-return-summary-2025.pdf"
     story = doc_header(
         "Federal Tax Return Summary - Tax Year 2025",
-        "Harborview Logistics | Form 1120-S summary prepared for lender review | Not a filed return",
+        "Dockwright Logistics | Form 1120-S summary prepared for lender review | Not a filed return",
     )
     story += [
         table(
@@ -500,7 +500,7 @@ def build_tax_return_summary():
                 ["Shareholder", "Ownership", "Pro rata share of ordinary income"],
                 ["Jordan Pike", "35%", "$246,750"],
                 ["Renata Voss", "35%", "$246,750"],
-                ["Harborview Employee Holdings LP", "30%", "$211,500"],
+                ["Dockwright Employee Holdings LP", "30%", "$211,500"],
             ],
             widths=[2.6 * inch, 1.3 * inch, 3.0 * inch],
         ),
@@ -522,10 +522,10 @@ def build_bank_statements():
     term sheet markup. The statements show roughly $310,000, so the request fails on the
     borrower's own evidence.
     """
-    path = PDF_OUT / "harborview-bank-statements-q2-2026.pdf"
+    path = PDF_OUT / "dockwright-bank-statements-q2-2026.pdf"
     story = doc_header(
         "Business Operating Account Statements - April to June 2026",
-        "Harborview Logistics | Operating account summary prepared for lender review",
+        "Dockwright Logistics | Operating account summary prepared for lender review",
     )
     story += [
         table(
@@ -556,7 +556,7 @@ def build_appraisal():
     exception. The report also says, in plain words, that FF&E is excluded from the real
     property value, which is what the Schedule A markup quietly reverses.
     """
-    path = PDF_OUT / "harborview-appraisal-2026.pdf"
+    path = PDF_OUT / "dockwright-appraisal-2026.pdf"
     story = doc_header(
         "Appraisal Report - Industrial Distribution Facility",
         f"{PROPERTY} | Prepared for {BANK} | Effective date August 4, 2026 | Meridian Valuation Group",
@@ -608,10 +608,10 @@ def build_appraisal():
 
 
 def build_insurance():
-    path = PDF_OUT / "harborview-insurance-certificate.pdf"
+    path = PDF_OUT / "dockwright-insurance-certificate.pdf"
     story = doc_header(
         "Certificate of Insurance",
-        f"Insured: {BORROWER_2026} | Certificate holder and mortgagee: {BANK} | LOS-2026-Harborview",
+        f"Insured: {BORROWER_2026} | Certificate holder and mortgagee: {BANK} | LOS-2026-Dockwright",
     )
     story += [
         table(
@@ -637,7 +637,7 @@ def build_insurance():
 
 
 def build_environmental_report():
-    path = PDF_OUT / "harborview-environmental-report-2026.pdf"
+    path = PDF_OUT / "dockwright-environmental-report-2026.pdf"
     story = doc_header(
         "Phase I Environmental Site Assessment - Executive Summary",
         f"{PROPERTY} | Prepared for {BANK} | July 29, 2026 | Northbank Environmental Consultants",
@@ -693,11 +693,11 @@ def build_executed_loan_agreement(
     borrower: str,
     prior_year: int | None = None,
 ):
-    """A prior Harborview loan agreement, executed, on Acme's own form.
+    """A prior Dockwright loan agreement, executed, on Acme's own form.
 
     These two documents exist to make one point that a single term sheet cannot make: the
     2026 markup is not asking the bank for something new. It is asking the bank to give
-    back two positions Harborview already accepted, in writing, twice.
+    back two positions Dockwright already accepted, in writing, twice.
 
     Both prior agreements carry a negotiated Schedule 1: loan-to-value tightened from the
     75% standard to 70%, and debt service coverage tightened from 1.25x to 1.30x tested
@@ -709,7 +709,7 @@ def build_executed_loan_agreement(
     The section numbers are deliberately identical across all three documents, so the
     reader can put 9.3 beside 9.3 and Schedule A beside Schedule A and see it.
     """
-    path = PDF_OUT / f"harborview-loan-agreement-{year}-executed.pdf"
+    path = PDF_OUT / f"dockwright-loan-agreement-{year}-executed.pdf"
     renewal = prior_year is not None
     reporting = (
         "Borrower delivered annual reviewed financial statements within 120 days after each fiscal year end "
@@ -721,7 +721,7 @@ def build_executed_loan_agreement(
     sections = loan_agreement_sections(executed=True, ltv_pct=70, dscr="1.30x", reporting=reporting)
     story = doc_header(
         f"{facility_title} - Executed {year}",
-        f"{BANK} and {borrower} | Loan {loan_id} | Executed {signed_on} | LOS-{year}-Harborview",
+        f"{BANK} and {borrower} | Loan {loan_id} | Executed {signed_on} | LOS-{year}-Dockwright",
     )
     story += [
         p(
@@ -938,11 +938,11 @@ def write_json():
     records = {
         "loan": {
             "loanId": "LN-2026-0042",
-            "name": "Harborview Logistics Distribution Facility Loan 2026",
-            "borrower": "Harborview Logistics",
+            "name": "Dockwright Logistics Distribution Facility Loan 2026",
+            "borrower": "Dockwright Logistics",
             "borrowerEntity": BORROWER_2026,
             "applicantName": "Jordan Pike",
-            "applicantEmail": "jordan.pike@harborviewlogistics.example",
+            "applicantEmail": "jordan.pike@dockwrightlogistics.example",
             "loanType": "Commercial Real Estate",
             "status": "Underwriting",
             "loanAmount": 4800000,
@@ -961,12 +961,12 @@ def write_json():
             "targetClosingDate": "2026-11-30",
             "maturityDate": None,
             "covenantReviewDate": "2027-03-31",
-            "boxWorkspace": "LOS-2026-Harborview",
+            "boxWorkspace": "LOS-2026-Dockwright",
         },
         "salesforceOpportunity": {
-            "id": "006-demo-harborview",
-            "accountName": "Harborview Logistics",
-            "name": "Harborview Logistics - Distribution Facility Acquisition",
+            "id": "006-demo-dockwright",
+            "accountName": "Dockwright Logistics",
+            "name": "Dockwright Logistics - Distribution Facility Acquisition",
             "stage": "Proposal/Price Quote",
             "amount": 4800000,
             "closeDate": "2026-11-30",
@@ -976,7 +976,7 @@ def write_json():
         "priorLoans": [
             {
                 "loanId": "LN-2023-0311",
-                "name": "Harborview Logistics Revolving Line of Credit 2023",
+                "name": "Dockwright Logistics Revolving Line of Credit 2023",
                 "loanType": "Line of Credit",
                 "status": "Closed",
                 "loanAmount": 1500000,
@@ -991,7 +991,7 @@ def write_json():
             },
             {
                 "loanId": "LN-2025-0148",
-                "name": "Harborview Logistics Equipment Term Loan 2025",
+                "name": "Dockwright Logistics Equipment Term Loan 2025",
                 "loanType": "Equipment Finance",
                 "status": "Closed",
                 "loanAmount": 2150000,
@@ -1014,7 +1014,7 @@ def write_json():
             {"condition": "riskRating in High,Critical", "approver": "Chief Credit Officer", "slaHours": 48},
         ],
     }
-    (JSON_OUT / "harborview-los-records.json").write_text(
+    (JSON_OUT / "dockwright-los-records.json").write_text(
         json.dumps(records, indent=2) + "\n", encoding="utf-8", newline="\n"
     )
 
@@ -1079,7 +1079,7 @@ def main():
         dscr_actual="1.34x",
         maturity="September 30, 2026",
         signed_on="September 15, 2023",
-        borrower="Harborview Logistics",
+        borrower="Dockwright Logistics",
     )
     build_executed_loan_agreement(
         year=2025,
@@ -1099,7 +1099,7 @@ def main():
         dscr_actual="1.31x",
         maturity="May 31, 2030",
         signed_on="May 20, 2025",
-        borrower="Harborview Logistics",
+        borrower="Dockwright Logistics",
         prior_year=2023,
     )
     build_environmental_report()

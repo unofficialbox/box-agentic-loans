@@ -7,29 +7,29 @@
 //
 // Values mirror ../sample-data/los-sample-records.bcl and DOMAIN-MAPPING section 2.
 
-final String HARBORVIEW = 'Harborview Logistics';
+final String DOCKWRIGHT = 'Dockwright Logistics';
 final String PINECREST = 'Pinecrest Dental Group';
-final String HARBORVIEW_CONTACT = 'kadams@boxdemo.com';
+final String DOCKWRIGHT_CONTACT = 'kadams@boxdemo.com';
 final String PINECREST_CONTACT = 'sarah.kim@pinecrestdental.example';
-final String OPP_2023 = 'Harborview Working Capital Line 2023';
-final String OPP_2025 = 'Harborview Fleet Expansion 2025';
-final String OPP_2026 = 'Harborview Logistics - Distribution Facility Acquisition';
+final String OPP_2023 = 'Dockwright Working Capital Line 2023';
+final String OPP_2025 = 'Dockwright Fleet Expansion 2025';
+final String OPP_2026 = 'Dockwright Logistics - Distribution Facility Acquisition';
 final String OPP_PINECREST = 'Pinecrest Dental Practice Expansion 2026';
 
 // ---------- Accounts ----------
 Map<String, Account> accountsByName = new Map<String, Account>();
-for (Account acct : [SELECT Id, Name FROM Account WHERE Name IN :new List<String>{ HARBORVIEW, PINECREST }]) {
+for (Account acct : [SELECT Id, Name FROM Account WHERE Name IN :new List<String>{ DOCKWRIGHT, PINECREST }]) {
     accountsByName.put(acct.Name, acct);
 }
 
 Integer accountsCreated = 0;
 List<Account> accountsToInsert = new List<Account>();
-if (!accountsByName.containsKey(HARBORVIEW)) {
+if (!accountsByName.containsKey(DOCKWRIGHT)) {
     accountsToInsert.add(new Account(
-        Name = HARBORVIEW,
+        Name = DOCKWRIGHT,
         Industry = 'Transportation',
         Phone = '(617) 555-0101',
-        Website = 'https://www.harborviewlogistics.example'
+        Website = 'https://www.dockwrightlogistics.example'
     ));
 }
 if (!accountsByName.containsKey(PINECREST)) {
@@ -46,25 +46,25 @@ if (!accountsToInsert.isEmpty()) {
 }
 
 accountsByName.clear();
-for (Account acct : [SELECT Id, Name FROM Account WHERE Name IN :new List<String>{ HARBORVIEW, PINECREST }]) {
+for (Account acct : [SELECT Id, Name FROM Account WHERE Name IN :new List<String>{ DOCKWRIGHT, PINECREST }]) {
     accountsByName.put(acct.Name, acct);
 }
 
 // ---------- Contacts ----------
 Map<String, Contact> contactsByEmail = new Map<String, Contact>();
-for (Contact c : [SELECT Id, Email FROM Contact WHERE Email IN :new List<String>{ HARBORVIEW_CONTACT, PINECREST_CONTACT }]) {
+for (Contact c : [SELECT Id, Email FROM Contact WHERE Email IN :new List<String>{ DOCKWRIGHT_CONTACT, PINECREST_CONTACT }]) {
     contactsByEmail.put(c.Email, c);
 }
 
 Integer contactsCreated = 0;
 List<Contact> contactsToInsert = new List<Contact>();
-if (!contactsByEmail.containsKey(HARBORVIEW_CONTACT)) {
+if (!contactsByEmail.containsKey(DOCKWRIGHT_CONTACT)) {
     contactsToInsert.add(new Contact(
         FirstName = 'Jordan',
         LastName = 'Pike',
         Title = 'Chief Financial Officer',
-        Email = HARBORVIEW_CONTACT,
-        AccountId = accountsByName.get(HARBORVIEW).Id
+        Email = DOCKWRIGHT_CONTACT,
+        AccountId = accountsByName.get(DOCKWRIGHT).Id
     ));
 }
 if (!contactsByEmail.containsKey(PINECREST_CONTACT)) {
@@ -90,15 +90,15 @@ for (Opportunity opp : [SELECT Id, Name, AccountId FROM Opportunity WHERE Name I
 Integer opportunitiesCreated = 0;
 List<Opportunity> opportunitiesToInsert = new List<Opportunity>();
 
-String opp2023Key = OPP_2023 + '|' + accountsByName.get(HARBORVIEW).Id;
-String opp2025Key = OPP_2025 + '|' + accountsByName.get(HARBORVIEW).Id;
-String opp2026Key = OPP_2026 + '|' + accountsByName.get(HARBORVIEW).Id;
+String opp2023Key = OPP_2023 + '|' + accountsByName.get(DOCKWRIGHT).Id;
+String opp2025Key = OPP_2025 + '|' + accountsByName.get(DOCKWRIGHT).Id;
+String opp2026Key = OPP_2026 + '|' + accountsByName.get(DOCKWRIGHT).Id;
 String oppPinecrestKey = OPP_PINECREST + '|' + accountsByName.get(PINECREST).Id;
 
 if (!opportunitiesByKey.containsKey(opp2023Key)) {
     opportunitiesToInsert.add(new Opportunity(
         Name = OPP_2023,
-        AccountId = accountsByName.get(HARBORVIEW).Id,
+        AccountId = accountsByName.get(DOCKWRIGHT).Id,
         Amount = 1500000,
         CloseDate = Date.newInstance(2023, 9, 15),
         StageName = 'Closed Won'
@@ -107,7 +107,7 @@ if (!opportunitiesByKey.containsKey(opp2023Key)) {
 if (!opportunitiesByKey.containsKey(opp2025Key)) {
     opportunitiesToInsert.add(new Opportunity(
         Name = OPP_2025,
-        AccountId = accountsByName.get(HARBORVIEW).Id,
+        AccountId = accountsByName.get(DOCKWRIGHT).Id,
         Amount = 2150000,
         CloseDate = Date.newInstance(2025, 5, 20),
         StageName = 'Closed Won'
@@ -116,7 +116,7 @@ if (!opportunitiesByKey.containsKey(opp2025Key)) {
 if (!opportunitiesByKey.containsKey(opp2026Key)) {
     opportunitiesToInsert.add(new Opportunity(
         Name = OPP_2026,
-        AccountId = accountsByName.get(HARBORVIEW).Id,
+        AccountId = accountsByName.get(DOCKWRIGHT).Id,
         Amount = 4800000,
         CloseDate = Date.today().addMonths(4),
         StageName = 'Proposal/Price Quote'
@@ -153,7 +153,7 @@ Integer loansUpdated = 0;
 List<LOS_Loan__c> loansToInsert = new List<LOS_Loan__c>();
 List<LOS_Loan__c> loansToUpdate = new List<LOS_Loan__c>();
 
-// Prior executed Harborview loans (loan history for the same borrower). Both carry the
+// Prior executed Dockwright loans (loan history for the same borrower). Both carry the
 // negotiated Schedule 1 covenants: 70% LTV and a 1.30x DSCR test, which is the precedent
 // the 2026 markup regresses.
 LOS_Loan__c loan2023 = loansByLoanId.get('LN-2023-0311');
@@ -163,9 +163,9 @@ if (loan2023 == null) {
 } else {
     loansToUpdate.add(loan2023);
 }
-loan2023.Name = 'Harborview Logistics Revolving Line of Credit 2023';
-loan2023.Borrower__c = HARBORVIEW;
-loan2023.Borrower_Account__c = accountsByName.get(HARBORVIEW).Id;
+loan2023.Name = 'Dockwright Logistics Revolving Line of Credit 2023';
+loan2023.Borrower__c = DOCKWRIGHT;
+loan2023.Borrower_Account__c = accountsByName.get(DOCKWRIGHT).Id;
 loan2023.Opportunity__c = opportunitiesByKey.get(opp2023Key).Id;
 loan2023.Loan_Type__c = 'Line of Credit';
 loan2023.Status__c = 'Closed';
@@ -180,7 +180,7 @@ loan2023.Region__c = 'Northeast';
 loan2023.Collateral_Type__c = 'Receivables';
 loan2023.Target_Closing_Date__c = Date.newInstance(2023, 9, 15);
 loan2023.Applicant_Name__c = 'Jordan Pike';
-loan2023.Applicant_Email__c = HARBORVIEW_CONTACT;
+loan2023.Applicant_Email__c = DOCKWRIGHT_CONTACT;
 loan2023.Loan_Officer_Name__c = 'Alex Bennett';
 loan2023.Record_Source__c = 'Manual';
 loan2023.Risk_Rating__c = 'Low';
@@ -193,9 +193,9 @@ if (loan2025 == null) {
 } else {
     loansToUpdate.add(loan2025);
 }
-loan2025.Name = 'Harborview Logistics Equipment Term Loan 2025';
-loan2025.Borrower__c = HARBORVIEW;
-loan2025.Borrower_Account__c = accountsByName.get(HARBORVIEW).Id;
+loan2025.Name = 'Dockwright Logistics Equipment Term Loan 2025';
+loan2025.Borrower__c = DOCKWRIGHT;
+loan2025.Borrower_Account__c = accountsByName.get(DOCKWRIGHT).Id;
 loan2025.Opportunity__c = opportunitiesByKey.get(opp2025Key).Id;
 loan2025.Loan_Type__c = 'Equipment Finance';
 loan2025.Status__c = 'Closed';
@@ -210,7 +210,7 @@ loan2025.Region__c = 'Northeast';
 loan2025.Collateral_Type__c = 'Equipment';
 loan2025.Target_Closing_Date__c = Date.newInstance(2025, 5, 20);
 loan2025.Applicant_Name__c = 'Jordan Pike';
-loan2025.Applicant_Email__c = HARBORVIEW_CONTACT;
+loan2025.Applicant_Email__c = DOCKWRIGHT_CONTACT;
 loan2025.Loan_Officer_Name__c = 'Alex Bennett';
 loan2025.Record_Source__c = 'Manual';
 loan2025.Risk_Rating__c = 'Low';
@@ -225,10 +225,10 @@ if (loan2026 == null) {
 } else {
     loansToUpdate.add(loan2026);
 }
-loan2026.Name = 'Harborview Logistics Distribution Facility Loan 2026';
-loan2026.Borrower__c = HARBORVIEW;
-loan2026.Borrower_Account__c = accountsByName.get(HARBORVIEW).Id;
-loan2026.Borrower_Entity__c = 'Harborview Logistics Holdings LLC';
+loan2026.Name = 'Dockwright Logistics Distribution Facility Loan 2026';
+loan2026.Borrower__c = DOCKWRIGHT;
+loan2026.Borrower_Account__c = accountsByName.get(DOCKWRIGHT).Id;
+loan2026.Borrower_Entity__c = 'Dockwright Logistics Holdings LLC';
 loan2026.Opportunity__c = opportunitiesByKey.get(opp2026Key).Id;
 loan2026.Loan_Type__c = 'Commercial Real Estate';
 loan2026.Status__c = 'Underwriting';
@@ -243,7 +243,7 @@ loan2026.Region__c = 'Northeast';
 loan2026.Collateral_Type__c = 'Real Estate';
 loan2026.Target_Closing_Date__c = Date.today().addMonths(4);
 loan2026.Applicant_Name__c = 'Jordan Pike';
-loan2026.Applicant_Email__c = HARBORVIEW_CONTACT;
+loan2026.Applicant_Email__c = DOCKWRIGHT_CONTACT;
 loan2026.Loan_Officer_Name__c = 'Alex Bennett';
 loan2026.Record_Source__c = 'Manual';
 loan2026.Risk_Rating__c = 'High';
@@ -290,9 +290,9 @@ if (!loansToUpdate.isEmpty()) {
 
 System.debug(LoggingLevel.INFO, 'SEED COMPLETE accounts new=' + accountsCreated + ' contacts new=' + contactsCreated + ' opportunities new=' + opportunitiesCreated + ' loans new=' + loansCreated + ' loans updated=' + loansUpdated);
 System.debug(LoggingLevel.INFO, 'SEED IDS: ' +
-    'account.Harborview=' + accountsByName.get(HARBORVIEW).Id +
+    'account.Dockwright=' + accountsByName.get(DOCKWRIGHT).Id +
     ', account.Pinecrest=' + accountsByName.get(PINECREST).Id +
-    ', opp.Harborview2026=' + opportunitiesByKey.get(opp2026Key).Id +
+    ', opp.Dockwright2026=' + opportunitiesByKey.get(opp2026Key).Id +
     ', opp.Pinecrest=' + opportunitiesByKey.get(oppPinecrestKey).Id +
     ', loan.LN-2026-0042=' + (loan2026.Id == null ? 'pending_insert' : loan2026.Id) +
     ', loan.LN-2026-0088=' + (loanPinecrest.Id == null ? 'pending_insert' : loanPinecrest.Id));

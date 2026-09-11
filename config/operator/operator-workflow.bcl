@@ -30,7 +30,7 @@ locals {
             }
             {
               "command" = "python3 scripts/demo_operator.py box-foundation"
-              "completeWhen" = "Bootstrap state contains the LOS-2026-Harborview workspace, nine child folders, five metadata templates, the six borrower documents, four Doc Gen templates, and the nine credit policy files."
+              "completeWhen" = "Bootstrap state contains the LOS-2026-Dockwright workspace, nine child folders, five metadata templates, the six borrower documents, four Doc Gen templates, and the nine credit policy files."
               "dryRun" = "python3 scripts/demo_operator.py box-foundation --dry-run"
               "id" = "box-foundation"
               "owner" = "Box administrator"

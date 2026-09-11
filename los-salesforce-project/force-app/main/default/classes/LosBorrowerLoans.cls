@@ -12,7 +12,7 @@
  * Account. There is nothing to abuse because there is nothing to supply.
  *
  * The Account lookup is the anchor rather than the Borrower__c text, which can carry both
- * "Harborview Logistics" and "Harborview Logistics Holdings LLC" for the same customer --
+ * "Dockwright Logistics" and "Dockwright Logistics Holdings LLC" for the same customer --
  * matching on it would show a borrower some of their loans and hide the rest.
  *
  * An internal user has no Contact, and gets nothing. That is deliberate: this action

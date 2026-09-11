@@ -7,9 +7,9 @@ describe("ProfileMenu", () => {
   test("names the reader and the account their rows are bounded to", () => {
     // The scoping is this app's claim. Until it was on screen a presenter had to assert
     // who "your loans" belonged to.
-    render(<ProfileMenu identity={{ isGuest: false, name: "Dana Whitfield", accountName: "Harborview Logistics" }} />);
+    render(<ProfileMenu identity={{ isGuest: false, name: "Dana Whitfield", accountName: "Dockwright Logistics" }} />);
     expect(screen.getByText("Dana Whitfield")).toBeVisible();
-    expect(screen.getByText("Harborview Logistics")).toBeVisible();
+    expect(screen.getByText("Dockwright Logistics")).toBeVisible();
   });
 
   test("offers a way in when signed out, and never an avatar over nobody", () => {

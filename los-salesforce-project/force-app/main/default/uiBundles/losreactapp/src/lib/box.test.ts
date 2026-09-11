@@ -232,11 +232,11 @@ describe("listBoxFolderItems", () => {
 
 describe("fetchBoxFolderName", () => {
   test("reads the folder's own name with the scoped token", async () => {
-    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ id: "42", name: "Harborview Logistics Distribution Facility Loan 2026" }) }));
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ id: "42", name: "Dockwright Logistics Distribution Facility Loan 2026" }) }));
     vi.stubGlobal("fetch", fetchMock);
     expect(await fetchBoxFolderName("42", "scoped-token")).toEqual({
       ok: true,
-      value: "Harborview Logistics Distribution Facility Loan 2026",
+      value: "Dockwright Logistics Distribution Facility Loan 2026",
     });
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("https://api.box.com/2.0/folders/42?fields=name");
