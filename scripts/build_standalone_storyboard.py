@@ -3,7 +3,6 @@
 import base64
 import hashlib
 import html
-import json
 import mimetypes
 from pathlib import Path
 import re
@@ -33,6 +32,10 @@ def build(source=GUIDE / 'index.html', destination=GUIDE / 'standalone.html'):
         assets.setdefault(key, {'mime': mime, 'data': base64.b64encode(data).decode()})
         return key, path.name, mime
 
+    def data_url(key):
+        asset = assets[key]
+        return f'data:{asset["mime"]};base64,{asset["data"]}'
+
     def attribute(match):
         name, url = match.groups()
         parsed = urlsplit(html.unescape(url))
@@ -43,14 +46,14 @@ def build(source=GUIDE / 'index.html', destination=GUIDE / 'standalone.html'):
             mime = mimetypes.guess_type(path.name)[0] or ''
             if mime.startswith('image/'):
                 key, _, _ = register(url)
-                return f'data-embedded-href="{key}" target="_blank" rel="noopener"'
+                return f'href="{data_url(key)}" target="_blank" rel="noopener"'
             relative = path.relative_to(ROOT).as_posix()
             target = REPO_URL + quote(relative, safe='/')
             if parsed.fragment:
                 target += '#' + parsed.fragment
             return f'href="{html.escape(target, quote=True)}" target="_blank" rel="noopener"'
         key, _, _ = register(url)
-        return f'data-embedded-src="{key}"'
+        return f'src="{data_url(key)}"'
 
     content = source.read_text()
     content = re.sub(r'\b(href|src)="([^"]+)"', attribute, content)
@@ -64,27 +67,6 @@ def build(source=GUIDE / 'index.html', destination=GUIDE / 'standalone.html'):
         return f'url("data:{mime};base64,{assets[key]["data"]}")'
 
     content = re.sub(r"url\(([\"'])(.*?)\1\)", font, content)
-    payload = json.dumps(assets, separators=(',', ':'))
-    runtime = '''
-<script id="embedded-files" type="application/json">''' + payload + '''</script>
-<script>
-(() => {
-  const files = JSON.parse(document.getElementById('embedded-files').textContent);
-  const urls = new Map();
-  function fileUrl(key) {
-    if (!urls.has(key)) {
-      const file = files[key];
-      const bytes = Uint8Array.from(atob(file.data), char => char.charCodeAt(0));
-      urls.set(key, URL.createObjectURL(new Blob([bytes], {type: file.mime})));
-    }
-    return urls.get(key);
-  }
-  document.querySelectorAll('[data-embedded-src]').forEach(image => { image.src = fileUrl(image.dataset.embeddedSrc); });
-  document.querySelectorAll('[data-embedded-href]').forEach(link => { link.href = fileUrl(link.dataset.embeddedHref); });
-})();
-</script>
-'''
-    content = content.replace('</html>', runtime + '</html>')
     Path(destination).write_text(content)
     return len(assets)
 
