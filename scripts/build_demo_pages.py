@@ -39,14 +39,6 @@ def build(destination, root=ROOT):
         target = destination / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
-    # Keep previously shared download URLs working without treating archives as new fixtures.
-    legacy = root / GUIDE / 'legacy'
-    if legacy.is_dir():
-        for source in legacy.rglob('*'):
-            if source.is_file():
-                target = destination / 'output' / source.relative_to(legacy)
-                target.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(source, target)
     standalone = destination / GUIDE / 'standalone.html'
     standalone.write_text(standalone.read_text().replace(REPO_URL, PUBLIC_URL))
     (destination / '.nojekyll').touch()
