@@ -570,22 +570,31 @@ h1, h2, h3 { font-family: var(--ab-serif); font-weight: 400; letter-spacing: -0.
   to { transform: rotate(360deg); }
 }
 
-.signature-panel {
-  background: var(--ab-surface);
-  border: 1px solid var(--ab-line);
-  border-radius: var(--ab-radius);
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
+/* Signing opens only on request and uses the canvas beside the navigation rail. */
+.signature-alert { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 16px 20px; border: 1px solid var(--ab-line); border-left: 4px solid var(--ab-amber); border-radius: var(--ab-radius); background: var(--ab-surface); }
+.signature-alert strong { color: var(--ab-ink); }
+.signature-alert p { margin: 4px 0 0; color: var(--ab-muted); font-size: 13px; }
+.signature-alert button { flex-shrink: 0; }
+.cb-page-signing { height: 100dvh; min-height: 0; }
+.cb-page-signing .topbar { flex-shrink: 0; }
+.content-grid-signing { flex: 1; min-height: 0; padding: 0; gap: 0; }
+.content-grid-signing main { min-height: 0; gap: 0; }
+.signature-pane { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--ab-surface); }
+.signature-pane .box-preview-bar { flex-shrink: 0; }
+.signature-pane .embedded-sign-container { flex: 1; min-height: 0; height: auto; border: 0; border-radius: 0; }
+@media (max-width: 620px) {
+  .signature-alert { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .signature-pane .box-preview-bar { flex-wrap: wrap; }
 }
 
-.signature-panel h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: var(--ab-text);
-}
-
-.signature-panel p {
-  margin: 0 0 1rem 0;
-  color: var(--ab-text-dim);
-}
+/* The checklist and retained-document list size to their contents; preview owns its canvas. */
+.workspace-documents:not([hidden]) { display: flex; flex-direction: column; gap: var(--grid-gap); }
+.workspace-documents .box-live:not(:has(.box-preview-pane)) { height: auto; }
+.workspace-documents .box-table { table-layout: fixed; }
+.workspace-documents .box-table th:nth-child(1) { width: 40%; }
+.workspace-documents .box-table th:nth-child(2) { width: 18%; }
+.workspace-documents .box-table th:nth-child(3) { width: 16%; }
+.workspace-documents .box-table th:nth-child(4) { width: 17%; }
+.workspace-documents .box-table th:nth-child(5) { width: 9%; }
+.workspace-documents .box-table td { white-space: normal; overflow-wrap: anywhere; }
+.workspace-documents .box-table-name svg { flex-shrink: 0; }

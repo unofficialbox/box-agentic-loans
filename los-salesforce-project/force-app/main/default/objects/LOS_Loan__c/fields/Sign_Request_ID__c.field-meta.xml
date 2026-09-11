@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Sign_Request_ID__c</fullName>
+    <description>Current Box request reference retained independently of the expiring signer URL.</description>
+    <label>Sign Request ID</label>
+    <length>100</length>
+    <type>Text</type>
+</CustomField>

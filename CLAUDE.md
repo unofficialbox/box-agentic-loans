@@ -1,5 +1,7 @@
 # Claude Desktop - LOS Demo Connector Strategy
 
+For repository work, read README.md and exactly one persona from .claude/personas/. Never load the entire documentation tree.
+
 When both **LOS Loan Tools** and **Box** MCP connectors are loaded, use this strategy:
 
 ## Search Strategy: Metadata First
@@ -16,8 +18,8 @@ Metadata searches are:
 **CRITICAL: These IDs are STATIC. NEVER call list tools - they return hundreds of results and swamp the session.**
 
 - **Metadata template:** `losDocument` (NEVER call `list_metadata_templates`)
-- **Doc Gen template ID:** Get from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c` (NEVER call `list_docgen_templates`)
-- **Credit Policy Hub ID:** `1488378748` "Acme Credit Policy Library" (NEVER call `list_hubs`)
+- **Doc Gen template ID:** Get from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c` (use the bounded fallback in `skills/loan-origination/SKILL.md` when config reads are unavailable)
+- **Credit Policy Hub ID:** `<CONFIGURED_ID>` "Acme Credit Policy Library" (NEVER call `list_hubs`)
 
 ### Loan Identification
 
@@ -112,11 +114,11 @@ Which loan documents are flagged critical policy risk?
 **For Box AI Operations:**
 - Document QA → Box connector's `box_ai_ask`
 - Term extraction → Box connector's `box_ai_extract`
-- Hub/policy search → Box connector's `ai_qa_hub` with hub_id `1488378748`
+- Hub/policy search → Box connector's `ai_qa_hub` with hub_id `<CONFIGURED_ID>`
 
 **NEVER:**
 - Get source file contents for analysis (use Box AI on IDs). Exception: inspect the exact Doc Gen output to verify merge completion before signing.
-- List hubs (Hub ID is static: `1488378748`)
+- List hubs (Hub ID is static: `<CONFIGURED_ID>`)
 - List templates (metadata template is `losDocument`, Doc Gen template from Salesforce)
 
 **For Box Doc Gen:**
@@ -224,7 +226,7 @@ query_metadata(template="losDocument", query="borrowerEntity='Harborview Logisti
 
 Follow [the canonical Doc Gen contract](docs/DOCGEN-GUIDE.md) for `create_docgen_batch`. Resolve the template from Salesforce and the destination from the current loan package. Pass all 15 merge paths under `document_generation_data[].user_input`.
 
-A batch acceptance is not success. Read the matching job, require `completed`, and inspect its exact `output_file.id` for unresolved tags and correct loan terms before previewing or sending. Do not select a generated file by name or metadata search; earlier failed outputs can have nearly identical names. A successful retry does not update an existing Box Sign request.
+A batch acceptance alone is not a generated letter. Use the output explicitly tied to this generation response or matching job, check its content in the background, and continue to preview and any already authorized signing. Do not add a separate manual job-status validation step when the exact populated output is available. Do not select a generated file by name or metadata search; earlier failed outputs can have nearly identical names. A successful retry does not update an existing Box Sign request.
 
 ## Performance Tips
 
@@ -254,7 +256,7 @@ A batch acceptance is not success. Read the matching job, require `completed`, a
 6. **Scope Metadata Queries:** Use folder scope when loan is known, enterprise scope when searching portfolio-wide
    ```
    # Searching one loan's folder - faster
-   query_metadata(template="losDocument", folder_id="416352496139", query="policyRisk='Critical'")
+   query_metadata(template="losDocument", folder_id="<CONFIGURED_ID>", query="policyRisk='Critical'")
    
    # Searching entire portfolio
    query_metadata(template="losDocument", query="policyRisk='Critical'")
@@ -271,13 +273,13 @@ A batch acceptance is not success. Read the matching job, require `completed`, a
 - File must be in the loan's governed folder
 
 **If Doc Gen has empty placeholders:**
-- Follow [Doc Gen diagnosis and retry](docs/DOCGEN-GUIDE.md#diagnosis-and-retry).
+- Follow [Doc Gen diagnosis and retry](skills/loan-origination/SKILL.md#doc-gen-troubleshooting).
 - Read the exact job's warnings and output file. Do not conclude that typed tags are invalid or blame the template without checking Box's recognized tags.
 
 **For Doc Gen:**
 - ✅ Use Box MCP `create_docgen_batch` (direct API, MCP-first)
 - ✅ Get template ID from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c`
-- ❌ NEVER call `list_docgen_templates` - template ID is static
+- If config reads are unavailable, follow the skill’s bounded template discovery fallback; never guess the configured ID.
 - Must provide complete analysis data to fill all placeholders
 
 ## Summary

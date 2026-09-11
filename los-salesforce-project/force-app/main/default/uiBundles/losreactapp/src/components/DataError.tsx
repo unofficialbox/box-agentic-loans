@@ -1,3 +1,4 @@
+import { signInReturnUrl } from "../lib/identity";
 import { AlertTriangle, LogIn, RefreshCw } from "lucide-react";
 
 /**
@@ -30,11 +31,11 @@ export function DataError({
         <p>{detail}</p>
       </div>
       {signInUrl ? (
-        <a className="upload-button" href={signInUrl} data-testid="data-error-signin">
+        <a className="upload-button" href={signInReturnUrl(signInUrl)} data-testid="data-error-signin">
           <LogIn size={15} aria-hidden="true" /> Sign in
         </a>
       ) : null}
-      {onRetry ? (
+      {onRetry && !signInUrl ? (
         <button type="button" className="secondary-button" onClick={onRetry}>
           <RefreshCw size={15} aria-hidden="true" /> Try again
         </button>

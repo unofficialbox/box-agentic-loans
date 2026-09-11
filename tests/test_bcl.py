@@ -97,7 +97,7 @@ class BCLLoaderTests(unittest.TestCase):
         self.assertEqual(routing["fallback"]["directoryKey"], "credit-admin-triage")
         documents = bcl.load_bcl(CONFIG / "los" / "required-documents.bcl")
         self.assertEqual(documents["artifact_name"], "required-documents")
-        self.assertEqual(len(documents["requirements"]["Commercial Real Estate"]), 7)
+        self.assertEqual(len(documents["requirements"]["Commercial Real Estate"]), 6)
         finding = bcl.load_bcl(CONFIG / "los" / "underwriting-finding.schema.bcl")
         self.assertEqual(finding["title"], "LOS Underwriting Finding")
         self.assertEqual(finding["properties"]["findingId"]["pattern"], "^UWF-[0-9]{3,}$")

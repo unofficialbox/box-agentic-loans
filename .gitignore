@@ -162,3 +162,6 @@ dist
 los-salesforce-project/force-app/main/default/bots/
 los-salesforce-project/force-app/main/default/genAiPlannerBundles/
 .venv/
+
+# Local browser test output
+/test-results/

@@ -6,7 +6,7 @@ set -e
 
 if [ $# -ne 3 ]; then
     echo "Usage: $0 <sf-alias> <box-workspace-folder-id> <loan-id>"
-    echo "Example: $0 agentforce 416380062104 LN-2026-0042"
+    echo "Example: $0 agentforce <folder-id> LN-2026-0042"
     exit 1
 fi
 

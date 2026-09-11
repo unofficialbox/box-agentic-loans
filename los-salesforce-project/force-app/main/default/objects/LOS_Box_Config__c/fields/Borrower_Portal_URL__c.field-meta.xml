@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Borrower_Portal_URL__c</fullName>
+    <description>HTTPS my.site.com workspace base URL used for Box Sign completion redirects. Set per environment; loan and mapped folder identifiers are appended by the server.</description>
+    <label>Borrower Portal URL</label>
+    <required>false</required>
+    <type>Url</type>
+</CustomField>

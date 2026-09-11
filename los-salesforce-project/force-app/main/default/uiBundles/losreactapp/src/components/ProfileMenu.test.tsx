@@ -14,7 +14,7 @@ describe("ProfileMenu", () => {
 
   test("offers a way in when signed out, and never an avatar over nobody", () => {
     render(<ProfileMenu identity={{ isGuest: true, loginUrl: "https://example.invalid/login" }} />);
-    expect(screen.getByTestId("profile-signin")).toHaveAttribute("href", "https://example.invalid/login");
+    expect(screen.getByTestId("profile-signin")).toHaveAttribute("href", "https://example.invalid/login?startURL=%2F");
     expect(screen.queryByTestId("profile-menu")).not.toBeInTheDocument();
   });
 

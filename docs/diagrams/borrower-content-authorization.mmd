@@ -6,3 +6,9 @@ flowchart LR
     F --> P[File-scoped preview token]
     U --> X[Box uploads]
     P --> D[One permitted Box document]
+
+  Sign[Box-confirmed signed request] --> Release[Publish verified final copies as Executed]
+  Release --> Receipt[Retain exact output IDs and request ID]
+  Receipt --> Closed[Close loan after outputs are ready]
+  Receipt --> Check[Check output remains in mapped loan folder]
+  Check --> Preview[Borrower file-scoped preview]

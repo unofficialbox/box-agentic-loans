@@ -1,5 +1,5 @@
 import type { BoxFolderItem } from "../lib/box";
-import { byDocumentType } from "../lib/documents";
+import { byDocumentType, isSigningDocument } from "../lib/documents";
 import { Donut, foldToPalette } from "./Donut";
 import { PackageProgress } from "./PackageProgress";
 
@@ -45,7 +45,7 @@ export function WorkspaceMetrics({ files }: { files: BoxFolderItem[] | null }) {
     );
   }
 
-  if (files.length === 0) return null;
+  if (files.filter((file) => !isSigningDocument(file)).length === 0) return null;
 
   const types = foldToPalette(byDocumentType(files));
 

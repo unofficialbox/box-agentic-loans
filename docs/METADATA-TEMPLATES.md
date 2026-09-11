@@ -188,7 +188,7 @@ Keyword search:        ~1-2s   (returns false positives)
 # When you know the folder ID
 query_metadata(
   template="losDocument",
-  folder_id="416352496139",
+  folder_id="<CONFIGURED_ID>",
   query="policyRisk='Critical'"
 )
 ```

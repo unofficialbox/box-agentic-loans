@@ -28,12 +28,13 @@ public with sharing class LosBorrowerDocuments {
                 String versionStatus = (String)document.get('versionStatus');
                 // Show files unless explicitly marked as internal-only
                 if ((String)file.get('type') != 'file' || INTERNAL_ONLY_STATUSES.contains(versionStatus)) continue;
-                // Never return bank risk/approval metadata, even on borrower-visible files.
+                // Return document approval only; bank risk and credit approval details stay private.
                 Map<String,Object> safe = new Map<String,Object>();
                 for (String key : new List<String>{'id','name','type','size','extension','modified_at'}) safe.put(key,file.get(key));
                 safe.put('metadata', new Map<String,Object>{'enterprise' => new Map<String,Object>{
                     'losDocument' => new Map<String,Object>{'documentType' => document.get('documentType'),
-                        'versionStatus' => document.get('versionStatus')}}});
+                        'versionStatus' => document.get('versionStatus'),
+                        'approvalStatus' => document.get('approvalStatus')}}});
                 visible.add(safe);
             }
             offset += entries.size();
@@ -42,6 +43,76 @@ public with sharing class LosBorrowerDocuments {
             if (entries.isEmpty()) throw new ListingException('Box pagination did not advance');
         }
         throw new ListingException('Loan folder exceeds supported listing size');
+    }
+    /** Release only the final copies identified by a verified completed signing request. */
+    public static void publishSignedFiles(Map<String,Object> artifacts, String folderId, String token) {
+        for (String fileId : artifacts.keySet()) {
+            HttpRequest read = new HttpRequest();
+            read.setEndpoint('callout:LOS_Box/2.0/files/' + fileId + '?fields=id,path_collection');
+            read.setMethod('GET'); read.setHeader('Authorization','Bearer ' + token);
+            HttpResponse fileResponse = new Http().send(read);
+            if (fileResponse.getStatusCode() != 200) throw new ListingException('Signed output not available');
+            Map<String,Object> file = objectMap(JSON.deserializeUntyped(fileResponse.getBody()));
+            Boolean inLoan = false;
+            List<Object> entries = (List<Object>)objectMap(file.get('path_collection')).get('entries');
+            if (entries != null) for (Object entry : entries) {
+                if (objectMap(entry).get('id') == folderId) inLoan = true;
+            }
+            if (!inLoan || file.get('id') != fileId) throw new ListingException('Signed output outside loan');
+            Map<String,Object> fields = new Map<String,Object>{
+                'documentType'=>objectMap(artifacts.get(fileId)).get('documentType'),
+                'versionStatus'=>'Executed','signatureStatus'=>'Signed'
+            };
+            HttpRequest write = new HttpRequest();
+            write.setEndpoint('callout:LOS_Box/2.0/files/' + fileId + '/metadata/enterprise/losDocument');
+            write.setMethod('POST'); write.setHeader('Authorization','Bearer ' + token);
+            write.setHeader('Content-Type','application/json');write.setBody(JSON.serialize(fields));
+            HttpResponse res = new Http().send(write);
+            if (res.getStatusCode() == 409) {
+                List<Object> patch = new List<Object>();
+                for (String key : fields.keySet()) patch.add(new Map<String,Object>{'op'=>'add','path'=>'/'+key,'value'=>fields.get(key)});
+                write.setMethod('PUT'); write.setHeader('Content-Type','application/json-patch+json');write.setBody(JSON.serialize(patch));
+                res = new Http().send(write);
+            }
+            if (res.getStatusCode() != 200 && res.getStatusCode() != 201) throw new ListingException('Signed output publication failed');
+        }
+    }
+
+    /** Only exact Box-confirmed outputs may cross a signing subfolder boundary. */
+    public static void addSignedFiles(List<Object> visible, String folderId, String token, String receipt) {
+        if (String.isBlank(receipt)) return;
+        Map<String,Object> artifacts = objectMap(JSON.deserializeUntyped(receipt));
+        for (String fileId : artifacts.keySet()) {
+            Map<String,Object> artifact = objectMap(artifacts.get(fileId));
+            if (artifact.get('folderId') != folderId || !fileId.isNumeric()) continue;
+            HttpRequest req = new HttpRequest();
+            req.setEndpoint('callout:LOS_Box/2.0/files/' + fileId
+                + '?fields=id,name,type,size,extension,modified_at,path_collection,metadata.enterprise.losDocument');
+            req.setMethod('GET'); req.setHeader('Authorization', 'Bearer ' + token);
+            HttpResponse res = new Http().send(req);
+            // Deleted or inaccessible documents do not grant preview access.
+            if (res.getStatusCode() == 404 || res.getStatusCode() == 403) continue;
+            if (res.getStatusCode() != 200) throw new ListingException('Signed document lookup failed');
+            Map<String,Object> file = objectMap(JSON.deserializeUntyped(res.getBody()));
+            Boolean inLoan = false;
+            List<Object> ancestors = (List<Object>)objectMap(file.get('path_collection')).get('entries');
+            if (ancestors != null) for (Object ancestor : ancestors) {
+                if (objectMap(ancestor).get('id') == folderId) inLoan = true;
+            }
+            Map<String,Object> document = objectMap(objectMap(objectMap(file.get('metadata')).get('enterprise')).get('losDocument'));
+            if (!inLoan || file.get('id') != fileId || file.get('type') != 'file'
+                || INTERNAL_ONLY_STATUSES.contains((String)document.get('versionStatus'))) continue;
+            Map<String,Object> safe = new Map<String,Object>();
+            for (String key : new List<String>{'id','name','type','size','extension','modified_at'}) safe.put(key,file.get(key));
+            safe.put('metadata', new Map<String,Object>{'enterprise'=>new Map<String,Object>{
+                'losDocument'=>new Map<String,Object>{'documentType'=>artifact.get('documentType'),
+                    'versionStatus'=>document.get('versionStatus')}}});
+            // Replace a direct child with the authoritative signing classification.
+            for (Integer i=visible.size()-1; i>=0; i--) {
+                if (objectMap(visible[i]).get('id') == fileId) visible.remove(i);
+            }
+            visible.add(safe);
+        }
     }
     public static Boolean containsFile(List<Object> files, String fileId) {
         for (Object file : files) if ((String)((Map<String,Object>)file).get('id') == fileId) return true;

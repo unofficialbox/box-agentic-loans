@@ -14,6 +14,7 @@ A borrower applies through the Acme Borrower Portal. Documents uploaded to Box a
 
 **Key features:**
 - Governed loan files in Box, structured records in Salesforce
+- Box-confirmed signature completion closes the loan; signed letters and signing logs remain available in the borrower workspace
 - Box AI for document classification and term extraction
 - Credit policy validation via Box Hubs
 - Headless AI integration (works with Claude Desktop, ChatGPT, Slack, Agentforce)
@@ -86,7 +87,6 @@ Run the demo beats with Claude Desktop (or any AI harness):
 
 - **[docs/SETUP.md](docs/SETUP.md)** - Complete deployment guide
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System design and governance
-- **[docs/HANDOFF.md](docs/HANDOFF.md)** - Developer handoff guide
 - **[CLAUDE.md](CLAUDE.md)** - AI connector strategy (metadata-first, Box MCP vs LOS tools)
 - **[docs/SECURITY.md](docs/SECURITY.md)** - Borrower authorization and token scoping
 - **[docs/paved-path.md](docs/paved-path.md)** - MCP deployment guidance

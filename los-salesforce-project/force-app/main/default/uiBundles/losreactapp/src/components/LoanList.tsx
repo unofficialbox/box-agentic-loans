@@ -44,7 +44,7 @@ export function LoanList({
   // class gate means the same thing to a visitor as the class's own 401 -- unless the
   // reader is known to be signed in, in which case signing in again would not help and
   // the refusal is shown as what it is.
-  if (error === NOT_AUTHENTICATED || (error === FORBIDDEN && !signedIn)) {
+  if (signedIn === false || error === NOT_AUTHENTICATED || (error === FORBIDDEN && !signedIn)) {
     return (
       <DataError
         title="Sign in to see your loans"
