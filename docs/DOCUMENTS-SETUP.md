@@ -113,7 +113,7 @@
   - Table showing standard form vs. as-executed terms
   - Shows 75%→70% LTV and 1.25x→1.30x DSCR negotiations
 - **Must have signature page with:**
-  - Borrower signature: Jordan Pike (CFO)
+  - Borrower signature: Dana Whitfield (CFO)
   - Lender signature: Priya Shah (Chief Credit Officer)
   - Date: September 15, 2023
 
@@ -155,7 +155,7 @@
 - **Must include Schedule 1 (Negotiated Covenants)**
   - Table showing same 70% LTV / 1.30x DSCR as 2023 agreement
 - **Must have signature page with:**
-  - Borrower signature: Jordan Pike (CFO) - same as 2023
+  - Borrower signature: Dana Whitfield (CFO) - same as 2023
   - Lender signature: Priya Shah (Chief Credit Officer) - same as 2023
   - Date: May 20, 2025
 
@@ -181,7 +181,7 @@
 | Beat 3 | LN-2026-0042: Term sheet with borrower markup | Box AI extracts: $4.8M, 6.50% requested, 1.10x DSCR, compares to policy Hub |
 | Beat 3a | (uses Beat 3 data) | Validates extracted terms against Salesforce record |
 | Beat 3b | (uses Beat 3 data) | Applies amount/rate/term to record with confirmation |
-| Beat 4 | LN-2023-0311 + LN-2025-0148: Executed agreements | Box AI multi-file QA compares covenants: **Both prior loans had 70% LTV, 1.30x DSCR quarterly** (consistent precedent). 2026 markup asks for 1.10x DSCR annual (more aggressive). Extracts Section 8/Schedule 1, identifies Pike/Shah signatures. |
+| Beat 4 | LN-2023-0311 + LN-2025-0148: Executed agreements | Box AI multi-file QA compares covenants: **Both prior loans had 70% LTV, 1.30x DSCR quarterly** (consistent precedent). 2026 markup asks for 1.10x DSCR annual (more aggressive). Extracts Section 8/Schedule 1, identifies Whitfield/Shah signatures. |
 | Beat 5 | (uses all prior data) | Generates commitment letter from beats 3+4 analysis |
 | Beat 5b | Beat 5: Generated commitment letter | Creates Box Sign request with embedded signing |
 | Beat 6 | Beat 5b: Sign request embed URL | Borrower signs in portal |
@@ -206,13 +206,13 @@ Upload to **LN-2026-0042** (<CONFIGURED_ID>):
 Upload to **LN-2023-0311** (<CONFIGURED_ID>):
 - [ ] ✅ `harborview-loan-agreement-2023-executed.pdf` from /output/pdf
 - [ ] Loan: $1.5M @ 7.25%, 70% LTV, 1.30x DSCR quarterly (Section 8 & Schedule 1)
-- [ ] Signatures: Pike (Borrower) / Shah (Bank) dated Sept 15, 2023
+- [ ] Signatures: Whitfield (Borrower) / Shah (Bank) dated Sept 15, 2023
 - [ ] Metadata: documentType="Loan Agreement", versionStatus="Executed"
 
 Upload to **LN-2025-0148** (<CONFIGURED_ID>):
 - [ ] ✅ `harborview-loan-agreement-2025-executed.pdf` from /output/pdf
 - [ ] Loan: $2.15M @ 6.95%, 70% LTV, 1.30x DSCR quarterly (Section 8 & Schedule 1)
-- [ ] Signatures: Pike (Borrower) / Shah (Bank) dated May 20, 2025
+- [ ] Signatures: Whitfield (Borrower) / Shah (Bank) dated May 20, 2025
 - [ ] Metadata: documentType="Loan Agreement", versionStatus="Executed"
 
 ---
