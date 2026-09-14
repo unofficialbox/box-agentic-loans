@@ -39,8 +39,10 @@ def build(destination, root=ROOT):
         target = destination / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
-    standalone = destination / GUIDE / 'standalone.html'
-    standalone.write_text(standalone.read_text().replace(REPO_URL, PUBLIC_URL))
+    for name in ('standalone.html', 'standalone-quick.html'):
+        standalone = destination / GUIDE / name
+        if standalone.is_file():
+            standalone.write_text(standalone.read_text().replace(REPO_URL, PUBLIC_URL))
     (destination / '.nojekyll').touch()
     (destination / 'index.html').write_text('<!doctype html><meta charset="utf-8"><title>Loan Origination Demo</title><meta http-equiv="refresh" content="0;url=docs/demo-storyboard/index.html"><a href="docs/demo-storyboard/index.html">Open Loan Origination Demo</a>')
     return destination

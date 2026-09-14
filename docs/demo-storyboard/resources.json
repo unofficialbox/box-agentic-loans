@@ -39,6 +39,14 @@
         "../../skills/loan-origination/SKILL.md"
       ],
       [
+        "Amazon Quick skill",
+        "../../skills/loan-origination-quick/SKILL.md"
+      ],
+      [
+        "Connect your AI client",
+        "../CLIENT-SETUP.md"
+      ],
+      [
         "Runtime configuration example",
         "../../config/runtime/demo-environment.example.json"
       ],
@@ -164,6 +172,14 @@
       [
         "Platform trio (PNG)",
         "platform-trio.png"
+      ],
+      [
+        "Platform trio, Amazon Quick (SVG)",
+        "platform-trio-quick.svg"
+      ],
+      [
+        "Platform trio, Amazon Quick (PNG)",
+        "platform-trio-quick.png"
       ],
       [
         "Loan journey",
