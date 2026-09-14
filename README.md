@@ -79,6 +79,7 @@ Run the demo beats with Claude Desktop (or any AI harness):
 - **Demo guide:** [Setup](docs/demo-storyboard/index.html#setup) · [Storyboard](docs/demo-storyboard/index.html#storyboard) · [Resources and sample files](docs/demo-storyboard/index.html#resources)
 - **Standalone HTML:** [Portable edition](docs/demo-storyboard/standalone.html) — embedded images/fonts; resource links open GitHub. Rebuild with `python3 scripts/build_standalone_storyboard.py`.
 - **Markdown storyboard:** [Tell / Show / Tell with screenshots](docs/demo-storyboard/storyboard.md)
+- **Amazon Quick edition:** [demo guide](docs/demo-storyboard/index-quick.html) · [portable HTML](docs/demo-storyboard/standalone-quick.html) · [Markdown](docs/demo-storyboard/storyboard-quick.md) — same beats with Amazon Quick as the officer harness and the [Quick platform trio](docs/demo-storyboard/platform-trio-quick.svg). Rebuild everything with `python3 scripts/build_demo_trio.py --png && python3 scripts/build_demo_storyboard.py && python3 scripts/build_standalone_storyboard.py`.
 - **Prompts & walkthrough:** [DEMO-CLICKPATH.md](DEMO-CLICKPATH.md)
 - **Presenter skill:** [skills/loan-origination/SKILL.md](skills/loan-origination/SKILL.md) — [package for Claude](docs/DOCGEN-GUIDE.md#distributing-the-claude-skill)
 - **Amazon Quick:** [skills/loan-origination-quick/SKILL.md](skills/loan-origination-quick/SKILL.md) plus the agent manifest in [config/quick/](config/quick/agent.json) — setup in [docs/SETUP.md §5b](docs/SETUP.md#5b-amazon-quick)

@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Render the table-driven storyboard from its single JSON source."""
+"""Render the table-driven storyboard from its single JSON source.
+
+Two editions come from the same storyboard.json: the Claude edition
+(index.html, storyboard.md) and the Amazon Quick edition (index-quick.html,
+storyboard-quick.md). The Quick edition swaps the officer harness in the text
+and the trio image; its officer screenshots are the Claude Desktop captures,
+labelled as such, until Quick captures exist.
+"""
+import argparse
+import copy
 import html
 import json
 from pathlib import Path
@@ -9,12 +18,46 @@ OUT = ROOT / "docs" / "demo-storyboard"
 LOGIN = "https://agentforce-box.my.site.com/loansvforcesite/login"
 JOURNEY = "loan-journey.png"
 
-def build():
-    steps = json.loads((OUT / "storyboard.json").read_text())
-    header = "# Loan Origination Demo\n\n[Open borrower portal login](" + LOGIN + ")\n\n"
-    md = [header, "![Box, Claude, and Salesforce](platform-trio.svg)\n", "## The loan journey\n",
+HARNESSES = {
+    "claude": {
+        "name": "Claude", "suffix": "", "trio": "platform-trio.svg",
+        "alt": "Box, Claude, and Salesforce", "title": "Loan Origination Demo",
+        "officer": 'Load the <a href="../../skills/loan-origination/SKILL.md">standalone SKILL.md</a> in Claude. Connect Box MCP and Salesforce Loan Origination.',
+        "switch": 'Presenting from Amazon Quick? <a href="index-quick.html">Open the Amazon Quick edition</a>.',
+    },
+    "quick": {
+        "name": "Amazon Quick", "suffix": "-quick", "trio": "platform-trio-quick.svg",
+        "alt": "Box, Amazon Quick, and Salesforce", "title": "Loan Origination Demo · Amazon Quick",
+        "officer": 'Import the <a href="../../skills/loan-origination-quick/SKILL.md">Amazon Quick SKILL.md</a> under Customize › Skills, reference both connectors, and publish. Connect the Salesforce Loan Origination and Box connectors (<a href="../CLIENT-SETUP.md">client setup</a>).',
+        "switch": 'Presenting from Claude? <a href="index.html">Open the Claude edition</a>.',
+    },
+}
+TEXT_FIELDS = ("title", "persona", "tell", "show", "land", "click", "details")
+
+
+def adapt(step, harness):
+    """Return the step as the given harness presents it."""
+    step = copy.deepcopy(step)
+    if harness == "claude":
+        return step
+    name = HARNESSES[harness]["name"]
+    for key in TEXT_FIELDS:
+        step[key] = step[key].replace("Claude", name)
+    captures = step.get("captures", [{"label": step["title"], "path": step["screenshot"]}])
+    for capture in captures:
+        if Path(capture["path"]).name.startswith("claude-"):
+            capture["label"] += " · captured in Claude Desktop"
+    step["captures"] = captures
+    return step
+
+
+def build(harness="claude"):
+    h = HARNESSES[harness]
+    steps = [adapt(step, harness) for step in json.loads((OUT / "storyboard.json").read_text())]
+    header = f"# {h['title']}\n\n[Open borrower portal login](" + LOGIN + ")\n\n"
+    md = [header, f"![{h['alt']}]({h['trio']})\n", "## The loan journey\n",
           f"![Capture, decision, and execution with Box and Salesforce]({JOURNEY})\n"]
-    overview = ('<article id="platform-trio"><a href="platform-trio.svg"><img src="platform-trio.svg" alt="Box, Claude, and Salesforce"></a></article>'
+    overview = (f'<article id="platform-trio"><a href="{h["trio"]}"><img src="{h["trio"]}" alt="{h["alt"]}"></a></article>'
                 '<article id="loan-journey"><h2>The loan journey</h2>'
                 f'<a href="{JOURNEY}"><img src="{JOURNEY}" '
                 'alt="Capture, decision, and execution with Box and Salesforce"></a></article>')
@@ -33,7 +76,7 @@ def build():
     setup = f'''<article><h2>Before the demo</h2>
 <table><thead><tr><th>Step</th><th>Action</th><th>Ready when</th></tr></thead><tbody>
 <tr><td>1 · Environment</td><td>Follow the <a href="../SETUP.md">deployment guide</a> for a new environment.</td><td>Box and Salesforce use the same loan folder mapping.</td></tr>
-<tr><td>2 · Officer</td><td>Load the <a href="../../skills/loan-origination/SKILL.md">standalone SKILL.md</a> in Claude. Connect Box MCP and Salesforce Loan Origination.</td><td>Both connectors are available in the conversation.</td></tr>
+<tr><td>2 · Officer</td><td>{h["officer"]}</td><td>Both connectors are available in the conversation.</td></tr>
 <tr><td>3 · Borrower</td><td><a href="{LOGIN}">Sign in to the borrower portal</a>.</td><td>The borrower can create an application and open the workspace.</td></tr>
 <tr><td>4 · Documents</td><td>Open the <a href="#resources">sample PDFs</a>. Upload the six supporting documents; add the borrower markup for analysis.</td><td>Classification has completed for the intended loan.</td></tr>
 <tr><td>5 · Credit and signing</td><td>Confirm policy and precedent access, credit approver, signer, and registered Doc Gen template.</td><td>Approved terms can produce a populated letter for the intended signer.</td></tr>
@@ -63,27 +106,29 @@ def build():
         if evidence:
             md += ["\n| Previews | Screenshot |\n|---|---|"]
             md += [f"| {e['label']} | [Open screenshot]({e['path']}) |" for e in evidence]
-        h = html.escape
+        h_ = html.escape
         def table(entries):
-            return "<table><tbody>" + "".join(f"<tr><th>{h(str(k))}</th><td>{h(v)}</td></tr>" for k, v in entries) + "</tbody></table>"
-        gallery = ''.join(f'<figure><figcaption>{h(c["label"])}</figcaption><a href="{h(c["path"])}">'
-                          f'<img loading="lazy" src="{h(c["path"])}" alt="{h(c["label"])} — {h(step["title"])}"></a></figure>' for c in captures)
-        cards.append(f'<article id="step-{step["number"]}"><h2>{h(title)}</h2>'
+            return "<table><tbody>" + "".join(f"<tr><th>{h_(str(k))}</th><td>{h_(v)}</td></tr>" for k, v in entries) + "</tbody></table>"
+        gallery = ''.join(f'<figure><figcaption>{h_(c["label"])}</figcaption><a href="{h_(c["path"])}">'
+                          f'<img loading="lazy" src="{h_(c["path"])}" alt="{h_(c["label"])} — {h_(step["title"])}"></a></figure>' for c in captures)
+        cards.append(f'<article id="step-{step["number"]}"><h2>{h_(title)}</h2>'
                      + table(rows) + gallery
                      + "<h3>What to click</h3>" + table(list(enumerate(clicks, 1)))
-                     + "<details><summary>Details</summary>" + table([("Note", step["details"])]) + "</details>" + "".join(f'<p><a href="{h(e["path"])}">{h(e["label"])}</a></p>' for e in evidence) + "</article>")
+                     + "<details><summary>Details</summary>" + table([("Note", step["details"])]) + "</details>" + "".join(f'<p><a href="{h_(e["path"])}">{h_(e["label"])}</a></p>' for e in evidence) + "</article>")
     step_nav = '<nav class="step-nav" aria-label="Storyboard steps"><p>Steps</p>' + ''.join(
         f'<a href="#step-{step["number"]}"><span>{step["number"]:02d}</span>{html.escape(step["title"])}</a>'
         for step in steps) + '</nav>'
-    (OUT / "storyboard.md").write_text("\n".join(md) + "\n")
-    (OUT / "index.html").write_text("""<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Loan Origination Demo</title><style>
-@font-face{font-family:Inter;src:url('fonts/Inter-Regular.ttf') format('truetype');font-weight:400;font-display:swap}
-@font-face{font-family:Inter;src:url('fonts/Inter-SemiBold.ttf') format('truetype');font-weight:600;font-display:swap}
-@font-face{font-family:'Inter Display';src:url('fonts/InterDisplay-SemiBold.ttf') format('truetype');font-weight:600;font-display:swap}
-body{font:16px/1.5 Inter,sans-serif;margin:0;background:#f7f5ef;color:#183c38}main{max-width:1440px;margin:auto;padding:32px}article{background:white;padding:24px;margin:28px 0;border:1px solid #ddd8cd;border-radius:12px}table{border-collapse:collapse;width:100%;margin:16px 0}th,td{padding:10px 14px;border:1px solid #ddd8cd;text-align:left;vertical-align:top}th{font-weight:600;width:180px;background:#f7f5ef}img{max-width:100%;height:auto}a{color:#006b62}summary{cursor:pointer;font-weight:600}h1,h2,h3{font-family:'Inter Display',Inter,sans-serif;font-weight:600}
-[hidden]{display:none!important}.tabs{display:flex;gap:6px;border-bottom:1px solid #ddd8cd;padding:12px 0;position:sticky;top:0;background:#f7f5ef;z-index:2}.tabs button{font:600 16px Inter,sans-serif;border:0;border-radius:8px;padding:12px 24px;background:transparent;color:#183c38;cursor:pointer}.tabs button[aria-selected="true"]{background:#183c38;color:white}.tabs button:focus-visible{outline:3px solid #0061ff;outline-offset:2px}figure{margin:24px 0}figcaption{font-weight:600;margin:8px 0}figure img{display:block;border-radius:8px}td a{font-weight:600}@media(max-width:640px){main{padding:16px}article{padding:16px}th,td{padding:8px;font-size:14px}.tabs button{padding:10px 16px}}@media print{.tabs{display:none}[role="tabpanel"][hidden]{display:block!important}}
-.storyboard-layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:28px;align-items:start}.storyboard-content{min-width:0}.step-nav{position:sticky;top:86px;max-height:calc(100vh - 110px);overflow:auto;padding:20px 0}.step-nav p{margin:0 12px 12px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:#62736e}.step-nav a{display:flex;gap:12px;padding:10px 12px;margin:3px 0;border-radius:8px;text-decoration:none;color:#183c38;font-size:14px;line-height:1.35}.step-nav a span{color:#72847b;font-variant-numeric:tabular-nums}.step-nav a:hover,.step-nav a:focus-visible{background:#e8ede7;outline-offset:2px}.storyboard-content article{scroll-margin-top:90px}.storyboard-content article:target{border-color:#006b62}#setup,#resources{max-width:1120px;margin:auto}@media(max-width:850px){.storyboard-layout{grid-template-columns:1fr;gap:0}.step-nav{position:static;max-height:210px;border-bottom:1px solid #ddd8cd}.step-nav a{padding:8px 12px}}@media print{.step-nav{display:none}.storyboard-layout{display:block}}
-</style><main><h1>Loan Origination Demo</h1><p><a href=""" + '"' + LOGIN + '"' + """>Open borrower portal</a></p>
+    (OUT / f"storyboard{h['suffix']}.md").write_text("\n".join(md) + "\n")
+    (OUT / f"index{h['suffix']}.html").write_text(f"""<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>{h['title']}</title><style>
+@font-face{{font-family:Inter;src:url('fonts/Inter-Regular.ttf') format('truetype');font-weight:400;font-display:swap}}
+@font-face{{font-family:Inter;src:url('fonts/Inter-SemiBold.ttf') format('truetype');font-weight:600;font-display:swap}}
+@font-face{{font-family:'Inter Display';src:url('fonts/InterDisplay-SemiBold.ttf') format('truetype');font-weight:600;font-display:swap}}
+body{{font:16px/1.5 Inter,sans-serif;margin:0;background:#f7f5ef;color:#183c38}}main{{max-width:1440px;margin:auto;padding:32px}}article{{background:white;padding:24px;margin:28px 0;border:1px solid #ddd8cd;border-radius:12px}}table{{border-collapse:collapse;width:100%;margin:16px 0}}th,td{{padding:10px 14px;border:1px solid #ddd8cd;text-align:left;vertical-align:top}}th{{font-weight:600;width:180px;background:#f7f5ef}}img{{max-width:100%;height:auto}}a{{color:#006b62}}summary{{cursor:pointer;font-weight:600}}h1,h2,h3{{font-family:'Inter Display',Inter,sans-serif;font-weight:600}}
+[hidden]{{display:none!important}}.tabs{{display:flex;gap:6px;border-bottom:1px solid #ddd8cd;padding:12px 0;position:sticky;top:0;background:#f7f5ef;z-index:2}}.tabs button{{font:600 16px Inter,sans-serif;border:0;border-radius:8px;padding:12px 24px;background:transparent;color:#183c38;cursor:pointer}}.tabs button[aria-selected="true"]{{background:#183c38;color:white}}.tabs button:focus-visible{{outline:3px solid #0061ff;outline-offset:2px}}figure{{margin:24px 0}}figcaption{{font-weight:600;margin:8px 0}}figure img{{display:block;border-radius:8px}}td a{{font-weight:600}}@media(max-width:640px){{main{{padding:16px}}article{{padding:16px}}th,td{{padding:8px;font-size:14px}}.tabs button{{padding:10px 16px}}}}@media print{{.tabs{{display:none}}[role="tabpanel"][hidden]{{display:block!important}}}}
+.storyboard-layout{{display:grid;grid-template-columns:240px minmax(0,1fr);gap:28px;align-items:start}}.storyboard-content{{min-width:0}}.step-nav{{position:sticky;top:86px;max-height:calc(100vh - 110px);overflow:auto;padding:20px 0}}.step-nav p{{margin:0 12px 12px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:#62736e}}.step-nav a{{display:flex;gap:12px;padding:10px 12px;margin:3px 0;border-radius:8px;text-decoration:none;color:#183c38;font-size:14px;line-height:1.35}}.step-nav a span{{color:#72847b;font-variant-numeric:tabular-nums}}.step-nav a:hover,.step-nav a:focus-visible{{background:#e8ede7;outline-offset:2px}}.storyboard-content article{{scroll-margin-top:90px}}.storyboard-content article:target{{border-color:#006b62}}#setup,#resources{{max-width:1120px;margin:auto}}@media(max-width:850px){{.storyboard-layout{{grid-template-columns:1fr;gap:0}}.step-nav{{position:static;max-height:210px;border-bottom:1px solid #ddd8cd}}.step-nav a{{padding:8px 12px}}}}@media print{{.step-nav{{display:none}}.storyboard-layout{{display:block}}}}
+.edition{{color:#62736e;font-size:14px}}
+</style><main><h1>{h['title']}</h1><p><a href="{LOGIN}">Open borrower portal</a></p>
+<p class="edition">{h['switch']}</p>
 <nav class="tabs" role="tablist" aria-label="Demo sections">
 <button id="tab-storyboard" role="tab" aria-selected="true" aria-controls="storyboard" data-panel="storyboard">Storyboard</button>
 <button id="tab-setup" role="tab" aria-selected="false" aria-controls="setup" data-panel="setup" tabindex="-1">Setup</button>
@@ -125,4 +170,9 @@ fromHash();
 
 
 if __name__ == "__main__":
-    build()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--harness", choices=sorted(HARNESSES), action="append",
+                        help="edition to build (default: all)")
+    args = parser.parse_args()
+    for name in args.harness or sorted(HARNESSES):
+        build(name)

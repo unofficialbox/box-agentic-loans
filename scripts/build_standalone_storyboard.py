@@ -72,5 +72,7 @@ def build(source=GUIDE / 'index.html', destination=GUIDE / 'standalone.html'):
 
 
 if __name__ == '__main__':
-    count = build()
-    print(f'Created standalone.html with {count} embedded files.')
+    for source, destination in [('index.html', 'standalone.html'), ('index-quick.html', 'standalone-quick.html')]:
+        if (GUIDE / source).is_file():
+            count = build(GUIDE / source, GUIDE / destination)
+            print(f'Created {destination} with {count} embedded files.')
