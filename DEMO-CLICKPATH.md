@@ -102,8 +102,8 @@ Expect LN-2023-0311 Closed, LN-2025-0148 Closed, and the most recent loan (e.g.,
 
 **P5. Box: required documents with metadata.** See [docs/DOCUMENTS-SETUP.md](docs/DOCUMENTS-SETUP.md) for explicit upload instructions:
 - **Latest Harborview loan** needs: Term sheet with borrower markup (policyRisk="Critical"), optional financials/appraisal
-- **LN-2023-0311** needs: Executed loan agreement ($1.5M, 70% LTV, 1.30 DSCR, Pike/Shah signatures)
-- **LN-2025-0148** needs: Executed loan agreement ($2.15M, 78% LTV, 1.28 DSCR, Pike/Shah signatures)
+- **LN-2023-0311** needs: Executed loan agreement ($1.5M, 70% LTV, 1.30 DSCR, Whitfield/Shah signatures)
+- **LN-2025-0148** needs: Executed loan agreement ($2.15M, 78% LTV, 1.28 DSCR, Whitfield/Shah signatures)
 
 After Beat 1 creates a new loan, upload `harborview-term-sheet-2026-borrower-markup.pdf` to its folder and ensure it has `policyRisk="Critical"` metadata. Check for duplicates: inventory each loan's `02 - Borrower Documents` subfolder for `(1)` copies left by earlier seeds. Unclassified duplicates are excluded from the borrower listing.
 
@@ -179,7 +179,7 @@ Box does this beat across three files.
 Compare the covenant terms across Harborview's prior executed loans and this 2026 markup.
 ```
 
-Expect `listLoans` or `getLoanPackage` for the two closed loans (LN-2023-0311, LN-2025-0148) to hand over the executed agreements, then one Box AI multi-file answer: both closed loans at 70% LTV and 1.30x DSCR tested quarterly, Section 8 and Schedule 1 of each executed agreement, signed by Jordan Pike for Harborview and Priya Shah for Acme Bank; the 2026 markup asks 1.10x tested annually. One table, then the 2025 agreement previewed at Schedule 1.
+Expect `listLoans` or `getLoanPackage` for the two closed loans (LN-2023-0311, LN-2025-0148) to hand over the executed agreements, then one Box AI multi-file answer: both closed loans at 70% LTV and 1.30x DSCR tested quarterly, Section 8 and Schedule 1 of each executed agreement, signed by Dana Whitfield for Harborview and Priya Shah for Acme Bank; the 2026 markup asks 1.10x tested annually. One table, then the 2025 agreement previewed at Schedule 1.
 
 Land it: Harborview's markup regresses two positions their own CFO agreed, in writing, twice.
 
