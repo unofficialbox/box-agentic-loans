@@ -31,7 +31,7 @@ HARNESSES = {
         'file': 'platform-trio-quick.svg',
         'title': 'Box, Amazon Quick, and Salesforce: the loan origination team',
         'desc': 'Box manages content and intelligence. Amazon Quick reasons and orchestrates through MCP connectors. Salesforce governs loan records and actions. People approve.',
-        'stroke': '#dd344c', 'fill': '#fffafa',
+        'stroke': '#b800b8', 'fill': '#fdf6fd',
         'coordinate': 'Box connector + Salesforce MCP connector',
         'footer': 'Agent Experience in Amazon Quick',
     },
@@ -41,9 +41,12 @@ HARNESSES = {
 def build(harness='claude'):
     h = HARNESSES[harness]
     parts = ['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1600" height="900" viewBox="0 0 1600 900" role="img"><title>' + h['title'] + '</title><desc>' + h['desc'] + '</desc><rect width="1600" height="900" fill="white"/>']
+    def measure(s,size,font):
+        f=FONTS[font]; gs=f.getGlyphSet(); cmap=f.getBestCmap()
+        return sum(gs[cmap[ord(c)]].width for c in s)*size/f['head'].unitsPerEm
     def text(s,x,y,size=22,font='body',fill='#151b26',anchor='start'):
         f=FONTS[font]; gs=f.getGlyphSet(); cmap=f.getBestCmap(); scale=size/f['head'].unitsPerEm
-        width=sum(gs[cmap[ord(c)]].width for c in s)*scale
+        width=measure(s,size,font)
         if anchor=='middle': x-=width/2
         paths=[]; at=0
         for c in s:
@@ -72,9 +75,11 @@ def build(harness='claude'):
         rect(x,211,w,490,c,bg)
     logo(244,242,92,50,'box-logo-blue.svg')
     if harness == 'quick':
-        # Official AWS Architecture Icon plus an outlined wordmark; AWS publishes no separate wordmark.
-        logo(690,245,50,50,'amazon-quick-icon.svg')
-        text('Amazon Quick',754,282,34,'display')
+        # The Amazon Quick app icon plus an outlined wordmark, centered as one group in the card.
+        icon, gap, wordmark = 50, 14, 'Amazon Quick'
+        start = 800 - (icon + gap + measure(wordmark, 34, 'display')) / 2
+        logo(start,245,icon,icon,'amazon-quick-icon.svg')
+        text(wordmark,start+icon+gap,282,34,'display')
     else:
         logo(690,245,220,50,'claude-logo.svg')
     logo(1176,242,80,56,'salesforce-logo.svg')
