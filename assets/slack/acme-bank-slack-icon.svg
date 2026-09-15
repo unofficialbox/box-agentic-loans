@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="2000" height="2000" viewBox="0 0 2000 2000" role="img" aria-labelledby="title desc">
   <title id="title">Acme Bank</title>
-  <desc id="desc">Acme Bank Slack app icon: the Borrower Portal brand mark, an amber-ringed evergreen circle with an AB serif monogram, on a deep evergreen tile with 260px rounded corners and a drop shadow, over an opaque #0A332E canvas. Colours are the portal tokens: #0A332E, #0F4C45, #C9871A.</desc>
+  <desc id="desc">Acme Bank Slack app icon: the Borrower Portal brand mark, an amber-ringed evergreen circle with an AB serif monogram, full bleed on the portal rail's deep evergreen. Colours are the portal tokens: #0A332E, #0F4C45, #C9871A.</desc>
   <!-- Source for assets/slack/acme-bank-slack-icon.png. The PNG was rendered with the Gelasio Medium
        webfont (Georgia-compatible, SIL OFL); rendering this SVG elsewhere falls back to the portal's
        own serif stack, so re-render from a browser with Gelasio installed to reproduce the PNG exactly. -->
@@ -47,11 +47,7 @@
     <clipPath id="faceClip"><circle cx="1000" cy="1000" r="664"/></clipPath>
   </defs>
 
-  <!-- Opaque canvas in the manifest background colour: Slack flattens alpha onto white. -->
-  <rect width="2000" height="2000" fill="#0A332E"/>
-  <!-- Tile: inset so the drop shadow has room inside the 2000px canvas -->
-  <g filter="url(#tileShadow)" transform="translate(70 50) scale(0.93)">
-  <g clip-path="url(#corners)">
+  <!-- Full bleed: Slack rounds the corners and paints its own banner, so the artwork fills the square. -->
   <!-- Ground -->
   <rect width="2000" height="2000" fill="url(#ground)"/>
   <!-- Faint outer halo rings, echoing the ringed mark without competing with it. -->
@@ -75,6 +71,4 @@
         font-family="Gelasio, 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif"
         font-weight="500" font-size="640" letter-spacing="0.02em"
         fill="url(#amber)" filter="url(#letterShadow)" dy="22">AB</text>
-  </g>
-  </g>
 </svg>
