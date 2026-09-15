@@ -76,12 +76,24 @@ class SalesforceDocGenTemplateTests(unittest.TestCase):
         for raw in TAG.findall(self.text):
             if '::' in raw:
                 self.assertRegex(raw.split('::', 1)[1].strip(), r'^(optional|format\("(US-Number|EU-Number|dd-mm-yyyy|mm-dd-yyyy|dd-mmm-yy)"\))$', raw)
-        self.assertEqual(self.text.count('{{tablerow'), self.text.count('{{endtablerow}}'))
         self.assertEqual(len(re.findall(r'\{\{ if ', self.text)), len(re.findall(r'\{\{ endif \}\}', self.text)))
 
-    def test_tablerow_opens_and_closes_in_the_same_row(self):
-        table = next(t for t in self.doc.tables if '{{tablerow' in t.rows[1].cells[0].text)
-        self.assertIn('{{endtablerow}}', table.rows[1].cells[-1].text)
+    def test_only_constructs_the_managed_package_supplies(self):
+        # Verified against the package preview and a direct Box Doc Gen run: `$User` is not
+        # resolved, a lookup's child list is not sent, and a missing key prints the tag
+        # literally, so every field that can be blank on a loan record must be optional.
+        required = {'LOS_Loan__c.Loan_ID__c', 'LOS_Loan__c.Name', 'LOS_Loan__c.Status__c', 'LOS_Loan__c.Underwriting_Notes__c'}
+        for raw in TAG.findall(self.text):
+            expression = raw.strip()
+            self.assertFalse(expression.startswith('$'), raw)
+            self.assertNotIn('Borrower_Loans__r', expression)
+            self.assertNotIn('tablerow', expression)
+            if expression in ('else', 'endif') or expression.startswith('if '):
+                continue
+            path, _, modifier = (part.strip() for part in expression.partition('::'))
+            if path in required or modifier.startswith('format('):
+                continue
+            self.assertEqual(modifier, 'optional', f'{raw!r} prints literally when the field is null')
 
     def test_signature_fields_match_the_first_template(self):
         self.assertIn('[[s|1|id:borrower_signature', self.text)
