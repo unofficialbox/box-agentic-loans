@@ -2,11 +2,11 @@
 
 `acme-bank-slack-icon.png` is the 2000 x 2000 icon for the Acme Bank Slack apps (`config/slack/`). It is the Borrower Portal brand mark from `los-salesforce-project/.../losreactapp/src/styles.css`, scaled up: an amber ring and serif `AB` monogram on the primary evergreen, over the rail's deep evergreen ground.
 
-Colours are the portal tokens only: `#0A332E` (ground), `#0F4C45` (mark), `#C9871A` (amber). The ground fades to a flat `#0A332E` at the edges, the same value as the manifest `background_color`, so the icon and the Slack app tile read as one surface. Corners are rounded at 26% (520px) with transparency outside, and the mark clears the corner radius with room to spare.
+Colours are the portal tokens only: `#0A332E` (ground), `#0F4C45` (mark), `#C9871A` (amber). The ground fades to a flat `#0A332E` at the edges, the same value as the manifest `background_color`, so the icon and the Slack app tile read as one surface. The tile has 26% rounded corners and a soft drop shadow, and is inset about 3.5% so the shadow falls inside the transparent canvas; the mark clears the corner radius with room to spare.
 
 `acme-bank-slack-icon.svg` is the editable source. The PNG was rendered from it in headless Chromium with the Gelasio Medium webfont (a Georgia-compatible serif, SIL OFL) for the monogram:
 
 ```sh
 chrome --headless=new --hide-scrollbars --force-device-scale-factor=1 --window-size=2000,2200 \
-  --virtual-time-budget=4000 --screenshot=icon.png acme-bank-slack-icon.svg   # then crop to 2000x2000 and mask the corners (rx 520) to alpha
+  --virtual-time-budget=4000 --default-background-color=00000000 --screenshot=icon.png acme-bank-slack-icon.svg   # then crop to 2000x2000
 ```
