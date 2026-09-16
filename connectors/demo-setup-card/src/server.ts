@@ -4,10 +4,16 @@
  * `demoBindings` (model-visible, no UI) answers silently: when every default is set it hands
  * the bindings back as complete and the demo runs without a setup step. `demoSetup` renders
  * the card, and is meant only for a missing value or an operator who asks for Demo Setup.
- * The app-only `confirmDemoSetup` validates what the operator confirmed and records it for
- * the process; the card then posts the confirmation into the chat as the operator's message,
- * so the presenter skill caches the bindings exactly as it would after a typed reply. The
- * card never offers a loan write; those stay typed.
+ * `confirmDemoSetup` validates what the operator confirmed and records it for the process;
+ * in Claude Desktop the card then posts the confirmation into the chat as the operator's
+ * message, so the presenter skill caches the bindings exactly as it would after a typed reply.
+ *
+ * The same tools also carry Block Kit in `_meta.slack.blocks` for the Slackbot MCP client:
+ * `demoSetup` renders the card with one "Use these bindings" button whose click Slack routes
+ * to `confirmDemoSetup`, and that tool's result replaces the card in place. The blocks are
+ * always attached, because the stateless HTTP mode serves each request from a fresh server
+ * that never saw the client's `initialize` capabilities; other hosts ignore the extra `_meta`.
+ * The card never offers a loan write; those stay typed.
  */
 import {
   registerAppResource,
@@ -23,11 +29,13 @@ import {
   BINDING_KEYS,
   type Bindings,
   bindingsTable,
+  emptyBindings,
   loadDefaults,
   missingBindings,
   summarizeBindings,
   validateBindings,
 } from "./bindings.js";
+import { confirmedBlocks, demoSetupBlocks, slackMeta, textInputsEnabled } from "./slack-blocks.js";
 
 export const RESOURCE_URI = "ui://los-demo-setup/card.html";
 export const SERVER_NAME = "LOS Demo Setup";
@@ -40,6 +48,8 @@ export interface ServerOptions {
   defaults?: Bindings;
   readCardHtml?: () => Promise<string>;
   store?: ConfirmationStore;
+  /** Add free-text override inputs to the Slack card. Defaults to LOS_DEMO_SLACK_TEXT_INPUTS. */
+  slackTextInputs?: boolean;
 }
 
 /** Process-wide memory of the last confirmation, shared across stateless HTTP requests. */
@@ -73,6 +83,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
   const defaults = options.defaults ?? loadDefaults();
   const readCardHtml = options.readCardHtml ?? readBuiltCard;
   const store = options.store ?? defaultStore;
+  const textInputs = options.slackTextInputs ?? textInputsEnabled();
 
   const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
 
@@ -118,7 +129,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
         "when the defaults are complete the demo runs without it. It writes nothing to Box or Salesforce.",
       inputSchema: z.object({}),
       annotations: { readOnlyHint: true, openWorldHint: false },
-      _meta: { ui: { resourceUri: RESOURCE_URI, visibility: ["model", "app"] } },
+      _meta: { ui: { resourceUri: RESOURCE_URI, visibility: ["model", "app"] }, slack: { supportsBlockKit: true } },
     },
     async () => {
       const confirmed = store.get();
@@ -131,6 +142,7 @@ export function createServer(options: ServerOptions = {}): McpServer {
       return {
         content: [{ type: "text", text }],
         structuredContent: { defaults, confirmed: confirmed ?? null },
+        _meta: slackMeta(demoSetupBlocks(confirmed ?? defaults, { confirmed: Boolean(confirmed), textInputs })),
       };
     },
   );
@@ -140,24 +152,31 @@ export function createServer(options: ServerOptions = {}): McpServer {
     "confirmDemoSetup",
     {
       title: "Confirm Demo Setup",
-      description: "Records the bindings the operator confirmed on the Demo Setup card for this session.",
+      description:
+        "Records the four bindings the operator confirmed for this session, from the Demo Setup card's " +
+        "button or from a typed reply. Call it only with values the operator confirmed or typed; never guess " +
+        "or invent a binding. It writes nothing to Box or Salesforce.",
       inputSchema: bindingsSchema,
       annotations: { readOnlyHint: true, openWorldHint: false },
-      _meta: { ui: { resourceUri: RESOURCE_URI, visibility: ["app"] } },
+      // Listed to the model as well as the app: Slack routes the card's button click here by name.
+      _meta: { ui: { resourceUri: RESOURCE_URI, visibility: ["model", "app"] }, slack: { supportsBlockKit: true } },
     },
     async (args) => {
       const result = validateBindings(args);
       if (!result.ok) {
+        const attempted = { ...emptyBindings(), ...(args as Partial<Bindings>) };
         return {
           isError: true,
           content: [{ type: "text", text: `Demo Setup not confirmed: ${result.errors.join(" ")}` }],
           structuredContent: { errors: result.errors },
+          _meta: slackMeta(demoSetupBlocks(attempted, { textInputs, errors: result.errors })),
         };
       }
       store.set(result.bindings);
       return {
         content: [{ type: "text", text: summarizeBindings(result.bindings) }],
         structuredContent: { bindings: result.bindings, summary: summarizeBindings(result.bindings) },
+        _meta: slackMeta(confirmedBlocks(result.bindings)),
       };
     },
   );

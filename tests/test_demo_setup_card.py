@@ -23,13 +23,24 @@ class DemoSetupCardTests(unittest.TestCase):
             self.assertIsNone(WRITE_VERBS.search(label), label)
         self.assertIn('Loan ID and folder come from the live record', html)
 
-    def test_server_marks_confirmation_tool_app_only(self):
+    def test_server_lists_confirmation_tool_with_block_kit_support(self):
+        # Slack routes the card's button click to confirmDemoSetup by name, so it is listed to the
+        # model (never app-only) and both card tools declare Block Kit support.
         source = (CARD / 'src' / 'server.ts').read_text()
         self.assertIn('"confirmDemoSetup"', source)
         self.assertIn('"demoBindings"', source)
-        self.assertIn('visibility: ["app"]', source)
-        self.assertIn('visibility: ["model", "app"]', source)
+        self.assertNotIn('visibility: ["app"]', source)
+        self.assertEqual(source.count('visibility: ["model", "app"]'), 2)
+        self.assertEqual(source.count('slack: { supportsBlockKit: true }'), 2)
         self.assertIn('ui://los-demo-setup/card.html', source)
+
+    def test_slack_card_confirms_bindings_only(self):
+        blocks = (CARD / 'src' / 'slack-blocks.ts').read_text()
+        self.assertIn('export const CONFIRM_TOOL = "confirmDemoSetup"', blocks)
+        self.assertIn('`tool:${CONFIRM_TOOL}`', blocks)
+        for label in re.findall(r'plain\("([^"]+)"\)', blocks):
+            self.assertIsNone(WRITE_VERBS.search(label), label)
+        self.assertIn('live record', blocks)
 
     def test_skill_and_client_guide_describe_demo_setup(self):
         skill = (ROOT / 'skills' / 'loan-origination' / 'SKILL.md').read_text()

@@ -1,6 +1,6 @@
 # Demo Setup card (MCP Apps connector)
 
-A small MCP server whose one model-visible tool, `demoSetup`, renders an interactive card inside Claude Desktop or claude.ai. The card shows the four environment bindings the LOS demo confirms once per session (Box enterprise ID, Credit Policy Hub ID, Doc Gen commitment-letter template ID, signer email), lets the operator edit them, and posts the confirmation into the chat as the operator's message. That gives the Claude Desktop demo the same clickable Demo Setup step as the Amazon Quick agent without touching the Salesforce-hosted `LOSLoanTools` server, which cannot serve MCP Apps UI resources.
+A small MCP server whose one model-visible tool, `demoSetup`, renders an interactive card inside Claude Desktop or claude.ai, and returns the same card as Block Kit for the Slackbot MCP client. The card shows the four environment bindings the LOS demo confirms once per session (Box enterprise ID, Credit Policy Hub ID, Doc Gen commitment-letter template ID, signer email), lets the operator edit them, and posts the confirmation into the chat as the operator's message. That gives the Claude Desktop demo the same clickable Demo Setup step as the Amazon Quick agent without touching the Salesforce-hosted `LOSLoanTools` server, which cannot serve MCP Apps UI resources.
 
 It holds no credentials, calls neither Box nor Salesforce, and never offers a loan write. Loan ID and loan folder ID are not bindings; the presenter skill resolves them from the live record.
 
@@ -60,6 +60,14 @@ Presenters add `https://<host>/mcp` as a custom connector named `LOS Demo Setup`
 ```
 
 Then type `Demo Setup` in a new chat.
+
+## Slackbot MCP client
+
+The same tools carry Block Kit for Slack's MCP client, so the card works there without the MCP Apps path. `demoSetup` returns `_meta.slack.blocks` (a header, the four bindings, and one **Use these bindings** button whose `action_id` is `tool:confirmDemoSetup` and whose `value` is the JSON string of the defaults). Slack routes the click to `confirmDemoSetup`, whose result replaces the card with the confirmed values and no button; its text, "Demo Setup confirmed: ...", is what Slackbot caches. Both tools declare `_meta.slack.supportsBlockKit`, and `confirmDemoSetup` is listed to the model so Slack can route to it by name. The blocks are attached on every host because the stateless HTTP mode cannot see the client's `initialize` capabilities; hosts that do not render them ignore the extra `_meta`.
+
+Overrides on Slack are typed in the DM, which the presenter skill already accepts. Setting `LOS_DEMO_SLACK_TEXT_INPUTS=1` adds one free-text input per binding to the card, bound with `input:<key>`; Slack's documentation lists select elements in forms but not free-text inputs, so rehearse this in a DM before relying on it (a rejected block payload is dropped in full and only the text shows).
+
+Slack connects only over Streamable HTTP on public HTTPS, so run the connector with `npm run start:http` behind TLS and add it to a Slack app's `mcp_servers` with `auth_type: "no_auth"` (the server holds no credentials and answers everyone the same) and the `mcp:connect` bot scope. Slackbot allows five connected servers per user; with Box and LOS Loan Tools this is the third.
 
 ## Governance
 
