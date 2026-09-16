@@ -9,5 +9,5 @@
     "lib": ["ES2022"],
     "types": ["node"]
   },
-  "include": ["src/server.ts", "src/main.ts", "src/bindings.ts"]
+  "include": ["src/server.ts", "src/main.ts", "src/bindings.ts", "src/slack-blocks.ts"]
 }
