@@ -13,13 +13,13 @@ This single file contains the complete skill. Execute the workflow through the c
 
 Use only capabilities exposed by the connected tools. If a capability is missing, follow the inline fallback or report the specific missing capability; do not substitute an external script or terminal command. The optional `.skill` archive is simply this file packaged for import, not a runtime dependency.
 
-## Demo Setup (run before the show, on request "Demo Setup")
+## Demo Setup (only when a binding is missing, or on request "Demo Setup")
 
-Four environment bindings are confirmed once per session and cached: Box enterprise ID, Credit Policy Hub ID, Doc Gen commitment-letter template ID, signer email. Loan ID and loan folder ID are never part of Demo Setup; resolve them from `listLoans` and `getLoanPackage` every session.
+Four environment bindings are cached for the session: Box enterprise ID, Credit Policy Hub ID, Doc Gen commitment-letter template ID, signer email. When they are already set, the demo starts without a setup step; show Demo Setup only when one is missing or the operator asks for it. Loan ID and loan folder ID are never part of Demo Setup; resolve them from `listLoans` and `getLoanPackage` every session.
 
-- **With the LOS Demo Setup connector loaded:** call its `demoSetup` tool once. It renders a card with the four bindings and their defaults. The operator confirms or edits them on the card, and the confirmation arrives as the operator's own message ("Demo Setup confirmed: ..."). Cache those values for the session and do not ask for them again. The card confirms bindings only; it never applies, approves, generates, or sends anything.
-- **Without the connector:** present the same four bindings as one Markdown table with their defaults (from the environment configuration, or blank) and ask for one reply: "use these defaults" or replacement values. Cache the reply.
-- If the operator skips Demo Setup, resolve each binding under the CRITICAL rules below the first time a beat needs it.
+- **With the LOS Demo Setup connector loaded:** at session start call its `demoBindings` tool once; it shows nothing. If it reports complete, use those values silently, do not mention setup, and go to the first beat. Only if it reports a missing value, or the operator types "Demo Setup", call `demoSetup`: it renders a card with the four bindings and their defaults, the operator confirms or edits them, and the confirmation arrives as the operator's own message ("Demo Setup confirmed: ..."). Cache those values and do not ask again. The card confirms bindings only; it never applies, approves, generates, or sends anything.
+- **Without the connector:** if the bindings are already known (the environment configuration or a rendered copy of this skill), use them silently. Present the four bindings as one Markdown table only when one is missing or on request, and ask for one reply: "use these defaults" or replacement values. Cache the reply.
+- If a binding is still unresolved when a beat needs it, resolve that one under the CRITICAL rules below.
 - Never offer decision cards or option lists whose choices apply terms, approve documents, generate documents, or send for signature. The only next step you offer is the next beat prompt in a code block.
 
 ## Answer style

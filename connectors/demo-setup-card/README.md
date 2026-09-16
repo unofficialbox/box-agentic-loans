@@ -6,7 +6,8 @@ It holds no credentials, calls neither Box nor Salesforce, and never offers a lo
 
 ## How it works
 
-- `demoSetup` (model-visible) returns the defaults and, if there is one, the confirmation already made in this process. Its `_meta.ui.resourceUri` points at `ui://los-demo-setup/card.html`, so an MCP Apps host renders the card.
+- `demoBindings` (model-visible, no UI) is the silent check the skill runs at session start. When every default is set it reports the bindings as complete and the demo proceeds with no setup step; when one is missing it names it and asks for the card.
+- `demoSetup` (model-visible) returns the defaults and, if there is one, the confirmation already made in this process. Its `_meta.ui.resourceUri` points at `ui://los-demo-setup/card.html`, so an MCP Apps host renders the card. The skill calls it only for a missing value or when the operator asks for Demo Setup.
 - `confirmDemoSetup` (app-only, hidden from the model) validates the values the card submits: numeric Box IDs, a well-formed email.
 - The card then calls `sendMessage` so "Demo Setup confirmed: ..." appears as the operator's chat message, which is exactly what the skill caches after a typed reply. If the host refuses chat messages it falls back to `updateModelContext`, and failing that it shows the sentence to paste.
 

@@ -27,7 +27,7 @@ Two rules govern everything the operator and audience see:
 
 ## Demo Setup (run before the show, on request "Demo Setup")
 
-When the operator runs **Demo Setup**, present these four environment bindings with their defaults all at once, and let the operator accept each default or supply their own value. Whatever is confirmed becomes the session default and is cached for the whole run, so nothing pauses mid-show:
+When every default below is filled in, Demo Setup is silent: use the values for the whole run and do not present them unless the operator asks. Present these four environment bindings with their defaults all at once only when the operator runs **Demo Setup** or a placeholder is unresolved, and let the operator accept each default or supply their own value. Whatever is confirmed becomes the session default and is cached for the whole run, so nothing pauses mid-show:
 
 | Binding | Default |
 |---|---|
@@ -38,7 +38,7 @@ When the operator runs **Demo Setup**, present these four environment bindings w
 
 The operator fills these four placeholders in the skill draft before publishing, from the environment's runtime defaults file (in the repository, `config/runtime/quick-demo-defaults.json`, which is never committed). They are demo values for one environment, not universal constants. If a placeholder is still unresolved when Demo Setup runs, ask the operator for that value; never guess.
 
-Offer them as a single confirmation ("use these four defaults, or override any"), not one prompt at a time. The loan ID and loan folder ID are NOT part of this setup; they are always resolved dynamically (see the bindings checklist). If the operator skips Demo Setup, fall back to the pre-demo bindings checklist, using these same defaults unless a connected tool provides the value.
+When you do present them, offer them as a single confirmation ("use these four defaults, or override any"), not one prompt at a time. The loan ID and loan folder ID are NOT part of this setup; they are always resolved dynamically (see the bindings checklist). If the operator skips Demo Setup, fall back to the pre-demo bindings checklist, using these same defaults unless a connected tool provides the value.
 
 ## Workflow
 
