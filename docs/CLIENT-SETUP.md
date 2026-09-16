@@ -56,7 +56,7 @@ The Demo Setup card is a small third connector that shows the four session bindi
 
 1. Ask your maintainer for the card URL. It ends in `/mcp`.
 2. In **Connectors**, **Add custom connector**. Name: `LOS Demo Setup`. URL: the card URL. Leave the OAuth fields blank and click **Connect**.
-3. In a new chat with all three connectors enabled, type `Demo Setup`. The card appears with the defaults. Change any value, then click **Use these for this session**. The confirmation shows up in the chat as your message and the skill caches it.
+3. In a new chat with all three connectors enabled, start the demo. When your maintainer's defaults are complete the card never appears and the values are used silently; it appears on its own only when a value is missing. Type `Demo Setup` whenever you want to see or change the values: the card shows the defaults, you change any value and click **Use these for this session**, and the confirmation shows up in the chat as your message.
 
 Without this connector, `Demo Setup` still works: the assistant shows the same four values as a table and you reply "use these defaults" or type replacements.
 

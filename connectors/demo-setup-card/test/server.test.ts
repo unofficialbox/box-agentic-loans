@@ -17,9 +17,9 @@ const DEFAULTS = {
 };
 const CARD_HTML = "<!DOCTYPE html><html><body><h1>Demo Setup</h1></body></html>";
 
-async function connect(store = new ConfirmationStore()) {
+async function connect(store = new ConfirmationStore(), defaults = DEFAULTS) {
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-  const server = createServer({ defaults: DEFAULTS, readCardHtml: async () => CARD_HTML, store });
+  const server = createServer({ defaults, readCardHtml: async () => CARD_HTML, store });
   await server.connect(serverTransport);
   const client = new Client({ name: "test", version: "0.0.0" });
   await client.connect(clientTransport);
@@ -72,12 +72,31 @@ describe("Demo Setup MCP App server", () => {
     const { client } = await connect();
     const { tools } = await client.listTools();
     const byName = Object.fromEntries(tools.map((t) => [t.name, t]));
-    expect(Object.keys(byName).sort()).toEqual(["confirmDemoSetup", "demoSetup"]);
+    expect(Object.keys(byName).sort()).toEqual(["confirmDemoSetup", "demoBindings", "demoSetup"]);
+    expect((byName.demoBindings._meta as { ui?: unknown } | undefined)?.ui).toBeUndefined();
     const ui = (name: string) => (byName[name]._meta as { ui: { resourceUri: string; visibility?: string[] } }).ui;
     expect(ui("demoSetup").resourceUri).toBe(RESOURCE_URI);
     expect(ui("demoSetup").visibility).toEqual(["model", "app"]);
     expect(ui("confirmDemoSetup").visibility).toEqual(["app"]);
     expect(byName.demoSetup.annotations?.readOnlyHint).toBe(true);
+  });
+
+  it("answers silently when the defaults are complete and asks for the card only when one is missing", async () => {
+    const { client, store } = await connect();
+    const complete = await client.callTool({ name: "demoBindings", arguments: {} });
+    expect(complete.structuredContent).toEqual({ bindings: DEFAULTS, missing: [], complete: true, source: "defaults" });
+    expect(text(complete)).toContain("Do not show Demo Setup");
+
+    const overrides = { ...DEFAULTS, signerEmail: "priya.shah@example.com" };
+    await client.callTool({ name: "confirmDemoSetup", arguments: overrides });
+    const confirmed = await client.callTool({ name: "demoBindings", arguments: {} });
+    expect(confirmed.structuredContent).toEqual({ bindings: overrides, missing: [], complete: true, source: "confirmed" });
+    expect(store.get()).toEqual(overrides);
+
+    const partial = await connect(new ConfirmationStore(), { ...DEFAULTS, creditPolicyHubId: "" });
+    const needed = await partial.client.callTool({ name: "demoBindings", arguments: {} });
+    expect(needed.structuredContent).toMatchObject({ complete: false, missing: ["Credit Policy Hub ID"], source: "defaults" });
+    expect(text(needed)).toContain("Call demoSetup");
   });
 
   it("serves the card as an MCP Apps HTML resource", async () => {

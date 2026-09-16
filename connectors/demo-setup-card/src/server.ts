@@ -1,11 +1,13 @@
 /**
  * MCP Apps server for the LOS demo's Demo Setup decision card.
  *
- * One model-visible tool, `demoSetup`, renders the card with the four environment bindings
- * and their defaults. One app-only tool, `confirmDemoSetup`, validates what the operator
- * confirmed and records it for the process. The card then posts the confirmation into the
- * chat as the operator's message, so the presenter skill caches the bindings exactly as it
- * would after a typed reply. The card never offers a loan write; those stay typed.
+ * `demoBindings` (model-visible, no UI) answers silently: when every default is set it hands
+ * the bindings back as complete and the demo runs without a setup step. `demoSetup` renders
+ * the card, and is meant only for a missing value or an operator who asks for Demo Setup.
+ * The app-only `confirmDemoSetup` validates what the operator confirmed and records it for
+ * the process; the card then posts the confirmation into the chat as the operator's message,
+ * so the presenter skill caches the bindings exactly as it would after a typed reply. The
+ * card never offers a loan write; those stay typed.
  */
 import {
   registerAppResource,
@@ -22,6 +24,7 @@ import {
   type Bindings,
   bindingsTable,
   loadDefaults,
+  missingBindings,
   summarizeBindings,
   validateBindings,
 } from "./bindings.js";
@@ -73,6 +76,35 @@ export function createServer(options: ServerOptions = {}): McpServer {
 
   const server = new McpServer({ name: SERVER_NAME, version: SERVER_VERSION });
 
+  const effective = () => {
+    const confirmed = store.get();
+    const bindings = confirmed ?? defaults;
+    const missing = missingBindings(bindings);
+    return { bindings, missing, complete: missing.length === 0, source: confirmed ? "confirmed" : "defaults" };
+  };
+
+  server.registerTool(
+    "demoBindings",
+    {
+      title: "Demo bindings",
+      description:
+        "Returns the LOS demo's four session bindings (Box enterprise ID, Credit Policy Hub ID, " +
+        "Doc Gen commitment-letter template ID, signer email) without showing anything. Call it once at " +
+        "session start. If it reports complete, use the values silently and do not run Demo Setup; " +
+        "only when it reports missing values, or the operator asks for Demo Setup, call demoSetup to show the card. " +
+        "It writes nothing to Box or Salesforce.",
+      inputSchema: z.object({}),
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    async () => {
+      const state = effective();
+      const text = state.complete
+        ? `Demo Setup is complete for this session (${state.source}). ${summarizeBindings(state.bindings)} Do not show Demo Setup unless the operator asks.`
+        : `Demo Setup is needed: ${state.missing.join(", ")} ${state.missing.length === 1 ? "is" : "are"} not set. Call demoSetup to show the card.\n\n${bindingsTable(state.bindings)}`;
+      return { content: [{ type: "text", text }], structuredContent: state };
+    },
+  );
+
   registerAppTool(
     server,
     "demoSetup",
@@ -81,8 +113,9 @@ export function createServer(options: ServerOptions = {}): McpServer {
       description:
         "Shows the Demo Setup card with the four environment bindings the LOS demo needs " +
         "(Box enterprise ID, Credit Policy Hub ID, Doc Gen commitment-letter template ID, signer email) " +
-        "and their defaults. The operator confirms or overrides them once per session. " +
-        "Call it when the operator asks for Demo Setup or before the first stage. It writes nothing to Box or Salesforce.",
+        "and their defaults, for the operator to confirm or override once per session. " +
+        "Call it only when demoBindings reports a missing value or the operator asks for Demo Setup; " +
+        "when the defaults are complete the demo runs without it. It writes nothing to Box or Salesforce.",
       inputSchema: z.object({}),
       annotations: { readOnlyHint: true, openWorldHint: false },
       _meta: { ui: { resourceUri: RESOURCE_URI, visibility: ["model", "app"] } },

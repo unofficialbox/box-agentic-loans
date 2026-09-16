@@ -26,6 +26,7 @@ class DemoSetupCardTests(unittest.TestCase):
     def test_server_marks_confirmation_tool_app_only(self):
         source = (CARD / 'src' / 'server.ts').read_text()
         self.assertIn('"confirmDemoSetup"', source)
+        self.assertIn('"demoBindings"', source)
         self.assertIn('visibility: ["app"]', source)
         self.assertIn('visibility: ["model", "app"]', source)
         self.assertIn('ui://los-demo-setup/card.html', source)
@@ -34,6 +35,10 @@ class DemoSetupCardTests(unittest.TestCase):
         skill = (ROOT / 'skills' / 'loan-origination' / 'SKILL.md').read_text()
         self.assertIn('## Demo Setup', skill)
         self.assertIn('`demoSetup`', skill)
+        self.assertIn('`demoBindings`', skill)
+        self.assertIn('use those values silently', skill)
+        for name in ('loan-origination-quick', 'loan-origination-slack'):
+            self.assertIn('silent', (ROOT / 'skills' / name / 'SKILL.md').read_text(), name)
         self.assertIn('Never offer decision cards', skill)
         guide = (ROOT / 'docs' / 'CLIENT-SETUP.md').read_text()
         self.assertIn('Demo Setup card', guide)

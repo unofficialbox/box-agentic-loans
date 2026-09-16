@@ -93,6 +93,11 @@ export function validateBindings(input: Partial<Record<BindingKey, unknown>>): V
   return errors.length ? { ok: false, errors } : { ok: true, bindings };
 }
 
+/** Labels of the bindings that are blank. Empty means every binding is set. */
+export function missingBindings(bindings: Partial<Bindings>): string[] {
+  return BINDING_KEYS.filter((key) => !(bindings[key] ?? "").trim()).map((key) => BINDING_LABELS[key]);
+}
+
 /** The sentence the card sends into the chat once the operator confirms. */
 export function summarizeBindings(bindings: Bindings): string {
   const parts = BINDING_KEYS.map((key) => `${BINDING_LABELS[key]} ${bindings[key]}`);

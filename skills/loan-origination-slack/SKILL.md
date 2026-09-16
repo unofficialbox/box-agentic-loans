@@ -27,7 +27,7 @@ Four environment bindings are confirmed once per session and cached. Loan ID and
 | Signer email | `<SIGNER_EMAIL>` |
 
 - **Before upload:** the operator renders this file with the environment's values (`python3 scripts/render_skill_bindings.py --skill loan-origination-slack`, see [Rendering the bindings](#rendering-the-bindings)) and uploads the rendered copy as the Slackbot skill. The repository copy keeps the angle-bracket placeholders on purpose.
-- **At session start, or on request "Demo Setup":** use the values in the table above for the whole conversation: the metadata search scope, `ai_qa_hub` `hub_id`, `create_docgen_batch` `file_id`, and the signer. Never discover them with a listing call.
+- **At session start:** if every value in the table is set, use them silently for the whole conversation (the metadata search scope, `ai_qa_hub` `hub_id`, `create_docgen_batch` `file_id`, and the signer) and do not show them. Show the table only when the operator types "Demo Setup" or a value is missing. Never discover a value with a listing call.
 - **If any value above is still an angle-bracket placeholder:** ask the operator for all four in one message, once, then cache the reply for the session. Never print a placeholder, and never put a Hub ID or any other binding into an answer or a suggested prompt; the prompts below are complete without them.
 - Never offer buttons or options that apply terms, approve documents, generate documents, or send for signature. The only next step you offer is the next prompt in a code block.
 
