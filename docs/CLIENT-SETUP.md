@@ -50,6 +50,16 @@ If step 3 answers with a filename but no document, say `show me the document` on
 2. Add the skill: upload `skills/loan-origination/SKILL.md` (or the `.skill` archive your maintainer sends you) under **Customize**, **Skills**.
 3. Start every rehearsal in a new chat inside that project with both connectors enabled under the **+** menu.
 
+**Optional: the Demo Setup card**
+
+The Demo Setup card is a small third connector that shows the four session bindings (Box enterprise ID, Credit Policy Hub ID, Doc Gen template ID, signer email) as a clickable card, the way Amazon Quick does, instead of a typed reply. Your maintainer runs it ([connectors/demo-setup-card](../connectors/demo-setup-card/README.md)); you only connect to it.
+
+1. Ask your maintainer for the card URL. It ends in `/mcp`.
+2. In **Connectors**, **Add custom connector**. Name: `LOS Demo Setup`. URL: the card URL. Leave the OAuth fields blank and click **Connect**.
+3. In a new chat with all three connectors enabled, type `Demo Setup`. The card appears with the defaults. Change any value, then click **Use these for this session**. The confirmation shows up in the chat as your message and the skill caches it.
+
+Without this connector, `Demo Setup` still works: the assistant shows the same four values as a table and you reply "use these defaults" or type replacements.
+
 **If it fails**
 
 - The LOS connector lists fewer than seven tools: it was connected before the newer tools existed. **Disconnect**, then **Connect** again with the same URL.
@@ -97,7 +107,7 @@ If step 3 answers with a filename but no document, say `show me the document` on
 
 ## Slack (Slackbot)
 
-Slackbot has no skills and no custom instructions, so the presenter pastes a short primer at the start of each rehearsal. Tools run in a direct message with Slackbot only, not in channels, and Slack does not show Box document previews; the demo cites documents with Box links instead.
+Slackbot can load the presenter skill (it shows *Used Loan Origination Slack* under its answers when it does); where it cannot, the presenter pastes a short primer at the start of each rehearsal. Either way the file must be the **rendered** copy with this environment's bindings in it, because Slackbot has no other source for them. Tools run in a direct message with Slackbot only, not in channels, and Slack does not show Box document previews; the demo cites documents with Box links instead.
 
 **One-time, by your Slack admin:** the `LOS Loan Tools` Slack app must be installed and approved for the workspace ([admin section](#for-admins)). Box for Slack must be installed.
 
@@ -113,9 +123,10 @@ Slackbot has no skills and no custom instructions, so the presenter pastes a sho
 2. In the same Slackbot direct message, click **Apps**, click **+** next to **Box**, and sign in to Box.
 3. Both apps now appear under **Your apps** in the **Integrations** tab.
 
-**Load the presenter primer**
+**Load the presenter skill or primer**
 
-1. Open `skills/loan-origination-slack/SKILL.md` and copy the block under **Primer**.
+0. If your Slackbot loads skills, add the rendered skill file your maintainer produced (`config/runtime/generated/loan-origination-slack.md`, or the `.skill` archive built with `--bindings`) and skip the primer. Confirm by checking that an answer shows *Used Loan Origination Slack*.
+1. Otherwise ask your maintainer for the **rendered** primer for this environment (they produce it with `scripts/render_skill_bindings.py`; its first rule carries the Box enterprise ID, Credit Policy Hub ID, Doc Gen template ID and signer email). If you only have the repository file `skills/loan-origination-slack/SKILL.md`, copy the block under **Primer** and replace the four angle-bracket values in rule 1 before pasting.
 2. Paste it as the first message of the Slackbot direct message.
 3. When Slackbot asks to allow a tool: choose **Always allow** for reads (list loans, get loan package, extract, search, Box AI, preview), and **Allow once** each time for apply, approve, Doc Gen, and signature.
 
@@ -125,6 +136,7 @@ Slackbot has no skills and no custom instructions, so the presenter pastes a sho
 - "Not able to connect" or "Unexpected error" on sign-in: the LOS app is missing the Slack callback URL or the client secret. Ask the Salesforce admin.
 - Slackbot lists the tools but never calls them: ask `What tools are available from LOS Loan Tools?` once, then repeat the prompt.
 - You already have five apps connected: Slackbot allows five at a time. Remove one under **Your apps**.
+- Slackbot asks for a Box Hub ID, or its suggested prompt shows `<POLICY_HUB_ID>`: the skill or primer it has still carries placeholders. Replace it with the rendered copy.
 
 ---
 
