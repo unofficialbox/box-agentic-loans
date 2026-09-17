@@ -2,39 +2,53 @@
 
 Two platforms, one set of governed actions between them. Box stores the loan file (application package, borrower documents, appraisal, term sheets, credit memos, commitment letters, executed agreements, metadata, versions, audit trail). Salesforce `LOS_Loan__c` stores structured credit truth. Loan-file bytes never flow into Salesforce, and term write-back requires explicit confirmation, and signature preparation enforces the loan state; draft generation requires a human request: AI drafts, compares, extracts and recommends; people approve credit decisions, exceptions, accepted terms and signatures.
 
-Diagrams: [LOS architecture](diagrams/los-architecture.svg) ([source](diagrams/los-architecture.mmd)) and the [Box + Salesforce flow](diagrams/box-salesforce-los-flow.svg) ([source](diagrams/box-salesforce-los-flow.mmd)).
+## System Architecture
 
-```text
-┌──────────────────────────────────────────────────────────────────────────────────────┐
-│                     Salesforce - governed Apex actions (6 tools)                     │
-│                                                                                      │
-│  Salesforce only:                                                                   │
-│  ┌──────────┐  ┌──────────┐                                                        │
-│  │ List     │  │ Apply    │                                                        │
-│  │ loans    │  │ terms    │                                                        │
-│  │ (SOQL)   │  │(confirmed│                                                        │
-│  └──────────┘  └──────────┘                                                        │
-│                                                                                      │
-│  Box for Salesforce:                                                                │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌───────────────┐                     │
-│  │ Loan     │  │ Extract  │  │ Classify │  │ Prepare       │                     │
-│  │ package  │  │ terms    │  │ document │  │ signature     │                     │
-│  │          │  │ (Box AI) │  │ (Box AI) │  │ (state-gated) │                     │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └───────┬───────┘                     │
-│  ┌────┴──────────────┴──────────────┴──────────────┴─────────────────────────┐   │
-│  │       Client Credentials Grant - the Box token never leaves Apex           │   │
-│  └────────────────────────────────────────────────────────────────────────────┘   │
-└──────────────────────────────────────────────────────────────────────────────────────┘
-        ▲                                                      ▲
-        │ MCP / Agentforce (internal)     downscoped token (borrower portal)
+![LOS Architecture](diagrams/los-architecture.svg)
 
-Additional Box operations now use Box MCP directly (not via Salesforce):
-- Metadata search: Box MCP query_metadata (enterprise-wide, faster)
-- Box AI QA: Box MCP box_ai_ask (direct API)
-- Doc Gen: Box MCP create_document_from_template (direct API)
-```
+*Complete system architecture showing governed Apex actions, Box MCP integration, and dual surfaces (internal AI + external portal)*
 
-Two surfaces share the governed assets. The internal surface is the `LOSLoanTools` hosted MCP server (Claude Desktop, ChatGPT, Slack) or the `LOS_Loan_Copilot` Employee Agent inside Agentforce, running as the signed-in employee over the whole portfolio. The external surface is the Acme Borrower Portal, a React UI Bundle on an authenticated Experience Cloud site, running as the community user and bounded by a sharing set, field permissions and server-authorized document listings, upload-only folder tokens and per-file preview tokens. The portal carries no agent: a Service Agent runs as its own user and takes the loan from the conversation, so it could not be scoped to the borrower. An optional third connector, `connectors/demo-setup-card` (an MCP Apps server), renders the Demo Setup card in Claude Desktop so the four session bindings are confirmed on a clickable card as in Amazon Quick; it holds no credentials and writes nothing to Box or Salesforce.
+View diagrams: [LOS architecture](diagrams/los-architecture.svg) ([source](diagrams/los-architecture.mmd)) and [Box + Salesforce flow](diagrams/box-salesforce-los-flow.svg) ([source](diagrams/box-salesforce-los-flow.mmd))
+
+### Governed Actions Layer
+
+**Salesforce Apex Tools (6 core tools):**
+- **List loans** (SOQL) - Portfolio queries by status/borrower
+- **Apply terms** (confirmed) - Write validated terms to record
+
+**Box for Salesforce Integration:**
+- **Loan package** - Resolve loan folder and document IDs
+- **Extract terms** (Box AI) - Pull structured data from documents
+- **Classify document** (Box AI) - Automatic metadata tagging
+- **Prepare signature** (state-gated) - Box Sign request creation
+
+All Box operations run through Client Credentials Grant — the Box token never leaves Apex.
+
+### Direct Box MCP Operations
+
+For performance and capability, these operations bypass Salesforce and call Box APIs directly:
+- **Metadata search** - `query_metadata` (enterprise-wide, faster than Apex round-trip)
+- **Box AI QA** - `box_ai_ask` (direct API access)
+- **Doc Gen** - `create_document_from_template` (direct API, no Apex overhead)
+
+### Two Surfaces
+
+**Internal Surface (AI Harnesses):**
+- `LOSLoanTools` hosted MCP server → Claude Desktop, ChatGPT, Slack
+- `LOS_Loan_Copilot` Employee Agent → Agentforce
+- Runs as signed-in employee with full portfolio access
+
+**External Surface (Borrower Portal):**
+- React UI Bundle on Experience Cloud
+- Runs as community user with sharing set boundaries
+- Field-level permissions + server-authorized document listings
+- Upload-only folder tokens + per-file preview tokens
+- No agent (Service Agents can't be scoped to borrower)
+
+**Optional: Demo Setup Card**
+- `connectors/demo-setup-card` (MCP Apps server)
+- Renders session bindings confirmation in Claude Desktop
+- Holds no credentials, writes nothing
 
 ## Box
 
