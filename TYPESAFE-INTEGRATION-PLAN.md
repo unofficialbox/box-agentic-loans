@@ -979,47 +979,58 @@ TYPESAFE_API_KEY=your_api_key_here
 TYPESAFE_MODEL=jev-latest
 ```
 
-### Python Dependencies
+### TypeScript Dependencies
 
-Add to `requirements.txt`:
+Add to `package.json`:
+```json
+{
+  "dependencies": {
+    "typesafe-sdk": "^1.0.0"
+  }
+}
 ```
-typesafe-sdk>=1.0.0
+
+Install:
+```bash
+npm install typesafe-sdk
+# or
+pnpm add typesafe-sdk
 ```
 
 ### Service Interface
 
-```python
-# Document Classification Response
-@dataclass
-class DocumentClassification:
-    doc_type: str              # Selected type
-    confidence: float          # 0-1 confidence score
-    probabilities: Dict[str, float]  # All type probabilities
-    needs_review: bool         # True if confidence < threshold
+```typescript
+// Document Classification Response
+interface DocumentClassificationResult {
+  docType: string;              // Selected type
+  confidence: number;           // 0-1 confidence score
+  probabilities: Record<string, number>;  // All type probabilities
+  needsReview: boolean;         // True if confidence < threshold
+}
 
-# Risk Score Response
-@dataclass
-class RiskScore:
-    credit_score: float        # 0-3 weighted score
-    collateral_score: float    # 0-3 weighted score
-    composite_score: float     # Weighted combination
-    risk_level: str           # Low/Medium/High/Critical
-    confidence: float         # Model confidence
-    requires_senior_review: bool
+// Risk Score Response
+interface RiskScore {
+  creditScore: number;          // 0-3 weighted score
+  collateralScore: number;      // 0-3 weighted score
+  compositeScore: number;       // Weighted combination
+  riskLevel: 'Low' | 'Medium' | 'High' | 'Critical';
+  confidence: number;           // Model confidence
+  requiresSeniorReview: boolean;
+}
 
-# Policy Validation Response
-@dataclass
-class PolicyValidation:
-    compliant: bool           # Overall compliance
-    checks: Dict[str, PolicyCheck]  # Individual checks
-    violations: List[str]     # Policy violations
-    exception_required: bool  # Needs approval
-    
-@dataclass
-class PolicyCheck:
-    name: str
-    probability: float        # 0-1 compliance probability
-    passed: bool             # True if prob > threshold
+// Policy Validation Response
+interface PolicyValidation {
+  compliant: boolean;           // Overall compliance
+  checks: Record<string, PolicyCheck>;  // Individual checks
+  violations: string[];         // Policy violations
+  exceptionRequired: boolean;   // Needs approval
+}
+
+interface PolicyCheck {
+  name: string;
+  probability: number;          // 0-1 compliance probability
+  passed: boolean;              // True if prob > threshold
+}
 ```
 
 ### API Usage Patterns

@@ -2,14 +2,25 @@
 
 Clear boundaries between TypeSafe orchestration and MCP data operations.
 
-## Architecture Principle
+## Core Principle
 
-**Each component does what it's best at:**
-- **Box MCP**: Content extraction, AI analysis, metadata, DocGen, Sign
-- **Salesforce MCP**: Record CRUD, governance, Apex actions
-- **TypeSafe**: Decision-making, routing, validation, orchestration
+**Simple separation of responsibilities:**
+
+- **📄 Unstructured data → Box MCP**: Documents, content, files, AI extraction
+- **📊 Structured data → Salesforce MCP**: Records, fields, relationships, governance
+- **🧠 Orchestration & decisions → TypeSafe**: Routing, validation, scoring, workflows
 
 **TypeSafe NEVER touches Box or Salesforce APIs directly.** It only makes decisions about data provided by MCPs.
+
+---
+
+## The Rule
+
+```
+If it's bytes/content/documents     → Box handles it
+If it's records/fields/database     → Salesforce handles it
+If it's "which/when/how confident"  → TypeSafe handles it
+```
 
 ---
 
@@ -187,54 +198,55 @@ Clear boundaries between TypeSafe orchestration and MCP data operations.
 
 ### TypeSafe Methods (Orchestration)
 
-```python
-class TypeSafeOrchestrator:
-    def validate_classification(
-        self, 
-        box_result: str,  # From Box MCP
-        loan_context: dict  # From Salesforce MCP
-    ) -> ValidationDecision:
-        """
-        Input: Data from MCPs
-        Output: Routing decision (auto/review/manual)
-        Does NOT: Call Box or Salesforce APIs
-        """
-        
-    def score_loan_risk(
-        self, 
-        loan_data: dict,  # From Salesforce MCP
-        documents: List[dict]  # From Box MCP
-    ) -> RiskScore:
-        """
-        Input: Data from MCPs
-        Output: Risk score with routing recommendation
-        Does NOT: Fetch loan or document data
-        """
-        
-    def route_intent(
-        self, 
-        query: str,
-        session_context: dict
-    ) -> WorkflowPlan:
-        """
-        Input: User query
-        Output: Which MCP tools to call and in what order
-        Does NOT: Call the MCP tools itself
-        """
+```typescript
+class TypeSafeOrchestrator {
+  async validateClassification(
+    boxResult: string,         // From Box MCP (unstructured → structured)
+    loanContext: LoanContext   // From Salesforce MCP (structured data)
+  ): Promise<ValidationDecision> {
+    /**
+     * Input: Data from MCPs
+     * Output: Routing decision (auto/review/manual)
+     * Does NOT: Call Box or Salesforce APIs
+     */
+  }
+  
+  async scoreLoanRisk(
+    loanData: LoanRecord,      // From Salesforce MCP (structured)
+    documents: Document[]      // From Box MCP (unstructured metadata)
+  ): Promise<RiskScore> {
+    /**
+     * Input: Data from MCPs
+     * Output: Risk score with routing recommendation
+     * Does NOT: Fetch loan or document data
+     */
+  }
+  
+  async routeIntent(
+    query: string,
+    sessionContext: SessionContext
+  ): Promise<WorkflowPlan> {
+    /**
+     * Input: User query
+     * Output: Which MCP tools to call and in what order
+     * Does NOT: Call the MCP tools itself
+     */
+  }
+}
 ```
 
 ### MCP Methods (Data Operations)
 
-```python
-# Box MCP - unchanged
-box_mcp.extract_structured(file_id, template)
-box_mcp.query_metadata(template, query)
-box_mcp.create_docgen_batch(template_id, data)
+```typescript
+// Box MCP - unchanged (unstructured data operations)
+await boxMcp.extractStructured(fileId, template);
+await boxMcp.queryMetadata(template, query);
+await boxMcp.createDocGenBatch(templateId, data);
 
-# Salesforce MCP - unchanged  
-sf_mcp.getLoanPackage(loan_id)
-sf_mcp.listLoans(filters)
-sf_mcp.classifyDocument(file_id, doc_type)
+// Salesforce MCP - unchanged (structured data operations)
+await sfMcp.getLoanPackage(loanId);
+await sfMcp.listLoans(filters);
+await sfMcp.classifyDocument(fileId, docType);
 ```
 
 ---
