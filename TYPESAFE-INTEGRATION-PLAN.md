@@ -508,45 +508,70 @@ if response.answers["fraud_indicators"].score > 2.0:
 
 ## TypeSafe Integration Opportunities
 
-### 1. Document Classification (Choice)
+### 1. Document Classification Validation (Score)
 
-**Current**: `LosClassifyDocument` → Box AI Extract → parse result → apply metadata
+**Current**: `LosClassifyDocument` → Box AI Extract → apply metadata (no validation)
 
-**With TypeSafe**:
+**Better Architecture**: Let Box AI do what it's best at (extract), TypeSafe validates confidence
+
 ```python
-response = client.system_one(
-    state=document_content,
+# Box MCP extracts document type (it's good at this!)
+box_result = box_mcp.extract_structured(
+    file_id=file_id,
+    metadata_template="losDocument",
+    fields=["documentType"]
+)
+
+# TypeSafe validates the extraction confidence and context
+response = typesafe.system_one(
+    state={
+        "box_classification": box_result.documentType,
+        "file_name": file_name,
+        "loan_type": loan.loan_type,
+        "loan_stage": loan.status,
+        "existing_documents": [doc.type for doc in loan_package.documents]
+    },
     questions={
-        "doc_type": Choice(
-            instructions="Classify this loan document",
-            criteria={
-                "loan_application": "Completed loan application form",
-                "term_sheet": "Proposed loan terms and conditions",
-                "financial_statement": "Balance sheet, P&L, cash flow",
-                "tax_return": "Business or personal tax returns",
-                "appraisal": "Property valuation report",
-                "insurance": "Insurance policy or certificate",
-                "credit_memo": "Internal credit analysis",
-                "commitment_letter": "Bank's loan approval offer",
-                "executed_agreement": "Signed loan documents"
-            }
+        "classification_confidence": Score(
+            instructions="How confident should we be in Box's classification?",
+            criteria=[
+                "High: Clear match, apply automatically",
+                "Medium: Reasonable match, flag for quick review",
+                "Low: Uncertain, needs manual classification",
+                "Wrong: Box misclassified, override needed"
+            ]
+        ),
+        "contextually_appropriate": Noul(
+            instructions="Does this document type make sense for this loan type and stage?"
+        ),
+        "duplicate_risk": Noul(
+            instructions="Is this a duplicate of an existing document in the package?"
         )
     }
 )
 
-doc_type = response.answers["doc_type"].choice
-confidence = response.answers["doc_type"].confidence
+# TypeSafe makes the routing decision
+confidence_score = response.answers["classification_confidence"].score
+is_appropriate = response.answers["contextually_appropriate"].noul
+is_duplicate = response.answers["duplicate_risk"].noul
 
-if confidence > 0.85:
-    apply_metadata_automatically(doc_type)
+if confidence_score < 1.0 and is_appropriate > 0.85 and is_duplicate < 0.3:
+    # High confidence - apply Box's classification automatically
+    apply_metadata(file_id, box_result.documentType)
+elif confidence_score < 2.0:
+    # Medium confidence - apply but flag for review
+    apply_metadata(file_id, box_result.documentType)
+    flag_for_quick_review(file_id, "medium_confidence")
 else:
-    flag_for_manual_classification(doc_type, confidence)
+    # Low confidence or contextual issues - manual classification
+    flag_for_manual_classification(file_id, box_result.documentType, confidence_score)
 ```
 
 **Benefits**:
-- 2-3x faster (single API call vs Box AI pipeline)
-- Confidence-based routing (auto-classify high confidence, review low)
-- Consistent enum values (no fuzzy matching)
+- Box AI does extraction (its strength)
+- TypeSafe validates context and confidence (its strength)
+- Catches duplicates and inappropriate classifications
+- Confidence-based routing (70-80% auto-applied, 20-30% reviewed)
 
 ### 2. Loan Risk Scoring (Score)
 
@@ -829,35 +854,64 @@ User Query
 
 ### Integration Layer Design
 
-**New Component**: `TypeSafeDecisionService`
+**New Component**: `TypeSafeOrchestrator`
 
-Located: `los-salesforce-project/services/typesafe_service.py`
+Located: `los-salesforce-project/services/typesafe_orchestrator.py`
 
 ```python
-class TypeSafeDecisionService:
+class TypeSafeOrchestrator:
     """
-    Wraps TypeSafe API for loan decision operations.
-    Provides confidence-based routing and structured decision outputs.
+    Orchestrates decisions between Box MCP and Salesforce MCP.
+    TypeSafe makes routing/validation decisions, MCPs handle data operations.
     """
     
-    def __init__(self, api_key: str):
-        self.client = TypeSafeClient(api_key=api_key)
+    def __init__(self, typesafe_api_key: str, box_mcp, salesforce_mcp):
+        self.typesafe = TypeSafeClient(api_key=typesafe_api_key)
+        self.box = box_mcp
+        self.sf = salesforce_mcp
     
-    def classify_document(self, content: str) -> DocumentClassification:
-        """Returns document type with confidence."""
+    def validate_document_classification(
+        self, file_id: str, box_classification: str, loan_context: dict
+    ) -> ClassificationValidation:
+        """
+        Box MCP extracts the type, TypeSafe validates confidence and context.
+        Returns routing decision: auto-apply, flag-for-review, or manual.
+        """
         
-    def score_loan_risk(self, loan_data: dict) -> RiskScore:
-        """Returns composite risk score with subscores."""
+    def score_loan_risk(self, loan_id: str) -> RiskScore:
+        """
+        Fetches data from both MCPs, TypeSafe scores risk and routes.
+        Returns composite risk score with routing recommendation.
+        """
         
-    def validate_policy(self, loan_terms: dict, policy: str) -> PolicyValidation:
-        """Returns compliance checks with probabilities."""
+    def validate_cross_system_consistency(
+        self, loan_id: str
+    ) -> ConsistencyValidation:
+        """
+        Compares Box documents vs Salesforce record, TypeSafe validates consistency.
+        Returns discrepancies and severity scoring.
+        """
         
-    def route_intent(self, query: str) -> Intent:
-        """Returns user intent with confidence."""
+    def route_user_intent(self, query: str, context: dict) -> IntentRoute:
+        """
+        TypeSafe classifies intent and returns which MCP tools to call.
+        Returns tool sequence and parameters.
+        """
         
-    def batch_decisions(self, state: dict, questions: dict) -> BatchDecisions:
-        """Handles complex multi-decision scenarios."""
+    def orchestrate_workflow(
+        self, workflow_type: str, parameters: dict
+    ) -> WorkflowResult:
+        """
+        Orchestrates multi-step workflows across MCPs with TypeSafe decisions.
+        Returns workflow outcome with confidence scores at each step.
+        """
 ```
+
+**Key Principle**: TypeSafe NEVER calls Box/Salesforce APIs directly. It only:
+1. Receives data fetched by MCPs
+2. Makes decisions about that data
+3. Returns routing/validation results
+4. MCPs handle all data operations
 
 ---
 
