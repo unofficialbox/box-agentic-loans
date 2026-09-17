@@ -56,55 +56,60 @@ These operations require **cross-system intelligence** that neither Box nor Sale
 **Problem**: Box documents and Salesforce records can drift out of sync. No single system knows if they match.
 
 **TypeSafe Solution**:
-```python
-# Get data from both systems via MCP
-loan_record = salesforce_mcp.get_loan("LN-2026-0042")
-term_sheet_doc = box_mcp.get_file(term_sheet_id)
+```typescript
+// Get data from both systems via MCP
+const loanRecord = await salesforceMcp.getLoan("LN-2026-0042");
+const termSheetDoc = await boxMcp.getFile(termSheetId);
 
-# TypeSafe evaluates consistency
-response = typesafe.system_one(
-    state={
-        "salesforce_record": {
-            "amount": loan_record["Loan_Amount__c"],
-            "rate": loan_record["Interest_Rate__c"],
-            "ltv": loan_record["LTV__c"],
-            "term": loan_record["Term_Months__c"]
+// TypeSafe evaluates consistency
+const response = await typesafe.systemOne({
+    state: {
+        salesforce_record: {
+            amount: loanRecord.Loan_Amount__c,
+            rate: loanRecord.Interest_Rate__c,
+            ltv: loanRecord.LTV__c,
+            term: loanRecord.Term_Months__c
         },
-        "box_document": term_sheet_doc.content
+        box_document: termSheetDoc.content
     },
-    questions={
-        "amount_matches": Noul(
-            instructions="Does the loan amount in the Salesforce record match the amount stated in the Box document?"
-        ),
-        "rate_matches": Noul(
-            instructions="Does the interest rate in the Salesforce record match the rate in the Box document?"
-        ),
-        "terms_consistent": Noul(
-            instructions="Are the loan terms in Salesforce and Box internally consistent and complete?"
-        ),
-        "discrepancy_severity": Score(
-            instructions="If inconsistencies exist, how severe are they?",
-            criteria=[
+    questions: {
+        amount_matches: {
+            type: 'noul',
+            instructions: "Does the loan amount in the Salesforce record match the amount stated in the Box document?"
+        },
+        rate_matches: {
+            type: 'noul',
+            instructions: "Does the interest rate in the Salesforce record match the rate in the Box document?"
+        },
+        terms_consistent: {
+            type: 'noul',
+            instructions: "Are the loan terms in Salesforce and Box internally consistent and complete?"
+        },
+        discrepancy_severity: {
+            type: 'score',
+            instructions: "If inconsistencies exist, how severe are they?",
+            criteria: [
                 "Minor: Small formatting differences, no material impact",
                 "Moderate: Numbers differ slightly, requires review",
                 "Major: Material differences in key terms",
                 "Critical: Fundamental mismatch, blocks closing"
             ]
-        )
+        }
     }
-)
+});
 
-# Act based on cross-system intelligence
-if all([
-    response.answers["amount_matches"].noul > 0.95,
-    response.answers["rate_matches"].noul > 0.95,
-    response.answers["terms_consistent"].noul > 0.95
-]):
-    approve_for_closing()
-elif response.answers["discrepancy_severity"].score > 2.0:
-    escalate_critical_mismatch()
-else:
-    flag_for_reconciliation()
+// Act based on cross-system intelligence
+if (
+    response.answers.amount_matches.noul > 0.95 &&
+    response.answers.rate_matches.noul > 0.95 &&
+    response.answers.terms_consistent.noul > 0.95
+) {
+    await approveForClosing();
+} else if (response.answers.discrepancy_severity.score > 2.0) {
+    await escalateCriticalMismatch();
+} else {
+    await flagForReconciliation();
+}
 ```
 
 **Why This Is Fancy**: Neither Box nor Salesforce can validate their own data against the other. TypeSafe reads from both (via MCPs) and makes consistency judgments impossible for either system alone.
@@ -114,66 +119,79 @@ else:
 **Problem**: Risk patterns across loans are invisible when analyzing one loan at a time.
 
 **TypeSafe Solution**:
-```python
-# Get portfolio data from Salesforce MCP
-active_loans = salesforce_mcp.list_loans(status="Underwriting,Approved")
+```typescript
+// Get portfolio data from Salesforce MCP
+const activeLoans = await salesforceMcp.listLoans({ status: "Underwriting,Approved" });
 
-# Get document quality scores from Box MCP for each loan
-loan_packages = [box_mcp.get_loan_package(loan.id) for loan in active_loans]
+// Get document quality scores from Box MCP for each loan
+const loanPackages = await Promise.all(
+    activeLoans.map(loan => boxMcp.getLoanPackage(loan.id))
+);
 
-# TypeSafe evaluates portfolio-level patterns
-response = typesafe.system_one(
-    state={
-        "portfolio": [
-            {
-                "loan_id": loan.id,
-                "borrower": loan.borrower,
-                "amount": loan.amount,
-                "ltv": loan.ltv,
-                "dscr": loan.dscr,
-                "risk_rating": loan.risk_rating,
-                "document_count": len(package.documents),
-                "document_types": [doc.type for doc in package.documents]
-            }
-            for loan, package in zip(active_loans, loan_packages)
-        ]
+// TypeSafe evaluates portfolio-level patterns
+const response = await typesafe.systemOne({
+    state: {
+        portfolio: activeLoans.map((loan, index) => {
+            const pkg = loanPackages[index];
+            return {
+                loan_id: loan.id,
+                borrower: loan.borrower,
+                amount: loan.amount,
+                ltv: loan.ltv,
+                dscr: loan.dscr,
+                risk_rating: loan.risk_rating,
+                document_count: pkg.documents.length,
+                document_types: pkg.documents.map(doc => doc.type)
+            };
+        })
     },
-    questions={
-        "concentration_risk": Score(
-            instructions="Assess borrower/industry concentration risk",
-            criteria=[
+    questions: {
+        concentration_risk: {
+            type: 'score',
+            instructions: "Assess borrower/industry concentration risk",
+            criteria: [
                 "Low: Well-diversified portfolio",
                 "Moderate: Some concentration in borrower/industry",
                 "High: Heavy concentration, limited diversity",
                 "Critical: Excessive concentration, systemic risk"
             ]
-        ),
-        "documentation_quality_trend": Score(
-            instructions="Overall trend in documentation completeness",
-            criteria=[
+        },
+        documentation_quality_trend: {
+            type: 'score',
+            instructions: "Overall trend in documentation completeness",
+            criteria: [
                 "Improving: Recent loans better documented",
                 "Stable: Consistent documentation quality",
                 "Declining: Recent loans less complete",
                 "Poor: Widespread documentation gaps"
             ]
-        ),
-        "outlier_loans": Choice(
-            instructions="Which loans are statistical outliers requiring attention?",
-            criteria={loan.id: f"{loan.borrower} ${loan.amount:,}" for loan in active_loans}
-        ),
-        "portfolio_health": Score(
-            instructions="Overall portfolio health assessment",
-            criteria=["Excellent", "Good", "Fair", "Poor", "Critical"]
-        )
+        },
+        outlier_loans: {
+            type: 'choice',
+            instructions: "Which loans are statistical outliers requiring attention?",
+            criteria: Object.fromEntries(
+                activeLoans.map(loan => [
+                    loan.id,
+                    `${loan.borrower} $${loan.amount.toLocaleString()}`
+                ])
+            )
+        },
+        portfolio_health: {
+            type: 'score',
+            instructions: "Overall portfolio health assessment",
+            criteria: ["Excellent", "Good", "Fair", "Poor", "Critical"]
+        }
     }
-)
+});
 
-# Generate portfolio risk report
-if response.answers["portfolio_health"].score > 3.0:
-    alert_portfolio_management()
-if response.answers["concentration_risk"].score > 2.0:
-    recommend_diversification()
-highlight_outliers(response.answers["outlier_loans"].choice)
+// Generate portfolio risk report
+if (response.answers.portfolio_health.score > 3.0) {
+    await alertPortfolioManagement();
+}
+if (response.answers.concentration_risk.score > 2.0) {
+    await recommendDiversification();
+}
+await highlightOutliers(response.answers.outlier_loans.choice);
 ```
 
 **Why This Is Fancy**: Combines Salesforce loan records + Box document inventories to detect portfolio-level patterns neither system can see independently.
@@ -183,63 +201,68 @@ highlight_outliers(response.answers["outlier_loans"].choice)
 **Problem**: Different loan types need different commitment letter sections, but template selection is manual.
 
 **TypeSafe Solution**:
-```python
-# Get loan data from Salesforce MCP
-loan = salesforce_mcp.get_loan(loan_id)
+```typescript
+// Get loan data from Salesforce MCP
+const loan = await salesforceMcp.getLoan(loanId);
 
-# Get available DocGen templates from Box MCP
-templates = box_mcp.list_docgen_templates()
+// Get available DocGen templates from Box MCP
+const templates = await boxMcp.listDocgenTemplates();
 
-# Get borrower communication history from Salesforce MCP
-communications = salesforce_mcp.get_account_timeline(loan.borrower_account_id)
+// Get borrower communication history from Salesforce MCP
+const communications = await salesforceMcp.getAccountTimeline(loan.borrowerAccountId);
 
-# TypeSafe orchestrates intelligent assembly
-response = typesafe.system_one(
-    state={
-        "loan_type": loan.loan_type,
-        "loan_amount": loan.amount,
-        "borrower_sophistication": communications,
-        "special_conditions": loan.underwriting_notes
+// TypeSafe orchestrates intelligent assembly
+const response = await typesafe.systemOne({
+    state: {
+        loan_type: loan.loanType,
+        loan_amount: loan.amount,
+        borrower_sophistication: communications,
+        special_conditions: loan.underwritingNotes
     },
-    questions={
-        "template_base": Choice(
-            instructions="Which commitment letter template best fits this loan?",
-            criteria={
-                t.id: f"{t.name}: {t.description}" for t in templates
-            }
-        ),
-        "include_ltv_covenant": Noul(
-            instructions="Should the letter include detailed LTV covenant language?"
-        ),
-        "include_guaranty_detail": Noul(
-            instructions="Should the letter include detailed personal guaranty terms?"
-        ),
-        "include_collateral_schedule": Noul(
-            instructions="Should the letter include a detailed collateral schedule?"
-        ),
-        "tone": Score(
-            instructions="What tone should the letter take?",
-            criteria=[
+    questions: {
+        template_base: {
+            type: 'choice',
+            instructions: "Which commitment letter template best fits this loan?",
+            criteria: Object.fromEntries(
+                templates.map(t => [t.id, `${t.name}: ${t.description}`])
+            )
+        },
+        include_ltv_covenant: {
+            type: 'noul',
+            instructions: "Should the letter include detailed LTV covenant language?"
+        },
+        include_guaranty_detail: {
+            type: 'noul',
+            instructions: "Should the letter include detailed personal guaranty terms?"
+        },
+        include_collateral_schedule: {
+            type: 'noul',
+            instructions: "Should the letter include a detailed collateral schedule?"
+        },
+        tone: {
+            type: 'score',
+            instructions: "What tone should the letter take?",
+            criteria: [
                 "Simple: Plain language, minimal jargon",
                 "Standard: Professional but accessible",
                 "Technical: Detailed legal language",
                 "Complex: Highly technical with full detail"
             ]
-        )
+        }
     }
-)
+});
 
-# Assemble document via Box MCP with TypeSafe-selected components
-template_id = response.answers["template_base"].choice
-sections = {
-    "include_ltv": response.answers["include_ltv_covenant"].noul > 0.7,
-    "include_guaranty": response.answers["include_guaranty_detail"].noul > 0.7,
-    "include_collateral": response.answers["include_collateral_schedule"].noul > 0.7,
-    "complexity_level": int(response.answers["tone"].score)
-}
+// Assemble document via Box MCP with TypeSafe-selected components
+const templateId = response.answers.template_base.choice;
+const sections = {
+    include_ltv: response.answers.include_ltv_covenant.noul > 0.7,
+    include_guaranty: response.answers.include_guaranty_detail.noul > 0.7,
+    include_collateral: response.answers.include_collateral_schedule.noul > 0.7,
+    complexity_level: Math.floor(response.answers.tone.score)
+};
 
-# Box MCP generates with intelligent section selection
-box_mcp.create_docgen_batch(template_id, loan_data, sections)
+// Box MCP generates with intelligent section selection
+await boxMcp.createDocgenBatch(templateId, loanData, sections);
 ```
 
 **Why This Is Fancy**: Combines loan attributes (SF) + templates (Box) + borrower communication history (SF) to intelligently customize document generation beyond simple merge fields.
@@ -249,77 +272,85 @@ box_mcp.create_docgen_batch(template_id, loan_data, sections)
 **Problem**: Loan officers need to prioritize responses based on urgency/risk, but email/portal messages are unstructured.
 
 **TypeSafe Solution**:
-```python
-# Get borrower communication from Salesforce MCP (could be email, portal message, etc)
-message = salesforce_mcp.get_latest_borrower_message(loan_id)
+```typescript
+// Get borrower communication from Salesforce MCP (could be email, portal message, etc)
+const message = await salesforceMcp.getLatestBorrowerMessage(loanId);
 
-# Get loan status from Salesforce MCP
-loan = salesforce_mcp.get_loan(loan_id)
+// Get loan status from Salesforce MCP
+const loan = await salesforceMcp.getLoan(loanId);
 
-# Get recent document activity from Box MCP
-recent_docs = box_mcp.query_metadata(
-    template="losDocument",
-    query=f"loanReference='{loan.loan_id}' AND modifiedAfter='-7 days'"
-)
+// Get recent document activity from Box MCP
+const recentDocs = await boxMcp.queryMetadata({
+    template: "losDocument",
+    query: `loanReference='${loan.loanId}' AND modifiedAfter='-7 days'`
+});
 
-# TypeSafe analyzes communication in context
-response = typesafe.system_one(
-    state={
-        "message": message.content,
-        "loan_status": loan.status,
-        "loan_amount": loan.amount,
-        "closing_date": loan.target_closing_date,
-        "recent_activity": [{"doc": d.name, "date": d.modified} for d in recent_docs]
+// TypeSafe analyzes communication in context
+const response = await typesafe.systemOne({
+    state: {
+        message: message.content,
+        loan_status: loan.status,
+        loan_amount: loan.amount,
+        closing_date: loan.targetClosingDate,
+        recent_activity: recentDocs.map(d => ({ doc: d.name, date: d.modified }))
     },
-    questions={
-        "urgency": Score(
-            instructions="How urgent is this communication?",
-            criteria=[
+    questions: {
+        urgency: {
+            type: 'score',
+            instructions: "How urgent is this communication?",
+            criteria: [
                 "Routine: Standard update, no time pressure",
                 "Important: Needs response in 1-2 days",
                 "Urgent: Needs response today",
                 "Critical: Immediate attention, blocks closing"
             ]
-        ),
-        "sentiment": Score(
-            instructions="Borrower sentiment",
-            criteria=["Positive", "Neutral", "Concerned", "Frustrated", "Angry"]
-        ),
-        "request_type": Choice(
-            instructions="What is the borrower asking for?",
-            criteria={
-                "status_update": "Wants progress update",
-                "document_issue": "Problem with documents",
-                "term_clarification": "Questions about loan terms",
-                "timeline_concern": "Worried about closing timeline",
-                "new_information": "Providing new financial info",
-                "complaint": "Expressing dissatisfaction"
+        },
+        sentiment: {
+            type: 'score',
+            instructions: "Borrower sentiment",
+            criteria: ["Positive", "Neutral", "Concerned", "Frustrated", "Angry"]
+        },
+        request_type: {
+            type: 'choice',
+            instructions: "What is the borrower asking for?",
+            criteria: {
+                status_update: "Wants progress update",
+                document_issue: "Problem with documents",
+                term_clarification: "Questions about loan terms",
+                timeline_concern: "Worried about closing timeline",
+                new_information: "Providing new financial info",
+                complaint: "Expressing dissatisfaction"
             }
-        ),
-        "risk_to_deal": Noul(
-            instructions="Does this message indicate risk to deal closure?"
-        ),
-        "requires_escalation": Noul(
-            instructions="Should this be escalated beyond the loan officer?"
-        )
+        },
+        risk_to_deal: {
+            type: 'noul',
+            instructions: "Does this message indicate risk to deal closure?"
+        },
+        requires_escalation: {
+            type: 'noul',
+            instructions: "Should this be escalated beyond the loan officer?"
+        }
     }
-)
+});
 
-# Intelligent routing based on cross-system context
-if response.answers["urgency"].score >= 2.5 or response.answers["risk_to_deal"].noul > 0.7:
-    priority_flag(message, "High")
-    if response.answers["requires_escalation"].noul > 0.6:
-        escalate_to_manager()
-    
-if response.answers["sentiment"].score >= 3.0:  # Frustrated or angry
-    assign_to_senior_loan_officer()
-    
-# Suggest response based on request type + context
-suggest_response_template(
-    request_type=response.answers["request_type"].choice,
-    urgency=response.answers["urgency"].score,
-    include_status_details=len(recent_docs) > 0
-)
+// Intelligent routing based on cross-system context
+if (response.answers.urgency.score >= 2.5 || response.answers.risk_to_deal.noul > 0.7) {
+    await priorityFlag(message, "High");
+    if (response.answers.requires_escalation.noul > 0.6) {
+        await escalateToManager();
+    }
+}
+
+if (response.answers.sentiment.score >= 3.0) {  // Frustrated or angry
+    await assignToSeniorLoanOfficer();
+}
+
+// Suggest response based on request type + context
+await suggestResponseTemplate({
+    requestType: response.answers.request_type.choice,
+    urgency: response.answers.urgency.score,
+    includeStatusDetails: recentDocs.length > 0
+});
 ```
 
 **Why This Is Fancy**: Analyzes borrower communication in the context of loan status (SF) + recent document activity (Box) to provide intelligent triage and response suggestions.
@@ -329,86 +360,94 @@ suggest_response_template(
 **Problem**: Want to predict whether a loan will close successfully based on early indicators.
 
 **TypeSafe Solution**:
-```python
-# Get current loan from Salesforce MCP
-current_loan = salesforce_mcp.get_loan(loan_id)
+```typescript
+// Get current loan from Salesforce MCP
+const currentLoan = await salesforceMcp.getLoan(loanId);
 
-# Get document package from Box MCP
-docs = box_mcp.get_loan_package(loan_id)
+// Get document package from Box MCP
+const docs = await boxMcp.getLoanPackage(loanId);
 
-# Get historical closed loans from Salesforce MCP
-historical_loans = salesforce_mcp.list_loans(status="Closed", limit=100)
+// Get historical closed loans from Salesforce MCP
+const historicalLoans = await salesforceMcp.listLoans({ status: "Closed", limit: 100 });
 
-# Get their document patterns from Box MCP
-historical_patterns = [
-    {
-        "loan": loan,
-        "doc_count_at_30_days": box_mcp.count_docs_as_of(loan.id, days_since_app=30),
-        "classification_rate": box_mcp.get_classification_rate(loan.id),
-        "revision_count": box_mcp.get_avg_revisions(loan.id)
-    }
-    for loan in historical_loans
-]
+// Get their document patterns from Box MCP
+const historicalPatterns = await Promise.all(
+    historicalLoans.map(async (loan) => ({
+        loan,
+        docCountAt30Days: await boxMcp.countDocsAsOf(loan.id, { daysSinceApp: 30 }),
+        classificationRate: await boxMcp.getClassificationRate(loan.id),
+        revisionCount: await boxMcp.getAvgRevisions(loan.id)
+    }))
+);
 
-# Calculate current loan's position
-days_since_app = (date.today() - current_loan.created_date).days
-current_doc_count = len(docs.files)
-current_classification_rate = sum(1 for d in docs.files if d.classified) / len(docs.files)
+// Calculate current loan's position
+const daysSinceApp = Math.floor(
+    (Date.now() - new Date(currentLoan.createdDate).getTime()) / (1000 * 60 * 60 * 24)
+);
+const currentDocCount = docs.files.length;
+const currentClassificationRate = 
+    docs.files.filter(d => d.classified).length / docs.files.length;
 
-# TypeSafe predicts outcome based on patterns
-response = typesafe.system_one(
-    state={
-        "current_loan": {
-            "days_since_app": days_since_app,
-            "doc_count": current_doc_count,
-            "classification_rate": current_classification_rate,
-            "ltv": current_loan.ltv,
-            "amount": current_loan.amount
+// TypeSafe predicts outcome based on patterns
+const response = await typesafe.systemOne({
+    state: {
+        currentLoan: {
+            daysSinceApp,
+            docCount: currentDocCount,
+            classificationRate: currentClassificationRate,
+            ltv: currentLoan.ltv,
+            amount: currentLoan.amount
         },
-        "historical_successful": [
-            p for p in historical_patterns 
-            if p["loan"].closed_successfully
-        ],
-        "historical_failed": [
-            p for p in historical_patterns 
-            if not p["loan"].closed_successfully
-        ]
-    },
-    questions={
-        "likely_outcome": Choice(
-            instructions="Based on current progress vs historical patterns, what is the likely outcome?",
-            criteria={
-                "on_track": "Progressing normally, likely to close",
-                "at_risk": "Falling behind benchmarks, needs attention",
-                "unlikely": "Significantly behind, unlikely to close without intervention"
-            }
-        },
-        "completion_probability": Noul(
-            instructions="Will this loan close successfully?"
+        historicalSuccessful: historicalPatterns.filter(
+            p => p.loan.closedSuccessfully
         ),
-        "days_to_close": Score(
-            instructions="Estimated days until closing",
-            criteria=["0-30 days", "31-60 days", "61-90 days", "90+ days", "Won't close"]
-        ),
-        "recommended_action": Choice(
-            instructions="What should the loan officer do?",
-            criteria={
-                "continue": "Continue standard process",
-                "expedite": "Expedite document collection",
-                "intervene": "Direct intervention needed",
-                "escalate": "Escalate to management"
-            }
+        historicalFailed: historicalPatterns.filter(
+            p => !p.loan.closedSuccessfully
         )
+    },
+    questions: {
+        likelyOutcome: {
+            type: 'choice',
+            instructions: "Based on current progress vs historical patterns, what is the likely outcome?",
+            criteria: {
+                onTrack: "Progressing normally, likely to close",
+                atRisk: "Falling behind benchmarks, needs attention",
+                unlikely: "Significantly behind, unlikely to close without intervention"
+            }
+        },
+        completionProbability: {
+            type: 'noul',
+            instructions: "Will this loan close successfully?"
+        },
+        daysToClose: {
+            type: 'score',
+            instructions: "Estimated days until closing",
+            criteria: ["0-30 days", "31-60 days", "61-90 days", "90+ days", "Won't close"]
+        },
+        recommendedAction: {
+            type: 'choice',
+            instructions: "What should the loan officer do?",
+            criteria: {
+                continue: "Continue standard process",
+                expedite: "Expedite document collection",
+                intervene: "Direct intervention needed",
+                escalate: "Escalate to management"
+            }
+        }
     }
-)
+});
 
-# Act on prediction
-if response.answers["completion_probability"].noul < 0.5:
-    alert_loan_officer(
+// Act on prediction
+if (response.answers.completionProbability.noul < 0.5) {
+    await alertLoanOfficer(
         "Loan at risk of not closing",
-        recommended_action=response.answers["recommended_action"].choice,
-        confidence=response.answers["likely_outcome"].confidence
-    )
+        {
+            recommendedAction: response.answers.recommendedAction.choice,
+            confidence: response.answers.likelyOutcome.confidence
+        }
+    );
+}
+
 ```
 
 **Why This Is Fancy**: Combines current loan status (SF) + current document progress (Box) + historical loan outcomes (SF) + historical document patterns (Box) to predict outcomes - impossible for either system alone.
@@ -418,88 +457,90 @@ if response.answers["completion_probability"].noul < 0.5:
 **Problem**: Unusual document patterns can indicate fraud, errors, or process issues, but no system tracks cross-document patterns.
 
 **TypeSafe Solution**:
-```python
-# Get all loan documents from Box MCP
-loan_docs = box_mcp.get_loan_package(loan_id)
+```typescript
+// Get all loan documents from Box MCP
+const loanDocs = await boxMcp.getLoanPackage(loanId);
 
-# Get loan metadata from Salesforce MCP
-loan = salesforce_mcp.get_loan(loan_id)
+// Get loan metadata from Salesforce MCP
+const loan = await salesforceMcp.getLoan(loanId);
 
-# Get typical document patterns for similar loans
-similar_loans = salesforce_mcp.list_loans(
-    loan_type=loan.loan_type,
-    amount_range=(loan.amount * 0.8, loan.amount * 1.2),
-    status="Closed"
-)
-typical_patterns = [box_mcp.get_loan_package(l.id) for l in similar_loans]
+// Get typical document patterns for similar loans
+const similarLoans = await salesforceMcp.listLoans({
+    loanType: loan.loanType,
+    amountRange: { min: loan.amount * 0.8, max: loan.amount * 1.2 },
+    status: "Closed"
+});
+const typicalPatterns = await Promise.all(
+    similarLoans.map(l => boxMcp.getLoanPackage(l.id))
+);
 
-# TypeSafe detects anomalies
-response = typesafe.system_one(
-    state={
-        "current_loan_docs": [
-            {
-                "type": doc.document_type,
-                "size": doc.size,
-                "pages": doc.page_count,
-                "modified_count": doc.version_count,
-                "upload_time": doc.created_at
-            }
-            for doc in loan_docs.files
-        ],
-        "typical_patterns": [
-            {
-                "doc_count": len(pkg.files),
-                "doc_types": [d.document_type for d in pkg.files],
-                "avg_revisions": sum(d.version_count for d in pkg.files) / len(pkg.files)
-            }
-            for pkg in typical_patterns
-        ]
+// TypeSafe detects anomalies
+const response = await typesafe.systemOne({
+    state: {
+        currentLoanDocs: loanDocs.files.map(doc => ({
+            type: doc.documentType,
+            size: doc.size,
+            pages: doc.pageCount,
+            modifiedCount: doc.versionCount,
+            uploadTime: doc.createdAt
+        })),
+        typicalPatterns: typicalPatterns.map(pkg => ({
+            docCount: pkg.files.length,
+            docTypes: pkg.files.map(d => d.documentType),
+            avgRevisions: pkg.files.reduce((sum, d) => sum + d.versionCount, 0) / pkg.files.length
+        }))
     },
-    questions={
-        "missing_docs": Choice(
-            instructions="Which critical document types are missing?",
-            criteria={
-                "none": "All expected documents present",
-                "financial": "Missing financial statements",
-                "appraisal": "Missing appraisal",
-                "tax": "Missing tax returns",
-                "insurance": "Missing insurance docs"
+    questions: {
+        missingDocs: {
+            type: 'choice',
+            instructions: "Which critical document types are missing?",
+            criteria: {
+                none: "All expected documents present",
+                financial: "Missing financial statements",
+                appraisal: "Missing appraisal",
+                tax: "Missing tax returns",
+                insurance: "Missing insurance docs"
             }
-        ),
-        "unusual_revision_count": Noul(
-            instructions="Does this loan have an unusually high number of document revisions?"
-        ),
-        "upload_timing_anomaly": Noul(
-            instructions="Were documents uploaded in an unusual pattern (e.g., all at once, or unusual gaps)?"
-        ),
-        "duplicate_risk": Score(
-            instructions="Risk of duplicate or contradictory documents",
-            criteria=["No risk", "Low risk", "Moderate risk", "High risk", "Confirmed duplicates"]
-        ),
-        "fraud_indicators": Score(
-            instructions="Overall fraud risk indicators",
-            criteria=[
+        },
+        unusualRevisionCount: {
+            type: 'noul',
+            instructions: "Does this loan have an unusually high number of document revisions?"
+        },
+        uploadTimingAnomaly: {
+            type: 'noul',
+            instructions: "Were documents uploaded in an unusual pattern (e.g., all at once, or unusual gaps)?"
+        },
+        duplicateRisk: {
+            type: 'score',
+            instructions: "Risk of duplicate or contradictory documents",
+            criteria: ["No risk", "Low risk", "Moderate risk", "High risk", "Confirmed duplicates"]
+        },
+        fraudIndicators: {
+            type: 'score',
+            instructions: "Overall fraud risk indicators",
+            criteria: [
                 "None: Normal documentation pattern",
                 "Low: Minor inconsistencies",
                 "Moderate: Multiple red flags",
                 "High: Significant fraud indicators",
                 "Critical: Clear fraud pattern"
             ]
-        )
-    }
-)
-
-# Alert on anomalies
-if response.answers["fraud_indicators"].score > 2.0:
-    flag_for_fraud_review(
-        loan_id,
-        indicators={
-            "missing": response.answers["missing_docs"].choice,
-            "unusual_revisions": response.answers["unusual_revision_count"].noul,
-            "timing_anomaly": response.answers["upload_timing_anomaly"].noul,
-            "duplicates": response.answers["duplicate_risk"].score
         }
-    )
+    }
+});
+
+// Alert on anomalies
+if (response.answers.fraudIndicators.score > 2.0) {
+    await flagForFraudReview(
+        loanId,
+        {
+            missing: response.answers.missingDocs.choice,
+            unusualRevisions: response.answers.unusualRevisionCount.noul,
+            timingAnomaly: response.answers.uploadTimingAnomaly.noul,
+            duplicates: response.answers.duplicateRisk.score
+        }
+    );
+}
 ```
 
 **Why This Is Fancy**: Detects patterns across the entire document set by comparing current loan (Box + SF) against historical patterns (Box + SF) to identify anomalies neither system can see independently.
@@ -514,57 +555,61 @@ if response.answers["fraud_indicators"].score > 2.0:
 
 **Better Architecture**: Let Box AI do what it's best at (extract), TypeSafe validates confidence
 
-```python
-# Box MCP extracts document type (it's good at this!)
-box_result = box_mcp.extract_structured(
-    file_id=file_id,
-    metadata_template="losDocument",
-    fields=["documentType"]
-)
+```typescript
+// Box MCP extracts document type (it's good at this!)
+const boxResult = await boxMcp.extractStructured({
+    fileId,
+    metadataTemplate: "losDocument",
+    fields: ["documentType"]
+});
 
-# TypeSafe validates the extraction confidence and context
-response = typesafe.system_one(
-    state={
-        "box_classification": box_result.documentType,
-        "file_name": file_name,
-        "loan_type": loan.loan_type,
-        "loan_stage": loan.status,
-        "existing_documents": [doc.type for doc in loan_package.documents]
+// TypeSafe validates the extraction confidence and context
+const response = await typesafe.systemOne({
+    state: {
+        boxClassification: boxResult.documentType,
+        fileName,
+        loanType: loan.loanType,
+        loanStage: loan.status,
+        existingDocuments: loanPackage.documents.map(doc => doc.type)
     },
-    questions={
-        "classification_confidence": Score(
-            instructions="How confident should we be in Box's classification?",
-            criteria=[
+    questions: {
+        classificationConfidence: {
+            type: 'score',
+            instructions: "How confident should we be in Box's classification?",
+            criteria: [
                 "High: Clear match, apply automatically",
                 "Medium: Reasonable match, flag for quick review",
                 "Low: Uncertain, needs manual classification",
                 "Wrong: Box misclassified, override needed"
             ]
-        ),
-        "contextually_appropriate": Noul(
-            instructions="Does this document type make sense for this loan type and stage?"
-        ),
-        "duplicate_risk": Noul(
-            instructions="Is this a duplicate of an existing document in the package?"
-        )
+        },
+        contextuallyAppropriate: {
+            type: 'noul',
+            instructions: "Does this document type make sense for this loan type and stage?"
+        },
+        duplicateRisk: {
+            type: 'noul',
+            instructions: "Is this a duplicate of an existing document in the package?"
+        }
     }
-)
+});
 
-# TypeSafe makes the routing decision
-confidence_score = response.answers["classification_confidence"].score
-is_appropriate = response.answers["contextually_appropriate"].noul
-is_duplicate = response.answers["duplicate_risk"].noul
+// TypeSafe makes the routing decision
+const confidenceScore = response.answers.classificationConfidence.score;
+const isAppropriate = response.answers.contextuallyAppropriate.noul;
+const isDuplicate = response.answers.duplicateRisk.noul;
 
-if confidence_score < 1.0 and is_appropriate > 0.85 and is_duplicate < 0.3:
-    # High confidence - apply Box's classification automatically
-    apply_metadata(file_id, box_result.documentType)
-elif confidence_score < 2.0:
-    # Medium confidence - apply but flag for review
-    apply_metadata(file_id, box_result.documentType)
-    flag_for_quick_review(file_id, "medium_confidence")
-else:
-    # Low confidence or contextual issues - manual classification
-    flag_for_manual_classification(file_id, box_result.documentType, confidence_score)
+if (confidenceScore < 1.0 && isAppropriate > 0.85 && isDuplicate < 0.3) {
+    // High confidence - apply Box's classification automatically
+    await applyMetadata(fileId, boxResult.documentType);
+} else if (confidenceScore < 2.0) {
+    // Medium confidence - apply but flag for review
+    await applyMetadata(fileId, boxResult.documentType);
+    await flagForQuickReview(fileId, "medium_confidence");
+} else {
+    // Low confidence or contextual issues - manual classification
+    await flagForManualClassification(fileId, boxResult.documentType, confidenceScore);
+}
 ```
 
 **Benefits**:
@@ -578,43 +623,46 @@ else:
 **Current**: Conversational AI analyzes loan, returns free-form risk assessment
 
 **With TypeSafe**:
-```python
-response = client.system_one(
-    state=loan_terms_and_financials,
-    questions={
-        "credit_risk": Score(
-            instructions="Assess overall credit risk",
-            criteria=[
+```typescript
+const response = await client.systemOne({
+    state: loanTermsAndFinancials,
+    questions: {
+        creditRisk: {
+            type: 'score',
+            instructions: "Assess overall credit risk",
+            criteria: [
                 "Low risk: Strong financials, conservative leverage, proven track record",
                 "Medium risk: Adequate financials, moderate leverage, some operational concerns",
                 "High risk: Weak financials, aggressive leverage, significant credit issues",
                 "Critical risk: Severe financial distress, policy violations, immediate concerns"
             ]
-        ),
-        "collateral_adequacy": Score(
-            instructions="Evaluate collateral coverage",
-            criteria=[
+        },
+        collateralAdequacy: {
+            type: 'score',
+            instructions: "Evaluate collateral coverage",
+            criteria: [
                 "Excellent: LTV <60%, high-quality assets, strong liquidation value",
                 "Good: LTV 60-75%, standard assets, adequate liquidation value",
                 "Fair: LTV 75-85%, weaker assets, limited liquidation value",
                 "Poor: LTV >85%, weak assets, questionable liquidation value"
             ]
-        )
+        }
     }
-)
+});
 
-credit_score = response.answers["credit_risk"].score
-collateral_score = response.answers["collateral_adequacy"].score
+const creditScore = response.answers.creditRisk.score;
+const collateralScore = response.answers.collateralAdequacy.score;
 
-# Composite risk rating with code-controlled weights
-composite_risk = (credit_score * 0.7) + (collateral_score * 0.3)
+// Composite risk rating with code-controlled weights
+const compositeRisk = (creditScore * 0.7) + (collateralScore * 0.3);
 
-if composite_risk > 2.5:
-    flag_for_senior_review()
-elif composite_risk > 1.5:
-    assign_to_experienced_underwriter()
-else:
-    proceed_with_standard_underwriting()
+if (compositeRisk > 2.5) {
+    await flagForSeniorReview();
+} else if (compositeRisk > 1.5) {
+    await assignToExperiencedUnderwriter();
+} else {
+    await proceedWithStandardUnderwriting();
+}
 ```
 
 **Benefits**:
@@ -628,47 +676,56 @@ else:
 **Current**: Box Hub QA asks policy library, parse yes/no answer
 
 **With TypeSafe**:
-```python
-response = client.system_one(
-    state={
-        "loan_terms": loan_terms,
-        "credit_policy": credit_policy_document
+```typescript
+const response = await client.systemOne({
+    state: {
+        loanTerms,
+        creditPolicy: creditPolicyDocument
     },
-    questions={
-        "ltv_compliant": Noul(
-            instructions="Does the LTV ratio comply with credit policy limits?"
-        ),
-        "dscr_compliant": Noul(
-            instructions="Does the DSCR meet or exceed policy minimums?"
-        ),
-        "collateral_acceptable": Noul(
-            instructions="Is the collateral type approved under policy?"
-        ),
-        "guaranty_adequate": Noul(
-            instructions="Does the personal guaranty meet policy requirements?"
-        )
+    questions: {
+        ltvCompliant: {
+            type: 'noul',
+            instructions: "Does the LTV ratio comply with credit policy limits?"
+        },
+        dscrCompliant: {
+            type: 'noul',
+            instructions: "Does the DSCR meet or exceed policy minimums?"
+        },
+        collateralAcceptable: {
+            type: 'noul',
+            instructions: "Is the collateral type approved under policy?"
+        },
+        guarantyAdequate: {
+            type: 'noul',
+            instructions: "Does the personal guaranty meet policy requirements?"
+        }
     }
-)
+});
 
-# Get probability of each compliance check
-ltv_prob = response.answers["ltv_compliant"].noul
-dscr_prob = response.answers["dscr_compliant"].noul
-collateral_prob = response.answers["collateral_acceptable"].noul
-guaranty_prob = response.answers["guaranty_adequate"].noul
+// Get probability of each compliance check
+const ltvProb = response.answers.ltvCompliant.noul;
+const dscrProb = response.answers.dscrCompliant.noul;
+const collateralProb = response.answers.collateralAcceptable.noul;
+const guarantyProb = response.answers.guarantyAdequate.noul;
 
-# Fail if any check has <50% probability of compliance
-policy_violations = []
-if ltv_prob < 0.5:
-    policy_violations.append(f"LTV non-compliant (confidence: {ltv_prob:.1%})")
-if dscr_prob < 0.5:
-    policy_violations.append(f"DSCR non-compliant (confidence: {dscr_prob:.1%})")
-if collateral_prob < 0.5:
-    policy_violations.append(f"Collateral not acceptable (confidence: {collateral_prob:.1%})")
-if guaranty_prob < 0.5:
-    policy_violations.append(f"Guaranty inadequate (confidence: {guaranty_prob:.1%})")
+// Fail if any check has <50% probability of compliance
+const policyViolations: string[] = [];
+if (ltvProb < 0.5) {
+    policyViolations.push(`LTV non-compliant (confidence: ${(ltvProb * 100).toFixed(1)}%)`);
+}
+if (dscrProb < 0.5) {
+    policyViolations.push(`DSCR non-compliant (confidence: ${(dscrProb * 100).toFixed(1)}%)`);
+}
+if (collateralProb < 0.5) {
+    policyViolations.push(`Collateral not acceptable (confidence: ${(collateralProb * 100).toFixed(1)}%)`);
+}
+if (guarantyProb < 0.5) {
+    policyViolations.push(`Guaranty inadequate (confidence: ${(guarantyProb * 100).toFixed(1)}%)`);
+}
 
-if policy_violations:
-    require_exception_approval(policy_violations)
+if (policyViolations.length > 0) {
+    await requireExceptionApproval(policyViolations);
+}
 ```
 
 **Benefits**:
@@ -682,40 +739,47 @@ if policy_violations:
 **Current**: LLM prompt engineering to classify user intent
 
 **With TypeSafe**:
-```python
-response = client.system_one(
-    state=user_query,
-    questions={
-        "intent": Choice(
-            instructions="What is the user trying to accomplish?",
-            criteria={
-                "search_documents": "Find or search for loan documents",
-                "extract_terms": "Extract loan terms from documents",
-                "validate_policy": "Check compliance with credit policy",
-                "generate_letter": "Create commitment or other letter",
-                "prepare_signature": "Send documents for signing",
-                "review_history": "Compare with prior loans or analyze history",
-                "update_record": "Modify loan record fields"
+```typescript
+const response = await client.systemOne({
+    state: { userQuery },
+    questions: {
+        intent: {
+            type: 'choice',
+            instructions: "What is the user trying to accomplish?",
+            criteria: {
+                searchDocuments: "Find or search for loan documents",
+                extractTerms: "Extract loan terms from documents",
+                validatePolicy: "Check compliance with credit policy",
+                generateLetter: "Create commitment or other letter",
+                prepareSignature: "Send documents for signing",
+                reviewHistory: "Compare with prior loans or analyze history",
+                updateRecord: "Modify loan record fields"
             }
-        )
+        }
     }
-)
+});
 
-intent = response.answers["intent"].choice
-confidence = response.answers["intent"].confidence
+const intent = response.answers.intent.choice;
+const confidence = response.answers.intent.confidence;
 
-# Route to appropriate connector based on intent
-if confidence > 0.8:
-    if intent == "search_documents":
-        call_box_metadata_search()
-    elif intent == "extract_terms":
-        call_los_extract_loan_terms()
-    elif intent == "validate_policy":
-        call_typesafe_policy_validation()
-    # ... etc
-else:
-    # Low confidence - route to conversational AI for clarification
-    call_conversational_ai_for_disambiguation()
+// Route to appropriate connector based on intent
+if (confidence > 0.8) {
+    switch (intent) {
+        case "searchDocuments":
+            await callBoxMetadataSearch();
+            break;
+        case "extractTerms":
+            await callLosExtractLoanTerms();
+            break;
+        case "validatePolicy":
+            await callTypesafePolicyValidation();
+            break;
+        // ... etc
+    }
+} else {
+    // Low confidence - route to conversational AI for clarification
+    await callConversationalAiForDisambiguation();
+}
 ```
 
 **Benefits**:
@@ -728,30 +792,32 @@ else:
 
 **TypeSafe Pattern**: Send all possible questions in one request, decide in code which to act on
 
-```python
-response = client.system_one(
-    state=loan_package,
-    questions={
-        # Classification
-        "doc_types": {f"doc_{i}": Choice(...) for i, doc in enumerate(documents)},
+```typescript
+const response = await client.systemOne({
+    state: loanPackage,
+    questions: {
+        // Classification
+        docTypes: Object.fromEntries(
+            documents.map((doc, i) => [`doc_${i}`, { type: 'choice', /* ... */ }])
+        ),
         
-        # Risk assessment
-        "credit_risk": Score(...),
-        "collateral_risk": Score(...),
+        // Risk assessment
+        creditRisk: { type: 'score', /* ... */ },
+        collateralRisk: { type: 'score', /* ... */ },
         
-        # Policy checks
-        "ltv_ok": Noul(...),
-        "dscr_ok": Noul(...),
-        "collateral_ok": Noul(...),
+        // Policy checks
+        ltvOk: { type: 'noul', /* ... */ },
+        dscrOk: { type: 'noul', /* ... */ },
+        collateralOk: { type: 'noul', /* ... */ },
         
-        # Readiness gates
-        "ready_for_underwriting": Noul(...),
-        "ready_for_approval": Noul(...),
-        "ready_for_closing": Noul(...)
+        // Readiness gates
+        readyForUnderwriting: { type: 'noul', /* ... */ },
+        readyForApproval: { type: 'noul', /* ... */ },
+        readyForClosing: { type: 'noul', /* ... */ }
     }
-)
+});
 
-# All answers returned in single response - decide in code what to do
+// All answers returned in single response - decide in code what to do
 ```
 
 **Benefits**:
@@ -858,53 +924,67 @@ User Query
 
 Located: `los-salesforce-project/services/typesafe_orchestrator.py`
 
-```python
-class TypeSafeOrchestrator:
-    """
-    Orchestrates decisions between Box MCP and Salesforce MCP.
-    TypeSafe makes routing/validation decisions, MCPs handle data operations.
-    """
+```typescript
+class TypeSafeOrchestrator {
+    /**
+     * Orchestrates decisions between Box MCP and Salesforce MCP.
+     * TypeSafe makes routing/validation decisions, MCPs handle data operations.
+     */
     
-    def __init__(self, typesafe_api_key: str, box_mcp, salesforce_mcp):
-        self.typesafe = TypeSafeClient(api_key=typesafe_api_key)
-        self.box = box_mcp
-        self.sf = salesforce_mcp
+    private typesafe: TypeSafeClient;
+    private box: BoxMCP;
+    private sf: SalesforceMCP;
     
-    def validate_document_classification(
-        self, file_id: str, box_classification: str, loan_context: dict
-    ) -> ClassificationValidation:
-        """
-        Box MCP extracts the type, TypeSafe validates confidence and context.
-        Returns routing decision: auto-apply, flag-for-review, or manual.
-        """
-        
-    def score_loan_risk(self, loan_id: str) -> RiskScore:
-        """
-        Fetches data from both MCPs, TypeSafe scores risk and routes.
-        Returns composite risk score with routing recommendation.
-        """
-        
-    def validate_cross_system_consistency(
-        self, loan_id: str
-    ) -> ConsistencyValidation:
-        """
-        Compares Box documents vs Salesforce record, TypeSafe validates consistency.
-        Returns discrepancies and severity scoring.
-        """
-        
-    def route_user_intent(self, query: str, context: dict) -> IntentRoute:
-        """
-        TypeSafe classifies intent and returns which MCP tools to call.
-        Returns tool sequence and parameters.
-        """
-        
-    def orchestrate_workflow(
-        self, workflow_type: str, parameters: dict
-    ) -> WorkflowResult:
-        """
-        Orchestrates multi-step workflows across MCPs with TypeSafe decisions.
-        Returns workflow outcome with confidence scores at each step.
-        """
+    constructor(typesafeApiKey: string, boxMcp: BoxMCP, salesforceMcp: SalesforceMCP) {
+        this.typesafe = new TypeSafeClient({ apiKey: typesafeApiKey });
+        this.box = boxMcp;
+        this.sf = salesforceMcp;
+    }
+    
+    async validateDocumentClassification(
+        fileId: string,
+        boxClassification: string,
+        loanContext: Record<string, any>
+    ): Promise<ClassificationValidation> {
+        /**
+         * Box MCP extracts the type, TypeSafe validates confidence and context.
+         * Returns routing decision: auto-apply, flag-for-review, or manual.
+         */
+    }
+    
+    async scoreLoanRisk(loanId: string): Promise<RiskScore> {
+        /**
+         * Fetches data from both MCPs, TypeSafe scores risk and routes.
+         * Returns composite risk score with routing recommendation.
+         */
+    }
+    
+    async validateCrossSystemConsistency(
+        loanId: string
+    ): Promise<ConsistencyValidation> {
+        /**
+         * Compares Box documents vs Salesforce record, TypeSafe validates consistency.
+         * Returns discrepancies and severity scoring.
+         */
+    }
+    
+    async routeUserIntent(query: string, context: Record<string, any>): Promise<IntentRoute> {
+        /**
+         * TypeSafe classifies intent and returns which MCP tools to call.
+         * Returns tool sequence and parameters.
+         */
+    }
+    
+    async orchestrateWorkflow(
+        workflowType: string,
+        parameters: Record<string, any>
+    ): Promise<WorkflowResult> {
+        /**
+         * Orchestrates multi-step workflows across MCPs with TypeSafe decisions.
+         * Returns workflow outcome with confidence scores at each step.
+         */
+    }
+}
 ```
 
 **Key Principle**: TypeSafe NEVER calls Box/Salesforce APIs directly. It only:
@@ -1036,35 +1116,42 @@ interface PolicyCheck {
 ### API Usage Patterns
 
 **Single Decision**:
-```python
-result = typesafe_service.classify_document(document_content)
-if result.confidence > 0.85:
-    apply_classification(result.doc_type)
-else:
-    flag_for_review(result)
+```typescript
+const result = await typesafeService.classifyDocument(documentContent);
+if (result.confidence > 0.85) {
+    await applyClassification(result.docType);
+} else {
+    await flagForReview(result);
+}
 ```
 
 **Parallel Decisions**:
-```python
-results = typesafe_service.batch_decisions(
-    state=loan_package,
-    questions={
-        "risk": "score_loan_risk",
-        "policy": "validate_policy",
-        "readiness": "check_stage_readiness"
+```typescript
+const results = await typesafeService.batchDecisions({
+    state: loanPackage,
+    questions: {
+        risk: "scoreLoanRisk",
+        policy: "validatePolicy",
+        readiness: "checkStageReadiness"
     }
-)
+});
 ```
 
 **Confidence-Based Routing**:
-```python
-def route_with_confidence(decision, high_threshold=0.85, low_threshold=0.50):
-    if decision.confidence > high_threshold:
-        return "auto_proceed"
-    elif decision.confidence > low_threshold:
-        return "flag_for_review"
-    else:
-        return "escalate_to_human"
+```typescript
+function routeWithConfidence(
+    decision: Decision,
+    highThreshold: number = 0.85,
+    lowThreshold: number = 0.50
+): string {
+    if (decision.confidence > highThreshold) {
+        return "auto_proceed";
+    } else if (decision.confidence > lowThreshold) {
+        return "flag_for_review";
+    } else {
+        return "escalate_to_human";
+    }
+}
 ```
 
 ---
@@ -1116,20 +1203,26 @@ Based on TypeSafe documentation and similar use cases:
 
 ### Fallback Strategy
 
-```python
-def classify_document_with_fallback(content):
-    try:
-        # Try TypeSafe first (fast path)
-        result = typesafe_service.classify_document(content)
-        if result.confidence > MIN_CONFIDENCE:
-            return result
-        else:
-            # Low confidence - use Box AI
-            return box_ai_classify(content)
-    except TypeSafeAPIError:
-        # TypeSafe unavailable - fallback to Box AI
-        logger.warning("TypeSafe unavailable, using Box AI fallback")
-        return box_ai_classify(content)
+```typescript
+async function classifyDocumentWithFallback(content: string): Promise<ClassificationResult> {
+    try {
+        // Try TypeSafe first (fast path)
+        const result = await typesafeService.classifyDocument(content);
+        if (result.confidence > MIN_CONFIDENCE) {
+            return result;
+        } else {
+            // Low confidence - use Box AI
+            return await boxAiClassify(content);
+        }
+    } catch (error) {
+        if (error instanceof TypeSafeAPIError) {
+            // TypeSafe unavailable - fallback to Box AI
+            logger.warning("TypeSafe unavailable, using Box AI fallback");
+            return await boxAiClassify(content);
+        }
+        throw error;
+    }
+}
 ```
 
 ### Testing Strategy
