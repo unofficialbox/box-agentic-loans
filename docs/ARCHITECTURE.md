@@ -39,7 +39,7 @@ For performance and capability, these operations bypass Salesforce and call Box 
 - Runs as signed-in employee with full portfolio access
 
 **External Surface (Borrower Portal):**
-- React UI Bundle on Experience Cloud
+- React Multi-Framework app on Experience Cloud
 - Runs as community user with sharing set boundaries
 - Field-level permissions + server-authorized document listings
 - Upload-only folder tokens + per-file preview tokens

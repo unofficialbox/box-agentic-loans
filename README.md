@@ -33,7 +33,7 @@ A borrower applies through the Acme Borrower Portal. Documents uploaded to Box a
 ### Prerequisites
 
 - Box enterprise with AI, Hubs, Doc Gen, Sign, and metadata enabled
-- Salesforce org with Agentforce and UI Bundles (Hyperforce required)
+- Salesforce org with Agentforce and [Multi-Framework](https://help.salesforce.com/s/articleView?id=sf.exp_cloud_multiframework.htm) (Hyperforce required)
 - Box for Salesforce package installed
 - Python 3.11+, Node.js, Box CLI, Salesforce CLI
 
