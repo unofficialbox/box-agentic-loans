@@ -6,6 +6,10 @@ Commercial loan origination demo showcasing Box + Salesforce integration with AI
 
 *The demo works headlessly across Claude Desktop, Amazon Quick, Slack, ChatGPT, and Agentforce — same Box + Salesforce backend, different AI harnesses.*
 
+![Acme Bank Borrower Portal](output/screenshots/box-salesforce-los/los-react-workspace.png)
+
+*Acme Bank Borrower Portal — Commercial loan workspace showing document checklist, Box-integrated file management, and AI-powered workflows.*
+
 ## What It Does
 
 A borrower applies through the Acme Borrower Portal. Documents uploaded to Box are automatically classified by Box AI. A loan officer's AI assistant:
