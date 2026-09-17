@@ -90,7 +90,7 @@ python3 scripts/cleanup_demo.py --status Application --yes
 
 ### Setup & Configuration
 - **[SETUP.md](docs/SETUP.md)** - Complete deployment guide
-- **[CLIENT-SETUP.md](docs/CLIENT-SETUP.md)** - Connect your AI client (Claude, Quick, Slack, ChatGPT)
+- **[CLIENT-SETUP.md](docs/CLIENT-SETUP.md)** - Connect your AI client
 
 ### Architecture & Design
 - **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System design and governance model
