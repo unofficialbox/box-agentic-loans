@@ -2,6 +2,10 @@
 
 Commercial loan origination demo showcasing Box + Salesforce integration with AI-powered workflows.
 
+![Multi-Framework Architecture](docs/demo-storyboard/platform-trio.png)
+
+*The demo works headlessly across Claude Desktop, Amazon Quick, Slack, ChatGPT, and Agentforce — same Box + Salesforce backend, different AI harnesses.*
+
 ## What It Does
 
 A borrower applies through the Acme Borrower Portal. Documents uploaded to Box are automatically classified by Box AI. A loan officer's AI assistant:
