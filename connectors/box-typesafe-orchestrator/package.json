@@ -1,7 +1,7 @@
 {
-  "name": "@acme-loans/typesafe-orchestrator",
+  "name": "box-typesafe-orchestrator",
   "version": "1.0.0",
-  "description": "TypeSafe.ai orchestration layer for Box + Salesforce loan origination",
+  "description": "Intelligent orchestration layer for Box integrations using TypeSafe.ai",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -14,14 +14,14 @@
     "format": "prettier --write \"src/**/*.ts\""
   },
   "keywords": [
+    "box",
     "typesafe",
     "orchestration",
-    "loan-origination",
-    "box",
-    "salesforce",
-    "mcp"
+    "ai",
+    "mcp",
+    "salesforce"
   ],
-  "author": "Acme Bank",
+  "author": "Box",
   "license": "MIT",
   "dependencies": {
     "typesafe-sdk": "^1.0.0"

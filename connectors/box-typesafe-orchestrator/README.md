@@ -1,6 +1,8 @@
-# TypeSafe Orchestrator
+# Box TypeSafe Orchestrator
 
-Intelligent orchestration layer for Box + Salesforce loan origination using TypeSafe.ai's System One API.
+Intelligent orchestration layer for Box integrations using TypeSafe.ai's System One API.
+
+Works with any Box MCP setup—routes intents, validates confidence, scores risk, and orchestrates multi-system workflows.
 
 ## Architecture
 
@@ -38,7 +40,7 @@ Get your API key at: https://console.typesafe.ai/settings/keys
 ## Usage
 
 ```typescript
-import { TypeSafeOrchestrator } from '@acme-loans/typesafe-orchestrator';
+import { TypeSafeOrchestrator } from 'box-typesafe-orchestrator';
 
 const orchestrator = new TypeSafeOrchestrator({
   apiKey: process.env.TYPESAFE_API_KEY,
