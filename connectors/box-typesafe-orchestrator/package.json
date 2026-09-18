@@ -1,0 +1,41 @@
+{
+  "name": "@acme-loans/typesafe-orchestrator",
+  "version": "1.0.0",
+  "description": "TypeSafe.ai orchestration layer for Box + Salesforce loan origination",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "keywords": [
+    "typesafe",
+    "orchestration",
+    "loan-origination",
+    "box",
+    "salesforce",
+    "mcp"
+  ],
+  "author": "Acme Bank",
+  "license": "MIT",
+  "dependencies": {
+    "typesafe-sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^6.20.0",
+    "@typescript-eslint/parser": "^6.20.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.4",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
