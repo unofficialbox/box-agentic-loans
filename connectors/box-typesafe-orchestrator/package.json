@@ -10,6 +10,8 @@
     "dev": "tsc --watch",
     "test": "vitest",
     "test:watch": "vitest --watch",
+    "benchmark": "node benchmark.js",
+    "benchmark:quick": "node benchmark.js --quick",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\""
   },
