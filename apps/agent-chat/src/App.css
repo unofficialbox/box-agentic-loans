@@ -1,0 +1,80 @@
+/* ── Box Design System Tokens ── */
+@font-face {
+  font-family: InterVariable;
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("https://cdn01.boxcdn.net/fonts/1.0.18-beta.5/inter/InterVariable.woff2") format("woff2");
+}
+
+:root {
+  /* Box palette */
+  --box-blue: #0061D5;
+  --box-blue-dark: #004FB2;
+  --box-blue-light: #F2F7FD;
+  --box-blue-hover: #0052B8;
+
+  /* Neutrals */
+  --text-primary: #1f1e1b;
+  --text-secondary: #6f6f6f;
+  --text-tertiary: #9b9b9b;
+
+  --surface-primary: #ffffff;
+  --surface-secondary: #f7f8fa;
+  --surface-hover: #f4f4f4;
+
+  --border-light: #e8e8e8;
+  --border-medium: #d4d4d4;
+  --border-dark: #b4b4b4;
+
+  /* Border radius system */
+  --radius-sm: 6px;     /* Small elements, tight corners */
+  --radius-md: 8px;     /* Standard buttons, controls */
+  --radius-lg: 12px;    /* Cards, inputs (friendly) */
+  --radius-pill: 999px; /* Pills, tags */
+  --radius-circle: 50%; /* Icon buttons */
+
+  /* Functional */
+  --focus-ring: rgba(0, 97, 213, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --shadow-offset: 4px 4px 0 rgba(0, 97, 213, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  font-family: InterVariable, Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--ink);
+  background: var(--surface-stage);
+  overflow: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.app {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-size: 1.2rem;
+  color: #6f6f6f;
+}
