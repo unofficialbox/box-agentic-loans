@@ -1,0 +1,208 @@
+import { describe, expect, it } from "vitest";
+import type { AgentEvent, Proposal } from "../src/contract.js";
+import { LoanAgent } from "../src/engine.js";
+import { FixtureToolGateway } from "../src/fixtures.js";
+import { TypeSafeError, type ChoiceDecision, type Decider } from "../src/typesafe.js";
+import { INTENTS, type Intent } from "../src/understand.js";
+
+const CLICKPATH: Array<[string, Intent]> = [
+  ["What's the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?", "find_risk_documents"],
+  ["Extract loan terms from the marked-up term sheet for that loan and check them against credit policy.", "extract_and_check"],
+  ["Validate those terms against the Salesforce record.", "validate_record"],
+  ["apply the amount, rate and term to the record, confirm", "apply_terms"],
+  ["Compare the covenant terms across Harborview's prior executed loans and this 2026 markup.", "compare_history"],
+  ["Generate the commitment letter for this loan", "generate_letter"],
+];
+
+/** Stands in for TypeSafe: a fixed intent per message, and a record of every question. */
+class StubDecider implements Decider {
+  readonly questions: string[] = [];
+  constructor(
+    private readonly intents: Record<string, Intent>,
+    private readonly confidence = 0.95
+  ) {}
+
+  async choose<K extends string>(state: unknown, instructions: string, criteria: Record<K, string>): Promise<ChoiceDecision<K>> {
+    this.questions.push(instructions);
+    const keys = Object.keys(criteria) as K[];
+    if (keys.length === Object.keys(INTENTS).length) {
+      const intent = this.intents[(state as { message: string }).message] ?? "out_of_scope";
+      return { choice: intent as K, confidence: this.confidence, probabilities: { [intent]: this.confidence, list_loans: 0.03 } as Partial<Record<K, number>> };
+    }
+    return { choice: keys[0], confidence: this.confidence, probabilities: {} };
+  }
+}
+
+function setup(options: { confidence?: number; signer?: string } = {}) {
+  const tools = new FixtureToolGateway();
+  const decider = new StubDecider(
+    {
+      ...Object.fromEntries(CLICKPATH),
+      "apply the rate at 6.75% to the record": "apply_terms",
+      "Send it for signature": "send_for_signature",
+      "Send it for signature to jordan.pike@example.com": "send_for_signature",
+    },
+    options.confidence
+  );
+  const agent = new LoanAgent(tools, decider, {
+    high: 0.85,
+    medium: 0.5,
+    boxEnterpriseId: "12345",
+    docgenTemplateFileId: "700001",
+    defaultSigner: options.signer ? { email: options.signer } : undefined,
+    now: () => new Date("2026-09-23T12:00:00Z"),
+  });
+  return { tools, decider, agent };
+}
+
+async function send(agent: LoanAgent, message: string, session = "s1") {
+  const events: AgentEvent[] = [];
+  await agent.handle(session, message, undefined, event => events.push(event));
+  const text = events.map(event => (event.kind === "delta" ? event.text : "")).join("");
+  const citations = events.flatMap(event => (event.kind === "citation" ? [event.citation.label] : []));
+  const proposals = events.flatMap(event => (event.kind === "proposal" ? [event.proposal] : []));
+  const trace = events.flatMap(event => (event.kind === "trace" && event.step.status !== "running" ? [`${event.step.title}:${event.step.status}`] : []));
+  return { events, text, citations, proposals, trace };
+}
+
+describe("clickpath on fixtures", () => {
+  it("finds the latest active loan and its critical-risk documents", async () => {
+    const { agent } = setup();
+    const turn = await send(agent, CLICKPATH[0][0]);
+    expect(turn.text).toContain("LN-2026-0003");
+    expect(turn.text).toContain("harborview-term-sheet-2026-borrower-markup.pdf (Term Sheet)");
+    expect(turn.citations).toEqual(["harborview-term-sheet-2026-borrower-markup.pdf"]);
+    expect(turn.trace).toContain("Rule · latest loan:succeeded");
+    expect(turn.events.find(event => event.kind === "context")).toEqual({
+      kind: "context",
+      loan: { loanId: "LN-2026-0003", name: "Harborview Logistics Commercial Real Estate 2026", borrower: "Harborview Logistics", status: "Approved" },
+    });
+  });
+
+  it("extracts the term sheet and applies policy rules to the borrower's markup", async () => {
+    const { agent } = setup();
+    await send(agent, CLICKPATH[0][0]);
+    const turn = await send(agent, CLICKPATH[1][0]);
+    expect(turn.text).toContain("• Amount $4.8M");
+    expect(turn.text).toContain("✓ Loan-to-value: 75% within the 75% limit");
+    expect(turn.text).toContain("✗ Debt service coverage: 1.1x tested annually");
+    expect(turn.text).toContain("✓ Pricing: 6.85% at or above the 6.50% floor");
+    expect(turn.citations).toContain("LOS-DSCR-001 · Standard DSCR");
+  });
+
+  it("validates against the record, reusing the extraction", async () => {
+    const { agent } = setup();
+    await send(agent, CLICKPATH[0][0]);
+    await send(agent, CLICKPATH[1][0]);
+    const turn = await send(agent, CLICKPATH[2][0]);
+    expect(turn.text).toContain("• Rate: document 6.85, record 6.5 (mismatch)");
+    expect(turn.trace.some(step => step.startsWith("LOS · extractLoanTerms"))).toBe(false);
+  });
+
+  it("holds the write as a proposal and runs it only once, on approval", async () => {
+    const { agent, tools } = setup();
+    for (const [message] of CLICKPATH.slice(0, 3)) await send(agent, message);
+    const turn = await send(agent, CLICKPATH[3][0]);
+    expect(tools.writes).toEqual([]);
+    const proposal = turn.proposals[0];
+    expect(proposal.params?.map(param => param.label)).toEqual(["Amount", "Rate", "Term"]);
+
+    const resolved = await agent.resolve("s1", proposal.id, "approved");
+    expect(resolved.decision).toBe("approved");
+    expect(tools.writes).toEqual([
+      { tool: "applyLoanTerms", input: { loanId: "LN-2026-0003", terms: { loanAmount: 4800000, interestRate: 6.85, termMonths: 120 } } },
+    ]);
+    await expect(agent.resolve("s1", proposal.id, "approved")).rejects.toThrow(/No pending proposal/);
+  });
+
+  it("uses values the officer states over extracted ones", async () => {
+    const { agent } = setup();
+    await send(agent, CLICKPATH[0][0]);
+    const turn = await send(agent, "apply the rate at 6.75% to the record");
+    expect(turn.proposals[0].params).toEqual([{ label: "Rate", value: "6.75%" }]);
+  });
+
+  it("does not run a proposal from another session", async () => {
+    const { agent, tools } = setup();
+    await send(agent, CLICKPATH[0][0]);
+    const turn = await send(agent, CLICKPATH[3][0]);
+    await expect(agent.resolve("someone-else", turn.proposals[0].id, "approved")).rejects.toThrow();
+    expect(tools.writes).toEqual([]);
+  });
+
+  it("compares covenants with prior executed loans and flags departures", async () => {
+    const { agent } = setup();
+    await send(agent, CLICKPATH[0][0]);
+    const turn = await send(agent, CLICKPATH[4][0]);
+    expect(turn.text).toContain("• LTV max: 70% (LN-2023-0311) · 70% (LN-2025-0148) · 75% (this markup) ← departs from precedent");
+    expect(turn.text).toContain("• Testing: quarterly (LN-2023-0311) · quarterly (LN-2025-0148) · annual (this markup) ← departs from precedent");
+    expect(turn.citations).toContain("harborview-loan-agreement-2023-executed.pdf");
+  });
+
+  it("generates the letter with all 15 Doc Gen paths, then gates signature on a signer", async () => {
+    const { agent, tools } = setup();
+    await send(agent, CLICKPATH[0][0]);
+    const generate = await send(agent, CLICKPATH[5][0]);
+    await agent.resolve("s1", generate.proposals[0].id, "approved");
+    const docgen = tools.writes.find(write => write.tool === "create_docgen_batch")!.input as { userInput: Record<string, Record<string, string>> };
+    const leaves = Object.values(docgen.userInput).flatMap(group => Object.values(group));
+    expect(leaves).toHaveLength(15);
+    expect(leaves.every(value => typeof value === "string" && value.length > 0)).toBe(true);
+
+    const noSigner = await send(agent, "Send it for signature");
+    expect(noSigner.text).toContain("Who should sign?");
+    const withSigner = await send(agent, "Send it for signature to jordan.pike@example.com");
+    const resolved = await agent.resolve("s1", withSigner.proposals[0].id, "approved");
+    expect(resolved.note).toContain("jordan.pike@example.com");
+  });
+
+  it("will not send a letter this conversation did not generate", async () => {
+    const { agent } = setup({ signer: "dana@example.com" });
+    await send(agent, CLICKPATH[0][0]);
+    const turn = await send(agent, "Send it for signature");
+    expect(turn.text).toContain("Generate the commitment letter first");
+    expect(turn.proposals).toEqual([]);
+  });
+});
+
+describe("decision gating", () => {
+  it("asks instead of acting when TypeSafe is not confident", async () => {
+    const { agent, tools } = setup({ confidence: 0.4 });
+    const turn = await send(agent, CLICKPATH[1][0]);
+    expect(turn.text).toMatch(/not confident what you'd like \(40%\)/);
+    expect(turn.trace.filter(step => step.startsWith("LOS"))).toEqual([]);
+    expect(tools.writes).toEqual([]);
+  });
+
+  it("takes no action when TypeSafe fails", async () => {
+    const tools = new FixtureToolGateway();
+    const failing: Decider = { choose: () => Promise.reject(new TypeSafeError("TypeSafe returned 503")) };
+    const agent = new LoanAgent(tools, failing, { high: 0.85, medium: 0.5 });
+    const turn = await send(agent, CLICKPATH[0][0]);
+    expect(turn.text).toContain("couldn't get a decision from TypeSafe");
+    expect(turn.trace).toEqual(["TypeSafe · route intent:failed"]);
+  });
+
+  it("asks which loan rather than guessing", async () => {
+    const { agent } = setup();
+    const turn = await send(agent, CLICKPATH[1][0]);
+    expect(turn.text).toContain("Which loan?");
+  });
+});
+
+describe("determinism", () => {
+  it("replays the clickpath to byte-identical output", async () => {
+    const run = async () => {
+      const { agent } = setup();
+      const out: AgentEvent[] = [];
+      for (const [message] of CLICKPATH) {
+        await agent.handle("s", message, undefined, event => out.push(event));
+      }
+      // Timestamps are wall-clock; everything else must match.
+      return JSON.stringify(out, (key, value) => (key === "startedAt" || key === "finishedAt" ? undefined : value));
+    };
+    expect(await run()).toBe(await run());
+  });
+});
+
+export type { Proposal };

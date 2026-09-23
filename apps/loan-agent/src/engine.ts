@@ -1,0 +1,790 @@
+import type { Citation, Emit, Proposal, StepStatus } from "./contract.js";
+import {
+  TERM_FIELDS,
+  newestFirst,
+  type Extraction,
+  type LoanDocument,
+  type LoanPackage,
+  type LoanRow,
+  type TermField,
+  type Terms,
+} from "./los.js";
+import { POLICIES, evaluateTerms, money, type PolicyFinding } from "./policy.js";
+import type { CovenantFields, ToolGateway } from "./tools.js";
+import { TypeSafeError, runnerUp, type Decider } from "./typesafe.js";
+import {
+  INTENTS,
+  documentKind,
+  emailAddress,
+  filePattern,
+  loanReference,
+  loanStatus,
+  namedBorrowers,
+  namedFields,
+  riskLevel,
+  valueOverrides,
+  type Intent,
+} from "./understand.js";
+
+/**
+ * An agent loop with no LLM:
+ *
+ *   message ─▶ TypeSafe picks one intent from INTENTS (closed set)
+ *           ─▶ rules pull arguments from the message and session
+ *           ─▶ a fixed tool program for that intent runs (reads only)
+ *           ─▶ credit policy is evaluated in code
+ *           ─▶ the reply is rendered from templates
+ *
+ * Writes never run in a turn: they become proposals, and run only from
+ * resolve() after a person approves. Given the same TypeSafe decision and the
+ * same tool results, a turn always produces the same reply.
+ */
+
+export interface AgentOptions {
+  /** TypeSafe confidence at or above which the agent acts without a flag. */
+  high: number;
+  /** Below this the agent asks instead of acting. */
+  medium: number;
+  boxEnterpriseId?: string;
+  docgenTemplateFileId?: string;
+  defaultSigner?: { name?: string; email: string };
+  now?: () => Date;
+}
+
+interface Session {
+  loan?: LoanPackage;
+  borrowers?: string[];
+  extraction?: { loanId: string; file: LoanDocument; result: Extraction; covenants?: CovenantFields };
+  findings?: PolicyFinding[];
+  precedent?: Array<{ loanId: string; file: LoanDocument; covenants: CovenantFields }>;
+  letter?: { loanId: string; fileId: string; fileName: string };
+}
+
+interface PendingAction {
+  sessionId: string;
+  proposal: Proposal;
+  run: () => Promise<string>;
+}
+
+const INTENT_LABELS: Record<Intent, string> = {
+  find_risk_documents: "find policy-risk documents",
+  extract_and_check: "extract terms and check policy",
+  validate_record: "compare terms with the loan record",
+  apply_terms: "apply terms to the record",
+  compare_history: "compare with prior loans",
+  generate_letter: "generate the commitment letter",
+  send_for_signature: "send the letter for signature",
+  list_loans: "list loans",
+  out_of_scope: "something else",
+};
+
+const FIELD_LABELS: Record<TermField, string> = {
+  loanAmount: "Amount",
+  interestRate: "Rate",
+  termMonths: "Term",
+  collateralValue: "Collateral value",
+  ltv: "LTV",
+  dscr: "DSCR",
+  maturityDate: "Maturity",
+};
+
+const ACTIVE_STATUSES = new Set(["Underwriting", "Credit Review", "Approved", "Commitment"]);
+
+class UserFacingError extends Error {}
+
+/** One turn's output channel: trace steps, streamed text, citations, proposals. */
+class Turn {
+  private stepCount = 0;
+  private readonly cited = new Set<string>();
+
+  constructor(private readonly emit: Emit) {}
+
+  async step<T>(title: string, description: string, work: () => Promise<T>, status?: (value: T) => StepStatus): Promise<T> {
+    const id = `step-${++this.stepCount}`;
+    const startedAt = new Date().toISOString();
+    this.emit({ kind: "trace", step: { id, title, description, status: "running", startedAt } });
+    try {
+      const value = await work();
+      this.emit({
+        kind: "trace",
+        step: { id, title, description, status: status?.(value) ?? "succeeded", startedAt, finishedAt: new Date().toISOString() },
+      });
+      return value;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.emit({
+        kind: "trace",
+        step: { id, title, description: `${description} · ${message}`, status: "failed", startedAt, finishedAt: new Date().toISOString() },
+      });
+      throw error;
+    }
+  }
+
+  note(title: string, description: string, status: StepStatus) {
+    this.emit({ kind: "trace", step: { id: `step-${++this.stepCount}`, title, description, status } });
+  }
+
+  say(lines: string[]) {
+    const text = lines.join("\n");
+    for (const line of text.split(/(?<=\n)/)) {
+      this.emit({ kind: "delta", text: line });
+    }
+  }
+
+  cite(citation: Citation) {
+    if (!this.cited.has(citation.id)) {
+      this.cited.add(citation.id);
+      this.emit({ kind: "citation", citation });
+    }
+  }
+
+  propose(proposal: Proposal) {
+    this.emit({ kind: "proposal", proposal });
+  }
+
+  context(loan: LoanPackage) {
+    if (loan.loanId) {
+      this.emit({ kind: "context", loan: { loanId: loan.loanId, name: loan.name, borrower: loan.borrower, status: loan.status } });
+    }
+  }
+}
+
+export class LoanAgent {
+  private readonly sessions = new Map<string, Session>();
+  private readonly pending = new Map<string, PendingAction>();
+  private proposalCounter = 0;
+
+  constructor(
+    private readonly tools: ToolGateway,
+    private readonly decider: Decider,
+    private readonly options: AgentOptions
+  ) {}
+
+  async handle(sessionId: string, message: string, loanHint: string | undefined, emit: Emit): Promise<void> {
+    const turn = new Turn(emit);
+    const session = this.session(sessionId);
+    try {
+      const intent = await this.route(turn, session, message);
+      if (!intent) {
+        return;
+      }
+      await this.dispatch(intent, turn, session, sessionId, message, loanHint);
+    } catch (error) {
+      if (error instanceof UserFacingError) {
+        turn.say([error.message]);
+      } else if (error instanceof TypeSafeError) {
+        turn.say([`I couldn't get a decision from TypeSafe, so I took no action. (${error.message})`]);
+      } else {
+        turn.say([`That step failed, so I stopped. (${error instanceof Error ? error.message : String(error)})`]);
+      }
+    }
+  }
+
+  async resolve(sessionId: string, proposalId: string, decision: "approved" | "rejected", note?: string): Promise<Proposal> {
+    const action = this.pending.get(proposalId);
+    if (!action || action.sessionId !== sessionId) {
+      throw new UserFacingError(`No pending proposal ${proposalId} in this session.`);
+    }
+    this.pending.delete(proposalId);
+    if (decision === "rejected") {
+      return { ...action.proposal, decision, note: note ?? "Not applied. Nothing was changed." };
+    }
+    try {
+      return { ...action.proposal, decision, note: await action.run() };
+    } catch (error) {
+      return {
+        ...action.proposal,
+        decision,
+        note: `Approved, but the action failed: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  // ── Routing ───────────────────────────────────────────────────────────
+
+  private async route(turn: Turn, session: Session, message: string): Promise<Intent | undefined> {
+    const state = {
+      message,
+      loanInContext: session.loan?.loanId ?? null,
+      termsExtracted: Boolean(session.extraction),
+      letterGenerated: Boolean(session.letter),
+    };
+    const decision = await turn.step(
+      "TypeSafe · route intent",
+      "Choose one operation from the fixed set",
+      () => this.decider.choose(state, "Which operation does the loan officer's message ask for?", INTENTS),
+      value => (value.confidence >= this.options.high ? "succeeded" : "warning")
+    );
+    const pct = Math.round(decision.confidence * 100);
+    turn.note(`Intent → ${decision.choice}`, `Confidence ${pct}%`, decision.confidence >= this.options.high ? "succeeded" : "warning");
+
+    if (decision.confidence < this.options.medium) {
+      const second = runnerUp(decision);
+      turn.say([
+        `I'm not confident what you'd like (${pct}%). Did you mean to ${INTENT_LABELS[decision.choice]}` +
+          (second ? ` or ${INTENT_LABELS[second]}?` : "?"),
+        "Rephrase or pick a suggestion below.",
+      ]);
+      return undefined;
+    }
+    return decision.choice;
+  }
+
+  private dispatch(intent: Intent, turn: Turn, session: Session, sessionId: string, message: string, loanHint?: string) {
+    switch (intent) {
+      case "find_risk_documents":
+        return this.findRiskDocuments(turn, session, message, loanHint);
+      case "extract_and_check":
+        return this.extractAndCheck(turn, session, message, loanHint);
+      case "validate_record":
+        return this.validateRecord(turn, session, message, loanHint);
+      case "apply_terms":
+        return this.applyTerms(turn, session, sessionId, message, loanHint);
+      case "compare_history":
+        return this.compareHistory(turn, session, message, loanHint);
+      case "generate_letter":
+        return this.generateLetter(turn, session, sessionId, message, loanHint);
+      case "send_for_signature":
+        return this.sendForSignature(turn, session, sessionId, message);
+      case "list_loans":
+        return this.listLoans(turn, session, message);
+      case "out_of_scope":
+        turn.say([
+          "I can work a loan with you:",
+          "• Find a borrower's latest loan and its critical-risk documents",
+          "• Extract terms, check credit policy, compare with the record",
+          "• Compare covenants with prior loans",
+          "• Apply terms, generate the commitment letter, send it for signature (each needs your approval)",
+        ]);
+        return Promise.resolve();
+    }
+  }
+
+  // ── Intents ───────────────────────────────────────────────────────────
+
+  private async findRiskDocuments(turn: Turn, session: Session, message: string, loanHint?: string) {
+    const loan = await this.resolveLoan(turn, session, message, loanHint, { preferLatest: true });
+    const risk = riskLevel(message);
+    const lines = [`Latest loan: ${loanLine(loan)}`];
+    if (!this.options.boxEnterpriseId) {
+      turn.note("Box · metadata query", "BOX_ENTERPRISE_ID is not set", "failed");
+      turn.say([...lines, "", "I can't search losDocument metadata until BOX_ENTERPRISE_ID is configured."]);
+      return;
+    }
+    const hits = await turn.step("Box · search_files_metadata", `losDocument · policyRisk = '${risk}'`, () =>
+      this.tools.findByPolicyRisk(requireFolder(loan), risk)
+    );
+    if (hits.length === 0) {
+      turn.say([...lines, "", `No documents in this loan are flagged ${risk} policy risk.`]);
+      return;
+    }
+    turn.say([
+      ...lines,
+      "",
+      `Flagged ${risk} policy risk:`,
+      ...hits.map(hit => `• ${hit.name}${hit.documentType ? ` (${hit.documentType})` : ""}`),
+    ]);
+    for (const hit of hits) {
+      turn.cite(documentCitation(loan, hit.fileId, hit.name));
+    }
+  }
+
+  private async extractAndCheck(turn: Turn, session: Session, message: string, loanHint?: string) {
+    const loan = await this.resolveLoan(turn, session, message, loanHint);
+    const extraction = await this.extract(turn, session, loan, message);
+    const findings = evaluateTerms(extraction.result.terms, extraction.covenants);
+    session.findings = findings;
+    turn.note("Credit policy rules", `${findings.length} checks against the approved library`, "succeeded");
+
+    turn.say([
+      `Terms from ${extraction.file.name}:`,
+      ...termLines(extraction.result.terms),
+      "",
+      "Credit policy:",
+      ...findings.map(findingLine),
+    ]);
+    turn.cite(documentCitation(loan, extraction.file.fileId, extraction.file.name));
+    citePolicies(turn, findings);
+  }
+
+  private async validateRecord(turn: Turn, session: Session, message: string, loanHint?: string) {
+    const loan = await this.resolveLoan(turn, session, message, loanHint);
+    const extraction = await this.extract(turn, session, loan, message);
+    const checks = extraction.result.checks;
+    if (checks.length === 0) {
+      turn.say(["The extraction returned no field comparison, so there is nothing to validate."]);
+      return;
+    }
+    const mismatches = checks.filter(check => check.status === "mismatch").length;
+    turn.say([
+      `${extraction.file.name} vs the ${loan.loanId} record:`,
+      ...checks.map(check => {
+        const label = FIELD_LABELS[check.field];
+        switch (check.status) {
+          case "match":
+            return `• ${label}: ${check.document} matches`;
+          case "mismatch":
+            return `• ${label}: document ${check.document}, record ${check.record} (mismatch)`;
+          case "new":
+            return `• ${label}: document ${check.document}, record empty`;
+          case "not_found":
+            return `• ${label}: not in the document`;
+        }
+      }),
+      "",
+      mismatches === 0 ? "No mismatches." : `${mismatches} mismatch${mismatches === 1 ? "" : "es"}. Nothing has been written.`,
+    ]);
+    turn.cite(documentCitation(loan, extraction.file.fileId, extraction.file.name));
+  }
+
+  private async applyTerms(turn: Turn, session: Session, sessionId: string, message: string, loanHint?: string) {
+    const loan = await this.resolveLoan(turn, session, message, loanHint);
+    const extraction = await this.extract(turn, session, loan, message);
+    const named = namedFields(message);
+    const overrides = valueOverrides(message);
+    // Canonical field order, not the tool's JSON key order, so the card never reshuffles.
+    const terms: Terms = {};
+    for (const field of TERM_FIELDS) {
+      const value = overrides[field] ?? extraction.result.terms[field];
+      const wanted = named.length === 0 || named.includes(field) || overrides[field] !== undefined;
+      if (value !== undefined && wanted) {
+        terms[field] = value;
+      }
+    }
+    const fields = Object.keys(terms) as TermField[];
+    if (fields.length === 0) {
+      turn.say(["There are no extracted values for those fields, so there is nothing to apply."]);
+      return;
+    }
+    const loanId = requireLoanId(loan);
+    const proposal = this.propose(sessionId, {
+      title: `Apply ${fields.length} term${fields.length === 1 ? "" : "s"} to ${loanId}`,
+      summary: `From ${extraction.file.name}${Object.keys(overrides).length ? ", with your changes" : ""}. Policy findings stay open.`,
+      params: fields.map(field => ({ label: FIELD_LABELS[field], value: formatTerm(field, terms[field]) })),
+      run: async () => {
+        const result = await this.tools.applyLoanTerms(loanId, terms);
+        return result.ok ? result.message : `The LOS refused: ${result.message}`;
+      },
+    });
+    turn.note("Approval gate · applyLoanTerms", "Held until a person approves", "warning");
+    turn.say([`Ready to write ${fields.length} field${fields.length === 1 ? "" : "s"} to ${loanId}. Nothing is written until you approve.`]);
+    turn.propose(proposal);
+  }
+
+  private async compareHistory(turn: Turn, session: Session, message: string, loanHint?: string) {
+    const loan = await this.resolveLoan(turn, session, message, loanHint);
+    const loanId = requireLoanId(loan);
+    const borrower = loan.borrower;
+    if (!borrower) {
+      throw new UserFacingError("The loan package does not name a borrower, so I can't find prior loans.");
+    }
+    const rows = await turn.step("LOS · listLoans", `borrower = ${borrower}`, () => this.tools.listLoans({ borrower }));
+    const year = loanYear(loanId);
+    const prior = rows
+      .filter(row => row.loanId !== loanId && loanYear(row.loanId) < year)
+      .sort((a, b) => a.loanId.localeCompare(b.loanId));
+    if (prior.length === 0) {
+      turn.say([`${borrower} has no loans before ${year} to compare with.`]);
+      return;
+    }
+
+    const precedent: NonNullable<Session["precedent"]> = [];
+    const missing: string[] = [];
+    for (const row of prior) {
+      const pkg = await turn.step("LOS · getLoanPackage", row.loanId, () => this.tools.getLoanPackage(row.loanId));
+      const agreement = pkg.documents.find(doc => filePattern("loan agreement")!.test(doc.name));
+      if (!agreement) {
+        missing.push(row.loanId);
+        continue;
+      }
+      const covenants = await turn.step("Box AI · extract covenants", agreement.name, () =>
+        this.tools.extractCovenants(agreement.fileId)
+      );
+      precedent.push({ loanId: row.loanId, file: agreement, covenants });
+      turn.cite(documentCitation(pkg, agreement.fileId, agreement.name));
+    }
+    const current = await this.currentCovenants(turn, session, loan);
+    session.precedent = precedent;
+
+    const columns = [
+      ...precedent.map(entry => ({ label: entry.loanId, fields: entry.covenants })),
+      { label: "this markup", fields: current.covenants },
+    ];
+    const row = (label: string, pick: (fields: CovenantFields) => string | undefined) => {
+      const values = columns.map(column => pick(column.fields));
+      const priorValues = new Set(values.slice(0, -1).filter(Boolean));
+      const departs = values.at(-1) !== undefined && priorValues.size > 0 && !priorValues.has(values.at(-1));
+      return `• ${label}: ${columns.map((column, i) => `${values[i] ?? "n/a"} (${column.label})`).join(" · ")}${departs ? " ← departs from precedent" : ""}`;
+    };
+    turn.say([
+      `Covenants: ${borrower} executed loans vs ${loanId}`,
+      row("LTV max", fields => (fields.ltvMax !== undefined ? `${fields.ltvMax}%` : undefined)),
+      row("DSCR min", fields => (fields.dscrMin !== undefined ? `${fields.dscrMin}x` : undefined)),
+      row("Testing", fields => fields.testFrequency),
+      row("Guaranty", fields =>
+        fields.guarantyType
+          ? fields.guarantyType + (fields.guarantyCapPerPerson ? ` ${money(fields.guarantyCapPerPerson)} cap` : "")
+          : undefined
+      ),
+      ...(missing.length ? ["", `No executed agreement in the package for ${missing.join(", ")}.`] : []),
+    ]);
+    turn.cite(documentCitation(loan, current.file.fileId, current.file.name));
+  }
+
+  private async generateLetter(turn: Turn, session: Session, sessionId: string, message: string, loanHint?: string) {
+    const loan = await this.resolveLoan(turn, session, message, loanHint);
+    const loanId = requireLoanId(loan);
+    const templateId = this.options.docgenTemplateFileId;
+    if (!templateId) {
+      turn.note("Box Doc Gen", "LOS_DOCGEN_TEMPLATE_FILE_ID is not set", "failed");
+      turn.say(["I can't generate the letter until LOS_DOCGEN_TEMPLATE_FILE_ID is configured."]);
+      return;
+    }
+    const extraction = await this.extract(turn, session, loan, "term sheet");
+    const findings = session.findings ?? evaluateTerms(extraction.result.terms, extraction.covenants);
+    session.findings = findings;
+    const userInput = this.letterPayload(loan, extraction, findings, session.precedent);
+    const folderId = requireFolder(loan);
+    const fileName = `${loanId}-Commitment-Letter`;
+
+    const proposal = this.propose(sessionId, {
+      title: `Generate commitment letter for ${loanId}`,
+      summary: "Box Doc Gen fills all 15 template fields from the record, extraction, and policy findings.",
+      params: [
+        { label: "Borrower", value: String(loan.borrower ?? "") },
+        { label: "Amount", value: formatTerm("loanAmount", extraction.result.terms.loanAmount) },
+        { label: "Policy findings", value: `${findings.filter(f => f.verdict !== "within").length} open` },
+        { label: "File", value: `${fileName}.pdf` },
+      ],
+      run: async () => {
+        const result = await this.tools.generateCommitmentLetter({ folderId, fileName, userInput });
+        if (!result.outputFileId) {
+          return "Doc Gen accepted the batch but did not name the output file, so it can't be sent for signature from here. Check the job in Box.";
+        }
+        session.letter = { loanId, fileId: result.outputFileId, fileName: `${fileName}.pdf` };
+        return "Letter generated. Ask me to send it for signature when ready.";
+      },
+    });
+    turn.note("Approval gate · create_docgen_batch", "Held until a person approves", "warning");
+    turn.say([`Commitment letter for ${loanId} is ready to generate. Approve to create it in the loan folder.`]);
+    turn.propose(proposal);
+  }
+
+  private async sendForSignature(turn: Turn, session: Session, sessionId: string, message: string) {
+    const letter = session.letter;
+    if (!letter) {
+      // Only a letter generated in this session: an earlier file with the same name may be a failed attempt.
+      throw new UserFacingError("Generate the commitment letter first; I only send a letter generated in this conversation.");
+    }
+    const email = emailAddress(message) ?? this.options.defaultSigner?.email;
+    if (!email) {
+      throw new UserFacingError("Who should sign? Reply with the signer's email address.");
+    }
+    const name = emailAddress(message) ? undefined : this.options.defaultSigner?.name;
+    const proposal = this.propose(sessionId, {
+      title: "Send commitment letter for signature",
+      summary: "Creates a Box Sign request and stores the embed link on the loan record.",
+      params: [
+        { label: "Signer", value: name ? `${name} <${email}>` : email },
+        { label: "Document", value: letter.fileName },
+        { label: "Loan", value: letter.loanId },
+      ],
+      run: async () => {
+        const result = await this.tools.prepareSignatureRequest({ loanId: letter.loanId, fileId: letter.fileId, signerEmail: email, signerName: name });
+        return result.ok ? result.message : `Not sent: ${result.message}`;
+      },
+    });
+    turn.note("Approval gate · prepareSignatureRequest", "Held until a person approves", "warning");
+    turn.say(["Ready to send the letter for signature. Approve to create the Box Sign request."]);
+    turn.propose(proposal);
+  }
+
+  private async listLoans(turn: Turn, session: Session, message: string) {
+    const borrowers = await this.borrowers(turn, session);
+    const borrower = namedBorrowers(message, borrowers)[0];
+    const status = loanStatus(message);
+    const rows = await turn.step("LOS · listLoans", [borrower && `borrower = ${borrower}`, status && `status = ${status}`].filter(Boolean).join(", ") || "all loans", () =>
+      this.tools.listLoans({ borrower, status })
+    );
+    if (rows.length === 0) {
+      turn.say(["No loans match."]);
+      return;
+    }
+    const shown = newestFirst(rows).slice(0, 10);
+    turn.say([
+      `${rows.length} loan${rows.length === 1 ? "" : "s"}${borrower ? ` for ${borrower}` : ""}${status ? ` in ${status}` : ""}:`,
+      ...shown.map(row => `• ${row.loanId} · ${row.name} · ${row.status}${row.amount ? ` · ${money(row.amount)}` : ""}`),
+      ...(rows.length > shown.length ? [`…and ${rows.length - shown.length} more.`] : []),
+    ]);
+  }
+
+  // ── Shared steps ──────────────────────────────────────────────────────
+
+  /**
+   * Which loan: an ID in the message, then a borrower named in the message,
+   * then the loan already in the conversation, then the page's loan. Never a
+   * guess: with none of these, ask.
+   */
+  private async resolveLoan(
+    turn: Turn,
+    session: Session,
+    message: string,
+    loanHint: string | undefined,
+    options: { preferLatest?: boolean } = {}
+  ): Promise<LoanPackage> {
+    const loan = await this.findLoan(turn, session, message, loanHint, options);
+    turn.context(loan);
+    return loan;
+  }
+
+  private async findLoan(
+    turn: Turn,
+    session: Session,
+    message: string,
+    loanHint: string | undefined,
+    options: { preferLatest?: boolean }
+  ): Promise<LoanPackage> {
+    const explicit = loanReference(message);
+    if (explicit) {
+      return this.loadPackage(turn, session, explicit);
+    }
+    const borrowers = await this.borrowers(turn, session);
+    const named = namedBorrowers(message, borrowers);
+    if (named.length > 0) {
+      const borrower =
+        named.length === 1
+          ? named[0]
+          : (
+              await turn.step("TypeSafe · which borrower", named.join(" / "), () =>
+                this.decider.choose(
+                  { message },
+                  "Which borrower is the message about?",
+                  Object.fromEntries(named.map(name => [name, name]))
+                )
+              )
+            ).choice;
+      const sameBorrower = session.loan?.borrower === borrower;
+      if (sameBorrower && !options.preferLatest && session.loan) {
+        return session.loan;
+      }
+      const rows = await turn.step("LOS · listLoans", `borrower = ${borrower}`, () => this.tools.listLoans({ borrower }));
+      const latest = latestLoan(rows);
+      if (!latest) {
+        throw new UserFacingError(`I found no loans for ${borrower}.`);
+      }
+      turn.note("Rule · latest loan", `${latest.loanId}: newest ID in an active status`, "succeeded");
+      return this.loadPackage(turn, session, latest.loanId);
+    }
+    if (session.loan) {
+      return session.loan;
+    }
+    if (loanHint) {
+      return this.loadPackage(turn, session, loanHint);
+    }
+    throw new UserFacingError("Which loan? Name the borrower or give a loan ID such as LN-2026-0003.");
+  }
+
+  private async loadPackage(turn: Turn, session: Session, reference: string): Promise<LoanPackage> {
+    if (session.loan && (session.loan.loanId === reference || session.loan.recordId === reference)) {
+      return session.loan;
+    }
+    const pkg = await turn.step("LOS · getLoanPackage", reference, () => this.tools.getLoanPackage(reference));
+    if (!pkg.found || !pkg.loanId) {
+      throw new UserFacingError(`I couldn't find loan ${reference}.`);
+    }
+    if (session.loan?.loanId !== pkg.loanId) {
+      session.extraction = undefined;
+      session.findings = undefined;
+      session.precedent = undefined;
+    }
+    session.loan = pkg;
+    return pkg;
+  }
+
+  private async borrowers(turn: Turn, session: Session): Promise<string[]> {
+    if (!session.borrowers) {
+      const rows = await turn.step("LOS · listLoans", "all borrowers", () => this.tools.listLoans({}));
+      session.borrowers = [...new Set(rows.map(row => row.borrower).filter(Boolean))];
+    }
+    return session.borrowers;
+  }
+
+  /** Extract once per loan and document; later turns reuse it. */
+  private async extract(turn: Turn, session: Session, loan: LoanPackage, message: string) {
+    const loanId = requireLoanId(loan);
+    const kind = documentKind(message);
+    const cached = session.extraction?.loanId === loanId ? session.extraction : undefined;
+    // "Validate those terms…" names no document: keep the one under discussion.
+    if (cached && !kind) {
+      return cached;
+    }
+    const file = await this.pickDocument(turn, loan, kind ?? "term sheet");
+    if (cached && cached.file.fileId === file.fileId) {
+      return cached;
+    }
+    const result = await turn.step("LOS · extractLoanTerms", file.name, () => this.tools.extractLoanTerms(loanId, file.fileId));
+    if (!result.extracted) {
+      throw new UserFacingError(`Box AI could not extract terms from ${file.name}.`);
+    }
+    const covenants = filePattern("term sheet")!.test(file.name)
+      ? await turn.step("Box AI · extract covenants", file.name, () => this.tools.extractCovenants(file.fileId))
+      : undefined;
+    session.extraction = { loanId, file, result, covenants };
+    return session.extraction;
+  }
+
+  private async currentCovenants(turn: Turn, session: Session, loan: LoanPackage) {
+    const extraction = await this.extract(turn, session, loan, "term sheet");
+    return { file: extraction.file, covenants: extraction.covenants ?? {} };
+  }
+
+  /** Documents by file-name rule; TypeSafe only breaks a tie between matches. */
+  private async pickDocument(turn: Turn, loan: LoanPackage, kind: string): Promise<LoanDocument> {
+    const pattern = filePattern(kind);
+    const matches = pattern ? loan.documents.filter(doc => pattern.test(doc.name)) : [];
+    if (matches.length === 1) {
+      return matches[0];
+    }
+    if (matches.length === 0) {
+      throw new UserFacingError(`There is no ${kind} in the ${loan.loanId} loan file.`);
+    }
+    const decision = await turn.step("TypeSafe · which document", `${matches.length} ${kind} files`, () =>
+      this.decider.choose(
+        { kind, files: matches.map(doc => doc.name) },
+        `Which file is the current ${kind}?`,
+        Object.fromEntries(matches.map(doc => [doc.fileId, doc.name]))
+      )
+    );
+    return matches.find(doc => doc.fileId === decision.choice)!;
+  }
+
+  private propose(sessionId: string, spec: Omit<Proposal, "id"> & { run: () => Promise<string> }): Proposal {
+    const { run, ...proposal } = spec;
+    const full: Proposal = { id: `proposal-${++this.proposalCounter}`, ...proposal };
+    this.pending.set(full.id, { sessionId, proposal: full, run });
+    return full;
+  }
+
+  /** The 15 Doc Gen paths (skills/loan-origination/SKILL.md), from sourced data only. */
+  private letterPayload(
+    loan: LoanPackage,
+    extraction: NonNullable<Session["extraction"]>,
+    findings: PolicyFinding[],
+    precedent: Session["precedent"]
+  ): Record<string, unknown> {
+    const terms = extraction.result.terms;
+    const open = findings.filter(finding => finding.verdict !== "within");
+    const approvers = [...new Set(open.map(finding => finding.approver).filter(Boolean))];
+    return {
+      loan: {
+        id: loan.loanId,
+        borrower: loan.borrower ?? "",
+        loanAmount: formatTerm("loanAmount", terms.loanAmount),
+        status: loan.status ?? "",
+        termSheetReference: extraction.file.name,
+      },
+      terms: {
+        policyAtIssue: [...new Set(findings.flatMap(finding => finding.policyIds))].join(", "),
+        requestedPosition: termLines(terms).map(line => line.slice(2)).join("; "),
+        approvedPosition: findings.filter(f => f.verdict === "within").map(f => `${f.topic}: ${f.detail}`).join("; ") || "None within standard policy",
+        exceptionPosition: open.length
+          ? `${open.map(f => `${f.topic}: ${f.detail}`).join("; ")}. No exception approval is recorded.`
+          : "No exceptions required",
+        owner: approvers.length ? approvers.join(", ") : "Loan officer",
+        risk: "Not recorded in the loan package",
+        proposedTerms: termLines(terms).map(line => line.slice(2)).join("; "),
+      },
+      precedent: {
+        summary: precedent?.length
+          ? precedent.map(entry => `${entry.loanId}: LTV max ${entry.covenants.ltvMax ?? "n/a"}%, DSCR ${entry.covenants.dscrMin ?? "n/a"}x ${entry.covenants.testFrequency ?? ""}`.trim()).join("; ")
+          : "No precedent comparison was run for this letter",
+      },
+      letter: {
+        preparedOn: (this.options.now?.() ?? new Date()).toISOString().slice(0, 10),
+        preparedBy: "Loan Copilot (draft for loan officer review)",
+      },
+    };
+  }
+
+  private session(id: string): Session {
+    let session = this.sessions.get(id);
+    if (!session) {
+      session = {};
+      this.sessions.set(id, session);
+    }
+    return session;
+  }
+}
+
+// ── Rendering helpers ───────────────────────────────────────────────────
+
+function loanLine(loan: LoanPackage): string {
+  return [loan.name ?? loan.loanId, loan.loanId, loan.status].filter(Boolean).join(" · ");
+}
+
+function latestLoan(rows: LoanRow[]): LoanRow | undefined {
+  const sorted = newestFirst(rows);
+  return sorted.find(row => ACTIVE_STATUSES.has(row.status)) ?? sorted[0];
+}
+
+function loanYear(loanId: string): number {
+  return Number(/^LN-(\d{4})/.exec(loanId)?.[1] ?? 0);
+}
+
+function requireLoanId(loan: LoanPackage): string {
+  if (!loan.loanId) throw new UserFacingError("The loan package has no loan ID.");
+  return loan.loanId;
+}
+
+function requireFolder(loan: LoanPackage): string {
+  if (!loan.folderId) throw new UserFacingError(`${loan.loanId} has no governed Box folder.`);
+  return loan.folderId;
+}
+
+export function formatTerm(field: TermField, value: number | string | undefined): string {
+  if (value === undefined) return "n/a";
+  const n = Number(value);
+  switch (field) {
+    case "loanAmount":
+    case "collateralValue":
+      return Number.isFinite(n) ? money(n) : String(value);
+    case "interestRate":
+    case "ltv":
+      return `${value}%`;
+    case "dscr":
+      return `${value}x`;
+    case "termMonths":
+      return `${value} months`;
+    default:
+      return String(value);
+  }
+}
+
+function termLines(terms: Terms): string[] {
+  return (Object.keys(FIELD_LABELS) as TermField[])
+    .filter(field => terms[field] !== undefined)
+    .map(field => `• ${FIELD_LABELS[field]} ${formatTerm(field, terms[field])}`);
+}
+
+const VERDICT_MARK: Record<PolicyFinding["verdict"], string> = {
+  within: "✓",
+  exception: "!",
+  outside: "✗",
+  unknown: "?",
+};
+
+function findingLine(finding: PolicyFinding): string {
+  const approval = finding.approver ? ` (${finding.approver})` : "";
+  return `${VERDICT_MARK[finding.verdict]} ${finding.topic}: ${finding.detail}${approval}`;
+}
+
+function citePolicies(turn: Turn, findings: PolicyFinding[]) {
+  for (const id of new Set(findings.flatMap(finding => finding.policyIds))) {
+    turn.cite({ id, label: `${id} · ${POLICIES[id] ?? "Credit policy"}` });
+  }
+}
+
+function documentCitation(loan: LoanPackage, fileId: string, name: string): Citation {
+  const href = loan.documents.find(doc => doc.fileId === fileId)?.href ?? `https://app.box.com/file/${fileId}`;
+  return { id: fileId, label: name, href };
+}

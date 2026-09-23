@@ -74,6 +74,11 @@
   font-weight: 600;
 }
 
+.loan-title-empty {
+  font-weight: 400;
+  color: var(--muted);
+}
+
 .pill {
   padding: 2px 10px;
   border-radius: 999px;

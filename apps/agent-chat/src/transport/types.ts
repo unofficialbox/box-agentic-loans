@@ -14,13 +14,26 @@ export interface TraceEvent {
   step: RunStep;
 }
 
+/** The loan the backend resolved this turn to (live mode only). */
+export interface LoanContext {
+  loanId: string;
+  name?: string;
+  borrower?: string;
+  status?: string;
+}
+
+export interface ContextEvent {
+  kind: "context";
+  loan: LoanContext;
+}
+
 /**
  * The wire contract a loan-agent backend streams back from `POST /chat`, one
  * JSON object per line. The first three kinds are box-agent-chat's own
  * `AgentStreamEvent` (`delta.text` is incremental, not cumulative); `trace`
- * is the side channel the decision-trace panel renders.
+ * feeds the decision-trace panel and `context` the loan header.
  */
-export type LoanAgentEvent = AgentStreamEvent | TraceEvent;
+export type LoanAgentEvent = AgentStreamEvent | TraceEvent | ContextEvent;
 
 export type TraceListener = (event: TraceEvent) => void;
 
@@ -31,6 +44,7 @@ export interface LoanAgentTransport extends AgentChatTransport {
   /** Called once at the start of every turn, before any trace step. */
   onTurnStart?: () => void;
   onTrace?: TraceListener;
+  onContext?: (loan: LoanContext) => void;
 }
 
 export type { RunStep };

@@ -19,7 +19,8 @@ async function collect(stream: ReadableStream<Uint8Array>) {
 }
 
 describe("parseEvent", () => {
-  it("accepts the four event kinds", () => {
+  it("accepts the event kinds, including the loan context", () => {
+    expect(parseEvent('{"kind":"context","loan":{"loanId":"LN-2026-0003"}}')?.kind).toBe("context");
     expect(parseEvent('{"kind":"delta","text":"hi"}')).toEqual({ kind: "delta", text: "hi" });
     expect(parseEvent('{"kind":"trace","step":{"id":"a","title":"A"}}')?.kind).toBe("trace");
   });

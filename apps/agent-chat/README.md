@@ -13,7 +13,7 @@ npm test           # transport + NDJSON unit tests
 npm run build
 ```
 
-The loan comes from `?recordId=` or `?loan=` in the URL. Without either, it defaults to `LN-2026-0042`.
+The loan comes from `?recordId=` or `?loan=` in the URL when the page is opened on one. Otherwise the backend resolves it from the conversation ("latest loan for Harborview") and reports it in a `context` event.
 
 ## Demo vs live
 
@@ -30,12 +30,17 @@ The loan comes from `?recordId=` or `?loan=` in the URL. Without either, it defa
 | `{"kind":"citation","citation":{"id","label","href?"}}` | A cited document or policy. |
 | `{"kind":"proposal","proposal":{"id","title","summary?","params?":[{"label","value"}]}}` | A governed write held for approval. |
 | `{"kind":"trace","step":{"id","title","description?","status","startedAt?","finishedAt?"}}` | A trace step. Sending the same `id` again updates that step. `status` is `running`, `succeeded`, `warning`, `failed`, or `skipped`. |
+| `{"kind":"context","loan":{"loanId","name?","borrower?","status?"}}` | The loan this turn resolved to. The top bar shows it. |
 
 `POST {VITE_AGENT_API_URL}/actions/resolve` takes `{ proposalId, decision: "approved" | "rejected", note?, sessionId }` and returns the updated proposal, with `decision` and an optional `note` describing what happened.
 
 Writes such as `applyLoanTerms`, `prepareSignatureRequest`, and Doc Gen must never run on `/chat`. Emit a `proposal` and run the write only after `/actions/resolve` approves it.
 
-### Strands agent backend
+### Backends
+
+[apps/loan-agent](../loan-agent/README.md) implements this contract **without an LLM**. TypeSafe picks the intent from a fixed set, rules resolve the arguments, and credit policy and replies are computed in code. Run it with `npm start` there and set `VITE_AGENT_API_URL=http://localhost:8787`.
+
+#### Strands agent (LLM alternative)
 
 A [Strands Agents](https://strandsagents.com/) server maps onto this contract directly:
 

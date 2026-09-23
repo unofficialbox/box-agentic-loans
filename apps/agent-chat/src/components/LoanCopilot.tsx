@@ -8,18 +8,26 @@ import type {
 } from "@unofficialbox/box-open-elements/patterns/agent-chat";
 import type { RunStep, RunTrace } from "@unofficialbox/box-open-elements";
 import { SUGGESTED_PROMPTS } from "../transport/demoScript";
-import { createTransport, type TraceEvent } from "../transport";
+import { createTransport, type LoanContext, type TraceEvent } from "../transport";
 import "./LoanCopilot.css";
 
 const newSessionId = () => `session-${Date.now().toString(36)}`;
 
-export function LoanCopilot({ loan }: { loan: string }) {
+/** What the offline demo script is about; live mode shows what the backend reports. */
+const DEMO_LOAN: LoanContext = {
+  loanId: "LN-2026-0042",
+  name: "Harborview Distribution Facility Loan 2026",
+  status: "Underwriting",
+};
+
+export function LoanCopilot({ loan }: { loan?: string }) {
   const transport = useMemo(() => createTransport(loan), [loan]);
   const [sessionId, setSessionId] = useState(newSessionId);
   const [steps, setSteps] = useState<RunStep[]>([]);
   const [messages, setMessages] = useState<AgentChatMessage[]>([]);
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [loanContext, setLoanContext] = useState<LoanContext | null>(null);
 
   const chatRef = useRef<AgentChat>(null);
   const traceRef = useRef<RunTrace>(null);
@@ -27,6 +35,7 @@ export function LoanCopilot({ loan }: { loan: string }) {
   // Trace steps replace by id, so a step can move running → succeeded.
   useEffect(() => {
     transport.onTurnStart = () => setSteps([]);
+    transport.onContext = setLoanContext;
     transport.onTrace = ({ step }: TraceEvent) =>
       setSteps(current => {
         const index = current.findIndex(entry => entry.id === step.id);
@@ -37,6 +46,7 @@ export function LoanCopilot({ loan }: { loan: string }) {
     return () => {
       transport.onTurnStart = undefined;
       transport.onTrace = undefined;
+      transport.onContext = undefined;
     };
   }, [transport]);
 
@@ -93,10 +103,12 @@ export function LoanCopilot({ loan }: { loan: string }) {
     setMessages([]);
     setSelectedSource(null);
     setNotice(null);
+    setLoanContext(null);
   };
 
   const isDemo = transport.mode === "demo";
   const started = messages.length > 0;
+  const shownLoan = isDemo ? DEMO_LOAN : (loanContext ?? (loan ? { loanId: loan } : null));
 
   return (
     <div className="copilot">
@@ -109,12 +121,16 @@ export function LoanCopilot({ loan }: { loan: string }) {
           </div>
         </div>
         <div className="loan-context" aria-label="Current loan">
-          <span className="loan-title">
-            {isDemo ? "Harborview Distribution Facility Loan 2026" : "Loan"}
-          </span>
-          <span className="pill">{loan}</span>
-          {isDemo && <span className="pill">Underwriting</span>}
-          {isDemo && <span className="pill pill-risk">Risk: High</span>}
+          {shownLoan ? (
+            <>
+              {shownLoan.name && <span className="loan-title">{shownLoan.name}</span>}
+              <span className="pill">{shownLoan.loanId}</span>
+              {shownLoan.status && <span className="pill">{shownLoan.status}</span>}
+              {isDemo && <span className="pill pill-risk">Risk: High</span>}
+            </>
+          ) : (
+            <span className="loan-title loan-title-empty">No loan selected. Name a borrower or loan ID.</span>
+          )}
         </div>
         <div className="topbar-actions">
           <span

@@ -25,10 +25,10 @@ function useBoxTheme() {
   }, []);
 }
 
-/** Loan from the URL (`?recordId=` or `?loan=`), else the demo loan. */
-function loanFromUrl(): string {
+/** Loan from the URL (`?recordId=` or `?loan=`), if the page was opened on one. */
+function loanFromUrl(): string | undefined {
   const params = new URLSearchParams(window.location.search);
-  return params.get("recordId") ?? params.get("loan") ?? "LN-2026-0042";
+  return params.get("recordId") ?? params.get("loan") ?? undefined;
 }
 
 export default function App() {

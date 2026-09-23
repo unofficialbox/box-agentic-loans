@@ -4,7 +4,7 @@ import type {
   AgentSendRequest,
 } from "@unofficialbox/box-open-elements/patterns/agent-chat";
 import { readNdjson } from "./ndjson";
-import type { LoanAgentTransport, TraceListener } from "./types";
+import type { LoanAgentTransport, LoanContext, TraceListener } from "./types";
 
 /**
  * Talks to a loan-agent backend (for example a Strands agent that routes with
@@ -20,10 +20,11 @@ export class HttpLoanAgentTransport implements LoanAgentTransport {
   readonly mode = "live" as const;
   onTurnStart?: () => void;
   onTrace?: TraceListener;
+  onContext?: (loan: LoanContext) => void;
 
   constructor(
     private readonly baseUrl: string,
-    private readonly loan: string
+    private readonly loan: string | undefined
   ) {}
 
   async sendMessage(request: AgentSendRequest): Promise<void> {
@@ -40,6 +41,8 @@ export class HttpLoanAgentTransport implements LoanAgentTransport {
     for await (const event of readNdjson(response.body)) {
       if (event.kind === "trace") {
         this.onTrace?.(event);
+      } else if (event.kind === "context") {
+        this.onContext?.(event.loan);
       } else {
         request.onEvent(event);
       }
