@@ -190,7 +190,7 @@ export function BoxWorkspace({
           {folderId && !borrower ? (
             <a
               className="secondary-button"
-              href={`https://${LOS_CONFIG.workspace.boxHostname || "app.box.com"}/folder/${encodeURIComponent(folderId)}`}
+              href={`https://app.box.com/folder/${encodeURIComponent(folderId)}`}
               target="_blank"
               rel="noreferrer"
             >

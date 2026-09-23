@@ -5,14 +5,16 @@
  *
  *   npm run check:typesafe -- 5
  */
-import { loadRootEnv, readConfig } from "./config.js";
+import { ConfigError, loadRootEnv, readTypeSafeConfig, type TypeSafeConfig } from "./config.js";
 import { TypeSafeClient } from "./typesafe.js";
 import { INTENTS } from "./understand.js";
 
 loadRootEnv();
-const config = readConfig();
-if (!config.typesafe.apiKey) {
-  console.error("TYPESAFE_API_KEY is not set. Add it to the repo-root .env (see .env.sample).");
+let typesafe: TypeSafeConfig;
+try {
+  typesafe = readTypeSafeConfig();
+} catch (error) {
+  console.error(error instanceof ConfigError ? error.message : error);
   process.exit(1);
 }
 
@@ -35,10 +37,10 @@ for (const prompt of PROMPTS) {
   for (let i = 0; i < runs; i++) {
     // A fresh client per run so the process cache cannot mask variation.
     const client = new TypeSafeClient({
-      apiKey: config.typesafe.apiKey,
-      apiUrl: config.typesafe.apiUrl,
-      model: config.typesafe.model,
-      timeoutMs: config.typesafe.timeoutMs,
+      apiKey: typesafe.apiKey,
+      apiUrl: typesafe.apiUrl,
+      model: typesafe.model,
+      timeoutMs: typesafe.timeoutMs,
     });
     const decision = await client.choose(
       { message: prompt, loanInContext: null, termsExtracted: false, letterGenerated: false },

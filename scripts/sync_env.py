@@ -4,11 +4,9 @@
 The output follows .env.sample's layout and comments. For every key:
 
 - set in .env: its value is kept exactly as written, even when empty;
-- an optional "# KEY=default" line in the sample that .env sets: kept, uncommented;
-- only in the sample: added with the sample's placeholder;
+- only in the sample: added with the sample's value or placeholder;
 - only in .env (no longer read by any code): dropped, and listed.
 
-A renamed key carries its value to the new name when the new one is unset.
 Reports print key names only, never values. Dry run by default; --write saves,
 after copying the old file to .env.bak (or .env.bak.1, .2, ...).
 
@@ -26,11 +24,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# Old name -> new name. The value moves only when the new key is unset.
-RENAMED = {"LOS_BOX_FOLDER_ID": "VITE_BOX_FOLDER_ID"}
-
 ACTIVE = re.compile(r"^(?:export\s+)?([A-Z][A-Z0-9_]*)=(.*)$")
-OPTIONAL = re.compile(r"^#\s?([A-Z][A-Z0-9_]*)=(.*)$")
 
 
 def read_values(text: str) -> dict[str, str]:
@@ -43,46 +37,25 @@ def read_values(text: str) -> dict[str, str]:
     return values
 
 
-def is_unset(value: str | None) -> bool:
-    return value is None or value.strip() in ("", '""', "''") or value.strip().startswith("<")
-
-
 def sync(sample: str, current: str) -> tuple[str, dict[str, list[str]]]:
     values = read_values(current)
-    report: dict[str, list[str]] = {"kept": [], "added": [], "moved": [], "removed": []}
-
-    for old, new in RENAMED.items():
-        if old in values and is_unset(values.get(new)) and not is_unset(values[old]):
-            values[new] = values[old]
-            report["moved"].append(f"{old} -> {new}")
-
+    report: dict[str, list[str]] = {"kept": [], "added": [], "removed": []}
     known: set[str] = set()
     out: list[str] = []
     for line in sample.splitlines():
-        active, optional = ACTIVE.match(line), OPTIONAL.match(line)
-        if active:
-            key = active.group(1)
-            known.add(key)
-            if key in values:
-                out.append(f"{key}={values[key]}")
-                report["kept"].append(key)
-            else:
-                out.append(line)
-                report["added"].append(key)
-        elif optional:
-            key = optional.group(1)
-            known.add(key)
-            if key in values:
-                out.append(f"{key}={values[key]}")
-                report["kept"].append(key)
-            else:
-                out.append(line)
+        match = ACTIVE.match(line)
+        if not match:
+            out.append(line)
+            continue
+        key = match.group(1)
+        known.add(key)
+        if key in values:
+            out.append(f"{key}={values[key]}")
+            report["kept"].append(key)
         else:
             out.append(line)
-
-    moved_from = {pair.split(" -> ")[0] for pair in report["moved"]}
-    report["removed"] = sorted(key for key in values if key not in known and key not in moved_from)
-    report["removed"] += sorted(moved_from)
+            report["added"].append(key)
+    report["removed"] = sorted(key for key in values if key not in known)
     return "\n".join(out) + "\n", report
 
 
@@ -115,7 +88,7 @@ def main(argv: list[str] | None = None) -> int:
     result, report = sync(sample, current)
 
     print(f"Kept {len(report['kept'])} value(s) as they are.")
-    for label in ("added", "moved", "removed"):
+    for label in ("added", "removed"):
         if report[label]:
             print(f"{label.capitalize()}: {', '.join(report[label])}")
 

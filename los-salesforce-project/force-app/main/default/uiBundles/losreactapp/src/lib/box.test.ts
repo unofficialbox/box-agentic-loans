@@ -2,10 +2,10 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { fetchBoxFolderName, fetchDownscopedBoxToken, getLosPageContext, listBoxFolderItems, provisionBoxFolder } from "./box";
 
 describe("LOS page context", () => {
-  test("defaults to a workspace id the token endpoint will reject rather than serve", () => {
+  test("has no workspace folder unless the URL or VITE_BOX_FOLDER_ID names one", () => {
     expect(getLosPageContext("")).toEqual({
       loanId: "LN-2026-0042",
-      folderId: "demo-workspace",
+      folderId: "",
     });
   });
 });

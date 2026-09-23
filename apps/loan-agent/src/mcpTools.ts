@@ -12,7 +12,7 @@ import {
 
 interface ServerConfig {
   url: string;
-  token?: string;
+  token: string;
 }
 
 /** One lazily connected MCP client per server. */
@@ -47,7 +47,7 @@ class McpServer {
   private connect(): Promise<Client> {
     this.client ??= (async () => {
       const client = new Client({ name: "acme-loan-agent", version: "0.1.0" });
-      const headers: Record<string, string> = this.config.token ? { Authorization: `Bearer ${this.config.token}` } : {};
+      const headers = { Authorization: `Bearer ${this.config.token}` };
       await client.connect(new StreamableHTTPClientTransport(new URL(this.config.url), { requestInit: { headers } }));
       return client;
     })();
@@ -63,8 +63,8 @@ export class McpToolGateway implements ToolGateway {
   constructor(
     los: ServerConfig,
     box: ServerConfig,
-    private readonly boxEnterpriseId?: string,
-    private readonly docgenTemplateFileId?: string
+    private readonly boxEnterpriseId: string,
+    private readonly docgenTemplateFileId: string
   ) {
     this.los = new McpServer("LOS", los);
     this.box = new McpServer("Box", box);
@@ -136,9 +136,6 @@ export class McpToolGateway implements ToolGateway {
   }
 
   async generateCommitmentLetter(input: { folderId: string; fileName: string; userInput: Record<string, unknown> }): Promise<DocgenResult> {
-    if (!this.docgenTemplateFileId) {
-      throw new Error("LOS_DOCGEN_TEMPLATE_FILE_ID is not set");
-    }
     const result = await this.box.call("create_docgen_batch", {
       file_id: this.docgenTemplateFileId,
       destination_folder_id: input.folderId,

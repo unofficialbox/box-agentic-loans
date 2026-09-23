@@ -38,7 +38,7 @@ interface CachedToken {
 export interface LiveBoxOptions {
   /** Box folder id to mint against. Defaults to VITE_BOX_FOLDER_ID, the folder the page previews. */
   folderId?: string;
-  /** Salesforce CLI target org alias. Defaults to LOS_ORG_ALIAS, then "agentforce". */
+  /** Salesforce CLI target org alias. Defaults to LOS_ORG_ALIAS. */
   orgAlias?: string;
 }
 
@@ -54,8 +54,8 @@ function mintToken(folderId: string, orgAlias: string): TokenResponse {
 }
 
 export function liveBoxToken(options: LiveBoxOptions = {}): Plugin {
-  const folderId = options.folderId || process.env.VITE_BOX_FOLDER_ID || "";
-  const orgAlias = options.orgAlias || process.env.LOS_ORG_ALIAS || "agentforce";
+  const folderId = options.folderId ?? process.env.VITE_BOX_FOLDER_ID;
+  const orgAlias = options.orgAlias ?? process.env.LOS_ORG_ALIAS;
   let cached: CachedToken | null = null;
 
   const handler: Connect.NextHandleFunction = (req, res, next) => {
@@ -64,11 +64,11 @@ export function liveBoxToken(options: LiveBoxOptions = {}): Plugin {
     res.setHeader("Content-Type", "application/json");
     res.setHeader("Cache-Control", "no-store");
 
-    if (!folderId) {
+    if (!folderId || !orgAlias) {
       res.statusCode = 500;
       res.end(JSON.stringify({
-        error: "missing_folder_id",
-        detail: "Set VITE_BOX_FOLDER_ID to the Box folder to mint against.",
+        error: "missing_setting",
+        detail: `Set ${[!folderId && "VITE_BOX_FOLDER_ID", !orgAlias && "LOS_ORG_ALIAS"].filter(Boolean).join(" and ")} in .env, then source it.`,
       }));
       return;
     }

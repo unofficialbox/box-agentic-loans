@@ -47,8 +47,6 @@ function setup(options: { confidence?: number; signer?: string } = {}) {
   const agent = new LoanAgent(tools, decider, {
     high: 0.85,
     medium: 0.5,
-    boxEnterpriseId: "12345",
-    docgenTemplateFileId: "700001",
     defaultSigner: options.signer ? { email: options.signer } : undefined,
     now: () => new Date("2026-09-23T12:00:00Z"),
   });

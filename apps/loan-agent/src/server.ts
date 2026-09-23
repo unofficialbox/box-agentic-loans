@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { loadRootEnv, readConfig } from "./config.js";
+import { ConfigError, loadRootEnv, readConfig, type AgentConfig } from "./config.js";
 import { LoanAgent } from "./engine.js";
 import { FixtureToolGateway } from "./fixtures.js";
 import { McpToolGateway } from "./mcpTools.js";
@@ -12,32 +12,24 @@ import { TypeSafeClient } from "./typesafe.js";
  * GET  /health
  *
  * The bearer token is the chat session ID, not a credential: this server has
- * no user auth, so it binds to localhost by default. Put it behind real auth
+ * no user auth, so bind it to localhost (LOAN_AGENT_HOST). Put it behind real auth
  * before exposing it.
  */
 
 loadRootEnv();
-const config = readConfig();
-
-if (!config.typesafe.apiKey) {
-  console.error("TYPESAFE_API_KEY is not set. Add it to the repo-root .env (see .env.sample).");
+let config: AgentConfig;
+try {
+  config = readConfig();
+} catch (error) {
+  console.error(error instanceof ConfigError ? error.message : error);
   process.exit(1);
 }
 
 function tools(): ToolGateway {
-  if (config.fixtures) {
+  if (!config.losMcp || !config.boxMcp) {
     return new FixtureToolGateway();
   }
-  if (!config.losMcp.url || !config.boxMcp.url) {
-    console.error("Set LOS_MCP_URL and BOX_MCP_URL, or LOAN_AGENT_FIXTURES=1 to use seeded fixtures.");
-    process.exit(1);
-  }
-  return new McpToolGateway(
-    { url: config.losMcp.url, token: config.losMcp.token },
-    { url: config.boxMcp.url, token: config.boxMcp.token },
-    config.boxEnterpriseId,
-    config.docgenTemplateFileId
-  );
+  return new McpToolGateway(config.losMcp, config.boxMcp, config.boxEnterpriseId, config.docgenTemplateFileId);
 }
 
 const agent = new LoanAgent(
@@ -51,8 +43,6 @@ const agent = new LoanAgent(
   {
     high: config.typesafe.high,
     medium: config.typesafe.medium,
-    boxEnterpriseId: config.boxEnterpriseId,
-    docgenTemplateFileId: config.docgenTemplateFileId,
     defaultSigner: config.defaultSigner,
   }
 );

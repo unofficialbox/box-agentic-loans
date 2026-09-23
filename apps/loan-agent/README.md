@@ -26,12 +26,14 @@ Writes (`applyLoanTerms`, `create_docgen_batch`, `prepareSignatureRequest`) neve
 
 ## Run
 
-Configuration comes from the repo-root `.env`; see `.env.sample`, section *Loan agent backend*.
+Configuration comes from the repo-root `.env`; see `.env.sample`, section *Loan agent backend*. There are no defaults in code: the server refuses to start and lists every missing or invalid setting.
+
+The connector endpoints are fixed and live in `src/config.ts`: `https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools` for the LOS tools and `https://mcp.box.com` for Box. Only their bearer tokens (`LOS_MCP_TOKEN`, `BOX_MCP_TOKEN`) go in `.env`.
 
 ```bash
 npm install
-npm test                 # 44 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
-npm start                # http://127.0.0.1:8787
+npm test                 # 50 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
+npm start                # http://LOAN_AGENT_HOST:LOAN_AGENT_PORT
 
 # Without MCP access, TypeSafe still decides but the tools are seeded fixtures:
 LOAN_AGENT_FIXTURES=1 npm start
@@ -65,7 +67,7 @@ Events are numbered with `seq`.
 
 ## Limits
 
-- **No user authentication.** The bearer token is the chat session ID, not a credential, so the server binds to `127.0.0.1` by default. Put real auth in front before exposing it.
+- **No user authentication.** The bearer token is the chat session ID, not a credential, so keep `LOAN_AGENT_HOST=127.0.0.1`. Put real auth in front before exposing it.
 - **Unverified Box response formats.** The shapes of the Box MCP responses for `search_files_metadata`, `ai_extract_structured_from_fields`, and `create_docgen_batch` haven't been checked against a live server. They are parsed defensively. If a Doc Gen response doesn't name its output file, the agent refuses to send anything for signature rather than choosing a file by name.
 - **Pricing check is partial.** SOFR isn't returned by any tool, so the pricing rule checks only the 6.50% absolute floor.
 - **Guaranty check is partial.** It covers limited vs unlimited. It does not yet detect an omitted owner.
