@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BOX_MCP_URL, ConfigError, LOS_MCP_URL, readConfig, readTypeSafeConfig } from "../src/config.js";
+import { ConfigError, readConfig, readTypeSafeConfig } from "../src/config.js";
 
 const COMPLETE = {
   TYPESAFE_API_KEY: "example-key",
@@ -11,8 +11,12 @@ const COMPLETE = {
   LOAN_AGENT_HOST: "127.0.0.1",
   LOAN_AGENT_PORT: "8787",
   LOAN_AGENT_ALLOWED_ORIGIN: "http://localhost:3003",
-  LOS_OAUTH_CLIENT_ID: "consumer-key",
-  BOX_MCP_TOKEN: "box-token",
+  LOS_MCP_URL: "https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools",
+  LOS_MCP_CLIENT_ID: "example-sf-client",
+  LOS_MCP_CLIENT_SECRET: "example-sf-secret",
+  BOX_MCP_URL: "https://mcp.box.com",
+  BOX_MCP_CLIENT_ID: "example-box-client",
+  BOX_MCP_CLIENT_SECRET: "example-box-secret",
   BOX_ENTERPRISE_ID: "12345",
   LOS_DOCGEN_TEMPLATE_FILE_ID: "700001",
 };
@@ -24,8 +28,12 @@ describe("readConfig", () => {
       port: 8787,
       host: "127.0.0.1",
       fixtures: false,
-      losMcp: { url: "https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools", clientId: "consumer-key" },
-      boxMcp: { url: "https://mcp.box.com", token: "box-token" },
+      losMcp: {
+        url: "https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools",
+        clientId: "example-sf-client",
+        clientSecret: "example-sf-secret",
+      },
+      boxMcp: { url: "https://mcp.box.com", clientId: "example-box-client", clientSecret: "example-box-secret" },
       typesafe: { model: "jev-latest", timeoutMs: 30000, high: 0.85, medium: 0.5 },
       boxEnterpriseId: "12345",
     });
@@ -33,7 +41,7 @@ describe("readConfig", () => {
   });
 
   it("names every missing setting in one error", () => {
-    const { TYPESAFE_MODEL: _model, LOAN_AGENT_PORT: _port, BOX_MCP_TOKEN: _box, ...partial } = COMPLETE;
+    const { TYPESAFE_MODEL: _model, LOAN_AGENT_PORT: _port, BOX_MCP_CLIENT_SECRET: _box, LOS_MCP_URL: _url, ...partial } = COMPLETE;
     expect(() => readConfig(partial)).toThrow(ConfigError);
     try {
       readConfig(partial);
@@ -41,7 +49,8 @@ describe("readConfig", () => {
       const message = (error as Error).message;
       expect(message).toContain("TYPESAFE_MODEL is not set");
       expect(message).toContain("LOAN_AGENT_PORT is not set");
-      expect(message).toContain("BOX_MCP_TOKEN is not set");
+      expect(message).toContain("BOX_MCP_CLIENT_SECRET is not set");
+      expect(message).toContain("LOS_MCP_URL is not set");
     }
   });
 
@@ -49,15 +58,12 @@ describe("readConfig", () => {
     expect(() => readConfig({ ...COMPLETE, TYPESAFE_TIMEOUT_MS: "soon" })).toThrow(/TYPESAFE_TIMEOUT_MS must be a number/);
   });
 
-  it("uses the fixed connector endpoints", () => {
-    expect([LOS_MCP_URL, BOX_MCP_URL]).toEqual(["https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools", "https://mcp.box.com"]);
-  });
-
   it("does not ask for connector credentials in fixtures mode", () => {
-    const { LOS_OAUTH_CLIENT_ID: _los, BOX_MCP_TOKEN: _box, ...rest } = COMPLETE;
+    const rest = Object.fromEntries(Object.entries(COMPLETE).filter(([key]) => !/^(LOS|BOX)_MCP_/.test(key)));
     const config = readConfig({ ...rest, LOAN_AGENT_FIXTURES: "1" });
     expect(config.fixtures).toBe(true);
     expect(config.losMcp).toBeUndefined();
+    expect(config.boxMcp).toBeUndefined();
   });
 });
 
