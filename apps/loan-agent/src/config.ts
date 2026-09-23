@@ -11,9 +11,6 @@ export function loadRootEnv(): void {
 
 export class ConfigError extends Error {}
 
-/** The connectors' fixed endpoints (MCP Streamable HTTP). */
-export const LOS_MCP_URL = "https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools";
-export const BOX_MCP_URL = "https://mcp.box.com";
 
 /**
  * Reads settings with no defaults: a required setting that is missing or
@@ -66,6 +63,13 @@ export interface TypeSafeConfig {
   medium: number;
 }
 
+/** An MCP endpoint (Streamable HTTP) and the OAuth app that signs in to it. */
+export interface ConnectorConfig {
+  url: string;
+  clientId: string;
+  clientSecret: string;
+}
+
 export interface AgentConfig {
   port: number;
   host: string;
@@ -73,9 +77,9 @@ export interface AgentConfig {
   /** Serve seeded fixtures instead of calling the Box and LOS MCP servers. */
   fixtures: boolean;
   typesafe: TypeSafeConfig;
-  /** Unset in fixtures mode. Salesforce is signed in through OAuth, not a pasted token. */
-  losMcp?: { url: string; clientId: string };
-  boxMcp?: { url: string; token: string };
+  /** Unset in fixtures mode. Each connector is signed in through OAuth. */
+  losMcp?: ConnectorConfig;
+  boxMcp?: ConnectorConfig;
   boxEnterpriseId: string;
   docgenTemplateFileId: string;
   /** Optional by design: without it the agent asks who should sign. */
@@ -104,7 +108,10 @@ export function readTypeSafeConfig(env: NodeJS.ProcessEnv = process.env): TypeSa
 export function readConfig(env: NodeJS.ProcessEnv = process.env): AgentConfig {
   const read = new EnvReader(env);
   const fixtures = read.optional("LOAN_AGENT_FIXTURES") === "1";
-  const live = <T>(value: () => T): T | undefined => (fixtures ? undefined : value());
+  const connector = (url: string, clientId: string, clientSecret: string): ConnectorConfig | undefined =>
+    fixtures
+      ? undefined
+      : { url: read.required(url), clientId: read.required(clientId), clientSecret: read.required(clientSecret) };
   const signerEmail = read.optional("LOS_DEFAULT_SIGNER_EMAIL");
 
   const config: AgentConfig = {
@@ -113,9 +120,10 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): AgentConfig {
     allowedOrigin: read.required("LOAN_AGENT_ALLOWED_ORIGIN"),
     fixtures,
     typesafe: typesafe(read),
-    // Consumer key of the "LOS Claude MCP" External Client App.
-    losMcp: live(() => ({ url: LOS_MCP_URL, clientId: read.required("LOS_OAUTH_CLIENT_ID") })),
-    boxMcp: live(() => ({ url: BOX_MCP_URL, token: read.required("BOX_MCP_TOKEN") })),
+    // Consumer key and secret of the "LOS Claude MCP" External Client App.
+    losMcp: connector("LOS_MCP_URL", "LOS_MCP_CLIENT_ID", "LOS_MCP_CLIENT_SECRET"),
+    // Integration credentials from Admin Console → Integrations → Box MCP Server.
+    boxMcp: connector("BOX_MCP_URL", "BOX_MCP_CLIENT_ID", "BOX_MCP_CLIENT_SECRET"),
     boxEnterpriseId: read.required("BOX_ENTERPRISE_ID"),
     docgenTemplateFileId: read.required("LOS_DOCGEN_TEMPLATE_FILE_ID"),
     defaultSigner: signerEmail ? { email: signerEmail, name: read.optional("LOS_DEFAULT_SIGNER_NAME") } : undefined,

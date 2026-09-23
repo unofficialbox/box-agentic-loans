@@ -1,16 +1,19 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { fileURLToPath } from "node:url";
-import { ConfigError, loadRootEnv, readConfig, type AgentConfig } from "./config.js";
+import { ConfigError, loadRootEnv, readConfig, type AgentConfig, type ConnectorConfig } from "./config.js";
 import { LoanAgent } from "./engine.js";
 import { FixtureToolGateway } from "./fixtures.js";
-import { McpToolGateway, bearerFetch } from "./mcpTools.js";
+import { McpToolGateway } from "./mcpTools.js";
 import {
-  CALLBACK_PATH,
+  BOX,
   FileTokenStore,
-  LOGIN_PATH,
+  OAuthClient,
   OAuthError,
-  SalesforceOAuth,
-} from "./salesforceOAuth.js";
+  SALESFORCE,
+  callbackPath,
+  loginPath,
+  type OAuthProvider,
+} from "./oauth.js";
 import type { ToolGateway } from "./tools.js";
 import { TypeSafeClient } from "./typesafe.js";
 
@@ -18,8 +21,8 @@ import { TypeSafeClient } from "./typesafe.js";
  * POST /chat             {message, sessionId, loan?} → NDJSON AgentEvent stream
  * POST /actions/resolve  {proposalId, decision, note?, sessionId} → Proposal
  * GET  /health
- * GET  /oauth/salesforce/login     → redirect to Salesforce sign-in (PKCE)
- * GET  /oauth/salesforce/callback  → Salesforce redirects back here
+ * GET  /oauth/{salesforce,box}/login     → redirect to that sign-in
+ * GET  /oauth/{salesforce,box}/callback  → the provider redirects back here
  *
  * The bearer token is the chat session ID, not a credential: this server has
  * no user auth, so bind it to localhost (LOAN_AGENT_HOST). Put it behind real auth
@@ -35,25 +38,37 @@ try {
   process.exit(1);
 }
 
-// The browser reaches the server as localhost; this exact URL must be a
-// callback URL on the "LOS Claude MCP" External Client App.
+// The browser reaches the server as localhost; these exact callback URLs must
+// be registered on the Salesforce External Client App and the Box integration.
 const baseUrl = `http://localhost:${config.port}`;
-const salesforce = config.losMcp
-  ? new SalesforceOAuth({
-      clientId: config.losMcp.clientId,
-      redirectUri: `${baseUrl}${CALLBACK_PATH}`,
-      loginPageUrl: `${baseUrl}${LOGIN_PATH}`,
-      store: new FileTokenStore(fileURLToPath(new URL("../.data/salesforce-token.json", import.meta.url))),
-    })
-  : undefined;
+
+function oauthClient(provider: OAuthProvider, connector: ConnectorConfig): OAuthClient {
+  return new OAuthClient({
+    provider,
+    clientId: connector.clientId,
+    clientSecret: connector.clientSecret,
+    redirectUri: `${baseUrl}${callbackPath(provider)}`,
+    loginPageUrl: `${baseUrl}${loginPath(provider)}`,
+    store: new FileTokenStore(fileURLToPath(new URL(`../.data/${provider.id}-token.json`, import.meta.url))),
+  });
+}
+
+const connectors =
+  config.losMcp && config.boxMcp
+    ? {
+        salesforce: { config: config.losMcp, oauth: oauthClient(SALESFORCE, config.losMcp) },
+        box: { config: config.boxMcp, oauth: oauthClient(BOX, config.boxMcp) },
+      }
+    : undefined;
+const oauthClients = connectors ? [connectors.salesforce.oauth, connectors.box.oauth] : [];
 
 function tools(): ToolGateway {
-  if (!config.losMcp || !config.boxMcp || !salesforce) {
+  if (!connectors) {
     return new FixtureToolGateway();
   }
   return new McpToolGateway(
-    { url: config.losMcp.url, fetch: salesforce.authorizedFetch },
-    { url: config.boxMcp.url, fetch: bearerFetch(config.boxMcp.token) },
+    { url: connectors.salesforce.config.url, fetch: connectors.salesforce.oauth.authorizedFetch },
+    { url: connectors.box.config.url, fetch: connectors.box.oauth.authorizedFetch },
     config.boxEnterpriseId,
     config.docgenTemplateFileId
   );
@@ -156,13 +171,14 @@ function page(res: ServerResponse, status: number, title: string, message: strin
   );
 }
 
-async function oauthCallback(oauth: SalesforceOAuth, params: URLSearchParams, res: ServerResponse) {
+async function oauthCallback(oauth: OAuthClient, params: URLSearchParams, res: ServerResponse) {
+  const { label } = oauth.provider;
   try {
     await oauth.completeLogin(params);
-    page(res, 200, "Salesforce connected", "The loan agent can now call the LOS tools. You can close this tab.");
+    page(res, 200, `${label} connected`, `The loan agent can now use its ${label} tools. You can close this tab.`);
   } catch (error) {
     if (!(error instanceof OAuthError)) throw error;
-    page(res, 400, "Salesforce sign-in failed", error.message);
+    page(res, 400, `${label} sign-in failed`, error.message);
   }
 }
 
@@ -177,13 +193,14 @@ const server = createServer(async (req, res) => {
         JSON.stringify({
           ok: true,
           fixtures: config.fixtures,
-          salesforce: salesforce ? (salesforce.connected ? "connected" : "not_connected") : "fixtures",
+          connectors: Object.fromEntries(oauthClients.map(client => [client.provider.id, client.connected ? "connected" : "not_connected"])),
         })
       );
-    } else if (req.method === "GET" && url.pathname === LOGIN_PATH && salesforce) {
-      res.writeHead(302, { Location: salesforce.beginLogin(), "Cache-Control": "no-store" }).end();
-    } else if (req.method === "GET" && url.pathname === CALLBACK_PATH && salesforce) {
-      await oauthCallback(salesforce, url.searchParams, res);
+    } else if (req.method === "GET" && oauthClients.some(client => url.pathname === loginPath(client.provider))) {
+      const client = oauthClients.find(entry => url.pathname === loginPath(entry.provider))!;
+      res.writeHead(302, { Location: client.beginLogin(), "Cache-Control": "no-store" }).end();
+    } else if (req.method === "GET" && oauthClients.some(client => url.pathname === callbackPath(client.provider))) {
+      await oauthCallback(oauthClients.find(entry => url.pathname === callbackPath(entry.provider))!, url.searchParams, res);
     } else if (req.method === "POST" && url.pathname === "/chat") {
       await chat(req, res);
     } else if (req.method === "POST" && url.pathname === "/actions/resolve") {
@@ -207,10 +224,12 @@ server.listen(config.port, config.host, () => {
   console.log(
     `Loan agent on http://${config.host}:${config.port} (${config.fixtures ? "fixtures" : "Box + LOS MCP"}, TypeSafe ${config.typesafe.model})`
   );
-  if (salesforce) {
-    console.log(`Salesforce callback URL (add to the LOS Claude MCP app): ${baseUrl}${CALLBACK_PATH}`);
-    if (!salesforce.connected) {
-      console.log(`Salesforce is not connected yet. Sign in: ${baseUrl}${LOGIN_PATH}`);
+  const registerOn = { salesforce: "the LOS Claude MCP External Client App", box: "the Box MCP Server integration" };
+  for (const client of oauthClients) {
+    const { id, label } = client.provider;
+    console.log(`${label} callback URL (register on ${registerOn[id]}): ${baseUrl}${callbackPath(client.provider)}`);
+    if (!client.connected) {
+      console.log(`${label} is not connected yet. Sign in: ${baseUrl}${loginPath(client.provider)}`);
     }
   }
 });

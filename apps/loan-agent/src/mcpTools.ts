@@ -10,21 +10,12 @@ import {
   type WriteResult,
 } from "./tools.js";
 
-import type { FetchLike } from "./salesforceOAuth.js";
+import type { FetchLike } from "./oauth.js";
 
 /** An endpoint and the fetch that authenticates requests to it. */
 export interface ServerConfig {
   url: string;
   fetch: FetchLike;
-}
-
-/** fetch that sends a fixed bearer token. */
-export function bearerFetch(token: string): FetchLike {
-  return (input, init) => {
-    const headers = new Headers(init?.headers);
-    headers.set("Authorization", `Bearer ${token}`);
-    return fetch(input, { ...init, headers });
-  };
 }
 
 /** One lazily connected MCP client per server. */
