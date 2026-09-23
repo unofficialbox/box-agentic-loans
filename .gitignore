@@ -80,10 +80,8 @@ web_modules/
 
 # dotenv environment variable files
 .env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
+.env.*
+!.env.sample
 
 # Generated per-operator environment bindings (copy from the example).
 # Runtime files are JSON; only the *.example.json templates are committed.

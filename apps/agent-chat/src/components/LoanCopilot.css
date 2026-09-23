@@ -1,0 +1,561 @@
+/* Layout shell around box-agent-chat. Values follow Box's Blueprint design
+   system (the web app's own tokens): 4px spacing scale, radii, drop shadows,
+   and the Box AI gradient. Colours come from the Box tokens applied to <html>
+   (light or dark), so nothing here is hard-coded per theme. */
+
+.copilot {
+  /* Blueprint primitives */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --radius-1: 0.25rem;
+  --radius-2: 0.375rem;
+  --radius-3: 0.5rem;
+  --radius-4: 0.75rem;
+  --radius-pill: 2rem;
+  --dropshadow-1: 0 0 0.5rem 0 #0000000d;
+  --dropshadow-3: 0 0.25rem 0.75rem 0 #0000001a;
+  --box-ai: linear-gradient(135deg, #fe03dc 0%, #2784fa 100%);
+  --box-ai-hover: linear-gradient(135deg, #cb02b0 0%, #1f6ac8 100%);
+
+  /* Semantic roles over the Box tokens */
+  --brand: var(--boe-token-surface-surface-brand, #0061d5);
+  --surface: var(--boe-token-surface-surface, #ffffff);
+  --surface-hover: var(--boe-token-surface-surface-hover, #f4f4f4);
+  --selected: var(--boe-token-surface-item-surface-selected, #f2f7fd);
+  --stroke: var(--boe-token-stroke-stroke, #e8e8e8);
+  --text: var(--boe-token-text-text, #222222);
+  --muted: var(--boe-token-text-text-secondary, #6f6f6f);
+  --success: var(--boe-token-surface-status-surface-success, #26c281);
+  --warning: var(--boe-token-surface-status-surface-inprogress, #f5b31b);
+  --danger: var(--boe-token-surface-status-surface-error, #ed3757);
+  --focus: 0 0 0 3px color-mix(in srgb, #2486fc 35%, transparent);
+
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100%;
+}
+
+/* ── Top bar ─────────────────────────────────────────────── */
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-6);
+  padding: var(--space-3) var(--space-6);
+  background: var(--surface);
+  border-bottom: 1px solid var(--stroke);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The Box AI mark: the product gradient behind a sparkle. */
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-3);
+  background: var(--box-ai);
+  color: #ffffff;
+}
+
+.brand-name,
+.brand-product {
+  margin: 0;
+  line-height: 1.2;
+}
+
+.brand-name {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.brand-product {
+  font-weight: 700;
+}
+
+.loan-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.loan-title {
+  font-weight: 700;
+}
+
+.loan-title-empty {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.pill {
+  padding: 0.125rem var(--space-3);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--stroke);
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.pill-risk {
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+  color: color-mix(in srgb, var(--danger) 80%, var(--text));
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-inline-start: auto;
+}
+
+.mode {
+  padding: 0.125rem var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.mode-demo {
+  background: color-mix(in srgb, var(--warning) 18%, transparent);
+  color: color-mix(in srgb, var(--warning) 45%, var(--text));
+}
+
+/* Live AI: gradient outline, Blueprint's treatment for an active AI control. */
+.mode-live {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    var(--box-ai) border-box;
+  color: var(--text);
+}
+
+.button,
+.chip,
+.source,
+.notice-dismiss,
+.icon-button,
+.library-tab,
+.library-card {
+  appearance: none;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.button {
+  padding: var(--space-1) var(--space-4);
+  min-height: 2rem;
+  border-radius: var(--radius-3);
+  border: 1px solid var(--stroke);
+  background: var(--surface);
+  font-weight: 700;
+}
+
+.button:hover,
+.chip:hover,
+.source:hover,
+.icon-button:hover,
+.library-card:hover {
+  background: var(--surface-hover);
+}
+
+:is(.button, .chip, .source, .notice-dismiss, .icon-button, .library-tab, .library-card):focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+/* ── Workspace ───────────────────────────────────────────── */
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 21rem;
+  gap: var(--space-5);
+  width: 100%;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-6);
+  min-height: 0;
+}
+
+.conversation {
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  gap: var(--space-3);
+  min-height: 0;
+}
+
+/* Let the pattern fill the column: the thread grows, the composer stays put. */
+box-agent-chat {
+  min-height: 0;
+}
+
+box-agent-chat::part(panel) {
+  box-sizing: border-box;
+  height: 100%;
+  grid-template-rows: auto 1fr auto;
+  background: var(--surface);
+  border-radius: var(--radius-4);
+  box-shadow: var(--dropshadow-1);
+}
+
+box-agent-chat::part(thread) {
+  max-block-size: none;
+  min-block-size: 0;
+  align-content: start;
+}
+
+box-agent-chat::part(empty) {
+  border-style: solid;
+  background: var(--boe-token-surface-surface-secondary, #fbfbfb);
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-3);
+  background: var(--selected);
+  font-size: 0.8125rem;
+}
+
+.notice-dismiss,
+.icon-button {
+  margin-inline-start: auto;
+  border: 0;
+  border-radius: var(--radius-1);
+  background: transparent;
+  font-size: 1.125rem;
+  line-height: 1;
+  padding: var(--space-1) var(--space-2);
+}
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.suggestions-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.chip {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--stroke);
+  background: var(--surface);
+  font-size: 0.8125rem;
+}
+
+.chip-library {
+  margin-inline-start: auto;
+  border-color: transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    var(--box-ai) border-box;
+  font-weight: 700;
+}
+
+/* ── Right rail ──────────────────────────────────────────── */
+
+.rail {
+  display: grid;
+  align-content: start;
+  gap: var(--space-4);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.card {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-4);
+  border: 1px solid var(--stroke);
+  background: var(--surface);
+  box-shadow: var(--dropshadow-1);
+}
+
+.card-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.card-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.card-count,
+.card-hint,
+.empty {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* Plan: Box AI's to-do list for the turn. */
+.todos {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.todo {
+  display: grid;
+  grid-template-columns: 1rem 1fr;
+  align-items: start;
+  gap: var(--space-2);
+  font-size: 0.8125rem;
+}
+
+.todo-mark {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.125rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--stroke);
+  box-sizing: border-box;
+}
+
+.todo-in_progress .todo-mark {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    var(--box-ai) border-box;
+  animation: todo-spin 1.2s linear infinite;
+}
+
+.todo-in_progress .todo-text {
+  font-weight: 700;
+}
+
+.todo-completed .todo-mark {
+  border: 0;
+  background: var(--success)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / 100% no-repeat;
+}
+
+.todo-completed .todo-text,
+.todo-skipped .todo-text {
+  color: var(--muted);
+}
+
+.todo-skipped .todo-text {
+  text-decoration: line-through;
+}
+
+@keyframes todo-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .todo-in_progress .todo-mark {
+    animation: none;
+  }
+}
+
+.sources {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.source {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-2);
+  background: transparent;
+  text-align: start;
+  font-size: 0.8125rem;
+}
+
+.source.is-selected {
+  background: var(--selected);
+  color: var(--brand);
+  font-weight: 700;
+}
+
+.source-icon {
+  flex: none;
+  width: 0.625rem;
+  height: 0.75rem;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--brand) 70%, transparent);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── Prompt library dialog ───────────────────────────────── */
+
+.library {
+  width: min(40rem, calc(100vw - 2rem));
+  max-height: min(36rem, calc(100vh - 2rem));
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-4);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--dropshadow-3);
+}
+
+.library::backdrop {
+  background: #0000004d;
+}
+
+.library-panel {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-6);
+}
+
+.library-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.library-title {
+  margin: 0 0 var(--space-2);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.library-scope {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.library-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--stroke);
+}
+
+.library-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.library-tab[aria-selected="true"] {
+  color: var(--text);
+  border-bottom-color: var(--brand);
+}
+
+.library-tab-count {
+  min-width: 1.25rem;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--surface-hover);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.library-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.library-card {
+  display: grid;
+  gap: var(--space-1);
+  width: 100%;
+  height: 100%;
+  padding: var(--space-4);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-4);
+  background: var(--surface);
+  text-align: start;
+}
+
+.library-card-title {
+  font-weight: 700;
+}
+
+.library-card-description {
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+/* ── Narrow screens: rail drops below the conversation ───── */
+
+@media (max-width: 56rem) {
+  .copilot {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+    padding: var(--space-4);
+  }
+
+  .conversation {
+    grid-template-rows: auto auto auto;
+  }
+
+  box-agent-chat::part(thread) {
+    max-block-size: 60vh;
+  }
+
+  .topbar {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .chip-library {
+    margin-inline-start: 0;
+  }
+}

@@ -33,77 +33,69 @@ A borrower applies through the Acme Borrower Portal. Documents uploaded to Box a
 ### Prerequisites
 
 - Box enterprise with AI, Hubs, Doc Gen, Sign, and metadata enabled
-- Salesforce org with Agentforce and UI Bundles (Hyperforce required)
+- Salesforce org with Agentforce and [Multi-Framework](https://help.salesforce.com/s/articleView?id=sf.exp_cloud_multiframework.htm) (Hyperforce required)
 - Box for Salesforce package installed
 - Python 3.11+, Node.js, Box CLI, Salesforce CLI
 
 ### Setup
 
-1. **Configure:**
-   ```bash
-   cp .env.sample .env
-   cp config/runtime/demo-environment.example.json config/runtime/demo-environment.json
-   python3 scripts/setup_los_dev.py
-   ```
-
-2. **Deploy:**
-   ```bash
-   python3 scripts/demo_operator.py bootstrap --scenario box-salesforce-los --yes
-   ./scripts/seed-los-sample-data.sh <alias>
-   ./scripts/seed-los-loan-files.sh <alias>
-   ```
-
-3. **Configure Box preview, Loan Copilot, and MCP connectors**  
-   Optional for Claude Desktop: run the [Demo Setup card](connectors/demo-setup-card/README.md), a third connector that confirms the session bindings on a clickable card.  
-   See [docs/SETUP.md](docs/SETUP.md) for the admin steps. Presenters connect their own AI client with [docs/CLIENT-SETUP.md](docs/CLIENT-SETUP.md) (no code).
-
-### Cleanup
-
-Remove demo loans and their Box folders between presentations:
-
 ```bash
-# Preview what would be deleted
-python3 scripts/cleanup_demo.py --status Application --dry-run
+# 1. Configure environment
+cp .env.sample .env
+cp config/runtime/demo-environment.example.json config/runtime/demo-environment.json
+python3 scripts/setup_los_dev.py
 
-# Delete all Application status loans
-python3 scripts/cleanup_demo.py --status Application --yes
-
-# Delete loans created today
-python3 scripts/cleanup_demo.py --today --yes
-
-# Delete specific loan
-python3 scripts/cleanup_demo.py --loan-id LN-2026-0042 --yes
-
-# Interactive mode (prompts for each)
-python3 scripts/cleanup_demo.py --status Application --interactive
+# 2. Deploy to Salesforce and Box
+python3 scripts/demo_operator.py bootstrap --scenario box-salesforce-los --yes
+./scripts/seed-los-sample-data.sh <alias>
+./scripts/seed-los-loan-files.sh <alias>
 ```
 
-### Demo
+**Next Steps:**
+- **Admin setup**: Configure Box preview and Loan Copilot → [SETUP.md](docs/SETUP.md)
+- **Presenter setup**: Connect your AI client → [CLIENT-SETUP.md](docs/CLIENT-SETUP.md)
 
-**[Open the public demo guide](https://unofficialbox.github.io/box-claudeforce-loans/)** · [Download portable HTML](https://unofficialbox.github.io/box-claudeforce-loans/docs/demo-storyboard/standalone.html)
+## Running the Demo
 
-[Open the borrower portal login](https://agentforce-box.my.site.com/loansvforcesite/login)
+### For Presenters
 
-Run the demo beats with Claude Desktop (or any AI harness):
-- **Demo guide:** [Setup](docs/demo-storyboard/index.html#setup) · [Storyboard](docs/demo-storyboard/index.html#storyboard) · [Resources and sample files](docs/demo-storyboard/index.html#resources)
-- **Standalone HTML:** [Portable edition](docs/demo-storyboard/standalone.html) — embedded images/fonts; resource links open GitHub. Rebuild with `python3 scripts/build_standalone_storyboard.py`.
-- **Markdown storyboard:** [Tell / Show / Tell with screenshots](docs/demo-storyboard/storyboard.md)
-- **Amazon Quick edition:** [demo guide](docs/demo-storyboard/index-quick.html) · [portable HTML](docs/demo-storyboard/standalone-quick.html) · [Markdown](docs/demo-storyboard/storyboard-quick.md) — same beats with Amazon Quick as the officer harness and the [Quick platform trio](docs/demo-storyboard/platform-trio-quick.svg). Rebuild everything with `python3 scripts/build_demo_trio.py --png && python3 scripts/build_demo_storyboard.py && python3 scripts/build_standalone_storyboard.py`.
-- **Prompts & walkthrough:** [DEMO-CLICKPATH.md](DEMO-CLICKPATH.md)
-- **Presenter skill:** [skills/loan-origination/SKILL.md](skills/loan-origination/SKILL.md) — [package for Claude](docs/DOCGEN-GUIDE.md#distributing-the-claude-skill)
-- **Amazon Quick:** [skills/loan-origination-quick/SKILL.md](skills/loan-origination-quick/SKILL.md) plus the agent manifest in [config/quick/](config/quick/agent.json) — setup in [docs/SETUP.md §5b](docs/SETUP.md#5b-amazon-quick)
-- **Slack (Slackbot):** [skills/loan-origination-slack/SKILL.md](skills/loan-origination-slack/SKILL.md) — a paste-in primer, since Slackbot loads no skills; app manifest in [config/slack/](config/slack/los-loan-tools.manifest.json) — setup in [docs/SETUP.md §5c](docs/SETUP.md#5c-slack-slackbot)
-- **Connect your client (all harnesses):** [docs/CLIENT-SETUP.md](docs/CLIENT-SETUP.md)
-- **Presenter guide:** [docs/PRESENTING.md](docs/PRESENTING.md)
+**📖 [Public Demo Guide](https://unofficialbox.github.io/box-claudeforce-loans/)** - Interactive HTML storyboard with screenshots and step-by-step instructions
+
+**🔗 [Borrower Portal](https://agentforce-box.my.site.com/loansvforcesite/login)** - Acme Bank demo portal (sign in as Dana Whitfield)
+
+### AI Client Setup
+
+Works with any AI harness - choose your platform:
+- **Claude Desktop**: [Setup instructions](docs/CLIENT-SETUP.md#claude-desktop)
+- **Amazon Quick**: [Setup instructions](docs/CLIENT-SETUP.md#amazon-quick)
+- **Slack**: [Setup instructions](docs/CLIENT-SETUP.md#slack)
+- **ChatGPT**: [Setup instructions](docs/CLIENT-SETUP.md#chatgpt)
+
+### Demo Materials
+
+- **[Presenter Guide](docs/PRESENTING.md)** - Tips for delivering the demo
+- **[Demo Clickpath](DEMO-CLICKPATH.md)** - Beat-by-beat prompts and walkthrough
+
+### Cleanup Between Demos
+
+```bash
+# Preview deletions
+python3 scripts/cleanup_demo.py --status Application --dry-run
+
+# Delete all test loans
+python3 scripts/cleanup_demo.py --status Application --yes
+```
 
 ## Documentation
 
-- **[docs/SETUP.md](docs/SETUP.md)** - Complete deployment guide
-- **[docs/CLIENT-SETUP.md](docs/CLIENT-SETUP.md)** - Connect Claude, Amazon Quick, Slack, or ChatGPT to the demo (for presenters)
-- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System design and governance
+### Setup & Configuration
+- **[SETUP.md](docs/SETUP.md)** - Complete deployment guide
+- **[CLIENT-SETUP.md](docs/CLIENT-SETUP.md)** - Connect your AI client
+
+### Architecture & Design
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - System design and governance model
+- **[SECURITY.md](docs/SECURITY.md)** - Authorization and token scoping
 - **[CLAUDE.md](CLAUDE.md)** - AI connector strategy (metadata-first, Box MCP vs LOS tools)
-- **[docs/SECURITY.md](docs/SECURITY.md)** - Borrower authorization and token scoping
-- **[docs/paved-path.md](docs/paved-path.md)** - MCP deployment guidance
 
 ## Repository Structure
 
