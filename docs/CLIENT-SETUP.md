@@ -162,6 +162,7 @@ The connection works the same way as in Claude, but nobody on this project has r
 | Slack (Slackbot) | `https://oauth2.slack.com/external/auth/callback` |
 | Amazon Quick | The redirect URL shown in Quick's **Create connector** dialog |
 | ChatGPT | The redirect URL shown in ChatGPT's **Create connector** dialog |
+| Loan agent backend (`apps/loan-agent`) | `http://localhost:8787/oauth/salesforce/callback` (use your `LOAN_AGENT_PORT`) |
 
 Then give each presenter the LOS server URL and the consumer key, assign them the `LOS_MCP_Client` permission set, and add them to the app's pre-authorized users. Full org-side steps are in [SETUP.md §5a](SETUP.md#5a-connect-an-mcp-client-to-the-los-server).
 

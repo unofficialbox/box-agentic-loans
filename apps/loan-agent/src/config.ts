@@ -73,8 +73,8 @@ export interface AgentConfig {
   /** Serve seeded fixtures instead of calling the Box and LOS MCP servers. */
   fixtures: boolean;
   typesafe: TypeSafeConfig;
-  /** Unset in fixtures mode. */
-  losMcp?: { url: string; token: string };
+  /** Unset in fixtures mode. Salesforce is signed in through OAuth, not a pasted token. */
+  losMcp?: { url: string; clientId: string };
   boxMcp?: { url: string; token: string };
   boxEnterpriseId: string;
   docgenTemplateFileId: string;
@@ -104,8 +104,7 @@ export function readTypeSafeConfig(env: NodeJS.ProcessEnv = process.env): TypeSa
 export function readConfig(env: NodeJS.ProcessEnv = process.env): AgentConfig {
   const read = new EnvReader(env);
   const fixtures = read.optional("LOAN_AGENT_FIXTURES") === "1";
-  const mcp = (url: string, tokenName: "LOS_MCP_TOKEN" | "BOX_MCP_TOKEN") =>
-    fixtures ? undefined : { url, token: read.required(tokenName) };
+  const live = <T>(value: () => T): T | undefined => (fixtures ? undefined : value());
   const signerEmail = read.optional("LOS_DEFAULT_SIGNER_EMAIL");
 
   const config: AgentConfig = {
@@ -114,8 +113,9 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): AgentConfig {
     allowedOrigin: read.required("LOAN_AGENT_ALLOWED_ORIGIN"),
     fixtures,
     typesafe: typesafe(read),
-    losMcp: mcp(LOS_MCP_URL, "LOS_MCP_TOKEN"),
-    boxMcp: mcp(BOX_MCP_URL, "BOX_MCP_TOKEN"),
+    // Consumer key of the "LOS Claude MCP" External Client App.
+    losMcp: live(() => ({ url: LOS_MCP_URL, clientId: read.required("LOS_OAUTH_CLIENT_ID") })),
+    boxMcp: live(() => ({ url: BOX_MCP_URL, token: read.required("BOX_MCP_TOKEN") })),
     boxEnterpriseId: read.required("BOX_ENTERPRISE_ID"),
     docgenTemplateFileId: read.required("LOS_DOCGEN_TEMPLATE_FILE_ID"),
     defaultSigner: signerEmail ? { email: signerEmail, name: read.optional("LOS_DEFAULT_SIGNER_NAME") } : undefined,

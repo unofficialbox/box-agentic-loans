@@ -10,7 +10,7 @@ import {
   type Terms,
 } from "./los.js";
 import { POLICIES, evaluateTerms, money, type PolicyFinding } from "./policy.js";
-import type { CovenantFields, ToolGateway } from "./tools.js";
+import { ActionRequiredError, type CovenantFields, type ToolGateway } from "./tools.js";
 import { TypeSafeError, runnerUp, type Decider } from "./typesafe.js";
 import {
   INTENTS,
@@ -255,7 +255,7 @@ export class LoanAgent {
       if (turn.proposed) status = "needs_input";
     } catch (error) {
       turn.finishPlan(false);
-      if (error instanceof UserFacingError) {
+      if (error instanceof UserFacingError || error instanceof ActionRequiredError) {
         status = "needs_input";
         turn.say([error.message]);
       } else if (error instanceof TypeSafeError) {

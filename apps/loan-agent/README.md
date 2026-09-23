@@ -28,11 +28,27 @@ Writes (`applyLoanTerms`, `create_docgen_batch`, `prepareSignatureRequest`) neve
 
 Configuration comes from the repo-root `.env`; see `.env.sample`, section *Loan agent backend*. There are no defaults in code: the server refuses to start and lists every missing or invalid setting.
 
-The connector endpoints are fixed and live in `src/config.ts`: `https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools` for the LOS tools and `https://mcp.box.com` for Box. Only their bearer tokens (`LOS_MCP_TOKEN`, `BOX_MCP_TOKEN`) go in `.env`.
+The connector endpoints are fixed and live in `src/config.ts`: `https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools` for the LOS tools and `https://mcp.box.com` for Box.
+
+### Salesforce sign-in
+
+The agent signs in to Salesforce itself. It uses OAuth with PKCE against the **LOS Claude MCP** External Client App, so no token is pasted into `.env`.
+
+1. **Add the callback URL.** In Setup → External Client App Manager → LOS Claude MCP → Settings → OAuth, add `http://localhost:<LOAN_AGENT_PORT>/oauth/salesforce/callback`. The server prints the exact URL at startup.
+2. **Set the consumer key.** Put the app's consumer key in `.env` as `LOS_OAUTH_CLIENT_ID`. The signing-in user needs the `LOS_MCP_Client` permission set and must be pre-authorized on the app.
+3. **Sign in.** Start the server and open `http://localhost:<LOAN_AGENT_PORT>/oauth/salesforce/login`.
+
+How the token is handled:
+- **Stored on disk.** It goes in `apps/loan-agent/.data/salesforce-token.json`, which is owner-only and gitignored, so a restart doesn't need a new sign-in.
+- **Renewed automatically.** The access token is refreshed when the MCP server answers 401.
+- **Revoked refresh token.** The agent forgets it and asks you to sign in again.
+- **Not signed in yet.** Every Salesforce step replies with the sign-in link, and `/health` reports `"salesforce": "not_connected"`.
+
+Box still takes a bearer token (`BOX_MCP_TOKEN`).
 
 ```bash
 npm install
-npm test                 # 50 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
+npm test                 # 59 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
 npm start                # http://LOAN_AGENT_HOST:LOAN_AGENT_PORT
 
 # Without MCP access, TypeSafe still decides but the tools are seeded fixtures:
@@ -63,7 +79,8 @@ Events are numbered with `seq`.
 | `src/los.ts` | Parsers for the LOS invocable actions' output summaries. |
 | `src/mcpTools.ts` | Box and LOS over MCP Streamable HTTP. |
 | `src/fixtures.ts` | Seeded Harborview data in the real response formats. |
-| `src/server.ts` | `POST /chat` (NDJSON), `POST /actions/resolve`, `GET /health`. |
+| `src/server.ts` | `POST /chat` (NDJSON), `POST /actions/resolve`, `GET /health`, and the Salesforce sign-in routes. |
+| `src/salesforceOAuth.ts` | PKCE sign-in, token file, and the refreshing fetch for the LOS MCP connection. |
 
 ## Limits
 

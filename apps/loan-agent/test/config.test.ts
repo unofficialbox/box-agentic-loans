@@ -11,7 +11,7 @@ const COMPLETE = {
   LOAN_AGENT_HOST: "127.0.0.1",
   LOAN_AGENT_PORT: "8787",
   LOAN_AGENT_ALLOWED_ORIGIN: "http://localhost:3003",
-  LOS_MCP_TOKEN: "los-token",
+  LOS_OAUTH_CLIENT_ID: "consumer-key",
   BOX_MCP_TOKEN: "box-token",
   BOX_ENTERPRISE_ID: "12345",
   LOS_DOCGEN_TEMPLATE_FILE_ID: "700001",
@@ -24,7 +24,7 @@ describe("readConfig", () => {
       port: 8787,
       host: "127.0.0.1",
       fixtures: false,
-      losMcp: { url: "https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools", token: "los-token" },
+      losMcp: { url: "https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools", clientId: "consumer-key" },
       boxMcp: { url: "https://mcp.box.com", token: "box-token" },
       typesafe: { model: "jev-latest", timeoutMs: 30000, high: 0.85, medium: 0.5 },
       boxEnterpriseId: "12345",
@@ -53,8 +53,8 @@ describe("readConfig", () => {
     expect([LOS_MCP_URL, BOX_MCP_URL]).toEqual(["https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools", "https://mcp.box.com"]);
   });
 
-  it("does not ask for MCP tokens in fixtures mode", () => {
-    const { LOS_MCP_TOKEN: _los, BOX_MCP_TOKEN: _box, ...rest } = COMPLETE;
+  it("does not ask for connector credentials in fixtures mode", () => {
+    const { LOS_OAUTH_CLIENT_ID: _los, BOX_MCP_TOKEN: _box, ...rest } = COMPLETE;
     const config = readConfig({ ...rest, LOAN_AGENT_FIXTURES: "1" });
     expect(config.fixtures).toBe(true);
     expect(config.losMcp).toBeUndefined();
