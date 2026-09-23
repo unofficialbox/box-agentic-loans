@@ -14,7 +14,7 @@ Styling follows Box's Blueprint design system:
 ```bash
 npm install
 npm run dev        # http://localhost:3003
-npm test           # transport + NDJSON unit tests
+npm test           # transport, NDJSON and inspector unit tests
 npm run build
 ```
 
@@ -24,6 +24,16 @@ The loan comes from `?recordId=` or `?loan=` in the URL when the page is opened 
 
 - **Demo script (default).** When `VITE_AGENT_API_URL` is empty, `DemoLoanAgentTransport` replays the six clickpath beats offline. It uses figures from the seeded Harborview sample data and matches prompts by keyword. The routing step in the trace is labelled as simulated. Approving a card makes no write.
 - **Live agent.** Set `VITE_AGENT_API_URL` in the repo-root `.env` (see `.env.sample`; Vite reads `envDir: ../..`), and `HttpLoanAgentTransport` talks to a backend over the contract below. Only `VITE_` values reach the browser. Keep `TYPESAFE_API_KEY`, Box, and Salesforce credentials in the backend.
+
+## API inspector
+
+In live mode a dark **API inspector** shelf sits at the bottom of the page, modelled on the HTTP inspector in [box-cmis-lab](https://github.com/unofficialbox/box-cmis-lab). It shows every call the loan agent makes to TypeSafe, Salesforce and Box, plus each chat request, live from the backend's `GET /calls/stream`:
+- the list shows status, service, the call (e.g. `tools/call getLoanPackage`) and time in ms, newest first
+- select a row to see its URL and its request and response headers and bodies
+- filter by service or errors, or **Clear** the log (`DELETE /calls`)
+- drag the title bar to resize the shelf, and the divider to resize the list; both sizes and the open/closed state are remembered in this browser
+
+Credentials are redacted by the backend before they reach the page. The demo script makes no API calls, so the shelf is hidden in demo mode.
 
 ## Backend contract
 
@@ -64,6 +74,7 @@ The backend has to keep a `proposalId → session` mapping. It should also cache
 ## Files
 
 - `src/components/LoanCopilot.tsx`: the page shell around the pattern
+- `src/components/ApiInspector.tsx` and `src/inspector/calls.ts`: the API inspector shelf and its call-log events
 - `src/transport/httpTransport.ts`: the live backend transport
 - `src/transport/ndjson.ts`: the stream reader
 - `src/transport/demoTransport.ts` and `demoScript.ts`: offline demo beats and the keyword router

@@ -19,6 +19,11 @@ export type {
  * conversation and reports it with a `context` event.
  */
 export function createTransport(loan: string | undefined): LoanAgentTransport {
-  const baseUrl = import.meta.env.VITE_AGENT_API_URL?.replace(/\/+$/, "");
+  const baseUrl = agentBaseUrl();
   return baseUrl ? new HttpLoanAgentTransport(baseUrl, loan) : new DemoLoanAgentTransport();
+}
+
+/** The live backend's base URL, or undefined in demo mode. */
+export function agentBaseUrl(): string | undefined {
+  return import.meta.env.VITE_AGENT_API_URL?.replace(/\/+$/, "") || undefined;
 }

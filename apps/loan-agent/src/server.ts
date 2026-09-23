@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { fileURLToPath } from "node:url";
+import { CallLog, MAX_BODY_CHARS, formatCallLine, loggedFetch, redactBody, redactHeaders, truncate, type CallEntry } from "./callLog.js";
 import { ConfigError, loadRootEnv, readConfig, type AgentConfig, type ConnectorConfig } from "./config.js";
 import { LoanAgent } from "./engine.js";
 import { FixtureToolGateway } from "./fixtures.js";
@@ -23,6 +24,9 @@ import { TypeSafeClient } from "./typesafe.js";
  * GET  /health
  * GET  /oauth/{salesforce,box}/login     → redirect to that sign-in
  * GET  /oauth/{salesforce,box}/callback  → the provider redirects back here
+ * GET  /calls            → every recorded API call, newest first (credentials redacted)
+ * GET  /calls/stream     → the same as server-sent events: a snapshot, then each call
+ * DELETE /calls          → clear the log
  *
  * The bearer token is the chat session ID, not a credential: this server has
  * no user auth, so bind it to localhost (LOAN_AGENT_HOST). Put it behind real auth
@@ -38,6 +42,13 @@ try {
   process.exit(1);
 }
 
+// Every call to TypeSafe, Salesforce and Box, and every chat request, for the
+// API inspector and the terminal. Credentials are redacted before storage.
+const calls = new CallLog();
+calls.subscribe(event => {
+  if (event.type === "call" && !event.entry.pending) console.log(formatCallLine(event.entry));
+});
+
 // The browser reaches the server as localhost; these exact callback URLs must
 // be registered on the Salesforce External Client App and the Box integration.
 const baseUrl = `http://localhost:${config.port}`;
@@ -50,6 +61,8 @@ function oauthClient(provider: OAuthProvider, connector: ConnectorConfig): OAuth
     redirectUri: `${baseUrl}${callbackPath(provider)}`,
     loginPageUrl: `${baseUrl}${loginPath(provider)}`,
     store: new FileTokenStore(fileURLToPath(new URL(`../.data/${provider.id}-token.json`, import.meta.url))),
+    // Token requests and MCP calls alike go through this fetch.
+    fetch: loggedFetch(calls, provider.id),
   });
 }
 
@@ -81,6 +94,7 @@ const agent = new LoanAgent(
     apiUrl: config.typesafe.apiUrl,
     model: config.typesafe.model,
     timeoutMs: config.typesafe.timeoutMs,
+    fetch: loggedFetch(calls, "typesafe"),
   }),
   {
     high: config.typesafe.high,
@@ -128,36 +142,98 @@ function requireString(body: Record<string, unknown>, key: string, max = 4000): 
 function cors(res: ServerResponse) {
   res.setHeader("Access-Control-Allow-Origin", config.allowedOrigin);
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "POST, GET, DELETE, OPTIONS");
   res.setHeader("Vary", "Origin");
 }
 
-async function chat(req: IncomingMessage, res: ServerResponse) {
+/** Records a request this server answered, like the outbound calls. */
+function inbound(req: IncomingMessage, url: URL, summary: string, body: Record<string, unknown>) {
+  const entry: CallEntry = {
+    id: calls.nextId(),
+    startedAt: Date.now(),
+    durationMs: 0,
+    pending: true,
+    service: "agent",
+    summary,
+    method: req.method ?? "GET",
+    url: url.href,
+    requestHeaders: redactHeaders(req.headers),
+    requestBody: redactBody(JSON.stringify(body), "application/json"),
+    status: 0,
+    statusText: "",
+    responseHeaders: {},
+  };
+  calls.put(entry);
+  return (res: ServerResponse, responseBody: string) =>
+    calls.put({
+      ...entry,
+      pending: false,
+      durationMs: Date.now() - entry.startedAt,
+      status: res.statusCode,
+      statusText: res.statusMessage ?? "",
+      responseHeaders: redactHeaders(res.getHeaders()),
+      responseBody: truncate(responseBody),
+    });
+}
+
+async function chat(req: IncomingMessage, res: ServerResponse, url: URL) {
   const body = await readJson(req);
   const message = requireString(body, "message");
   const sessionId = requireString(body, "sessionId", 200);
   const loan = typeof body.loan === "string" && body.loan ? body.loan : undefined;
+  const done = inbound(req, url, `chat: ${message.length > 60 ? `${message.slice(0, 60)}…` : message}`, body);
+  const lines: string[] = [];
+  let size = 0;
   res.writeHead(200, { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-store" });
-  await agent.handle(sessionId, message, loan, event => {
-    if (!res.writableEnded) res.write(`${JSON.stringify(event)}\n`);
-  });
-  res.end();
+  try {
+    await agent.handle(sessionId, message, loan, event => {
+      const line = JSON.stringify(event);
+      if (size <= MAX_BODY_CHARS) {
+        lines.push(line);
+        size += line.length;
+      }
+      if (!res.writableEnded) res.write(`${line}\n`);
+    });
+    res.end();
+  } finally {
+    done(res, lines.join("\n"));
+  }
 }
 
-async function resolveAction(req: IncomingMessage, res: ServerResponse) {
+async function resolveAction(req: IncomingMessage, res: ServerResponse, url: URL) {
   const body = await readJson(req);
   const decision = body.decision;
   if (decision !== "approved" && decision !== "rejected") {
     throw new HttpError(400, "decision must be approved or rejected");
   }
   const note = typeof body.note === "string" ? body.note : undefined;
+  const done = inbound(req, url, `resolve: ${decision}`, body);
   try {
     const proposal = await agent.resolve(requireString(body, "sessionId", 200), requireString(body, "proposalId", 200), decision, note);
+    const json = JSON.stringify(proposal);
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(proposal));
+    res.end(json);
+    done(res, json);
   } catch (error) {
-    throw new HttpError(404, error instanceof Error ? error.message : "Unknown proposal");
+    const message = error instanceof Error ? error.message : "Unknown proposal";
+    res.statusCode = 404;
+    done(res, JSON.stringify({ error: message }));
+    throw new HttpError(404, message);
   }
+}
+
+/** Server-sent events: the current log, then every change, until the page closes. */
+function callStream(req: IncomingMessage, res: ServerResponse) {
+  res.writeHead(200, { "Content-Type": "text/event-stream; charset=utf-8", "Cache-Control": "no-store", Connection: "keep-alive" });
+  res.write(`event: snapshot\ndata: ${JSON.stringify(calls.list())}\n\n`);
+  const unsubscribe = calls.subscribe(event => {
+    res.write(event.type === "clear" ? "event: clear\ndata: {}\n\n" : `event: call\ndata: ${JSON.stringify(event.entry)}\n\n`);
+  });
+  const heartbeat = setInterval(() => res.write(": keep-alive\n\n"), 25_000);
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    unsubscribe();
+  });
 }
 
 function page(res: ServerResponse, status: number, title: string, message: string) {
@@ -202,9 +278,16 @@ const server = createServer(async (req, res) => {
     } else if (req.method === "GET" && oauthClients.some(client => url.pathname === callbackPath(client.provider))) {
       await oauthCallback(oauthClients.find(entry => url.pathname === callbackPath(entry.provider))!, url.searchParams, res);
     } else if (req.method === "POST" && url.pathname === "/chat") {
-      await chat(req, res);
+      await chat(req, res, url);
     } else if (req.method === "POST" && url.pathname === "/actions/resolve") {
-      await resolveAction(req, res);
+      await resolveAction(req, res, url);
+    } else if (req.method === "GET" && url.pathname === "/calls") {
+      res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" }).end(JSON.stringify(calls.list()));
+    } else if (req.method === "GET" && url.pathname === "/calls/stream") {
+      callStream(req, res);
+    } else if (req.method === "DELETE" && url.pathname === "/calls") {
+      calls.clear();
+      res.writeHead(204).end();
     } else {
       throw new HttpError(404, "Not found");
     }

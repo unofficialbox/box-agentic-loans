@@ -49,7 +49,7 @@ Salesforce sign-in goes to the org's My Domain (`LOS_MCP_LOGIN_URL`), not `login
 
 ```bash
 npm install
-npm test                 # 63 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
+npm test                 # 72 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
 npm start                # http://LOAN_AGENT_HOST:LOAN_AGENT_PORT
 
 # Without MCP access, TypeSafe still decides but the tools are seeded fixtures:
@@ -69,6 +69,21 @@ Each `/chat` response streams the wire contract described in the agent-chat READ
 
 Events are numbered with `seq`.
 
+### API call log
+
+The agent records every HTTP call it makes and serves, for debugging and demos:
+- **Outbound:** TypeSafe System One requests, Salesforce and Box MCP traffic (`initialize`, `tools/call <tool>`, the event stream), and OAuth token exchanges and refreshes.
+- **Inbound:** each `POST /chat` (with the NDJSON events it streamed back) and `POST /actions/resolve`.
+
+Each entry has the method, URL, status, timing, and request and response headers and bodies. Credentials are removed before anything is stored: `Authorization` headers, cookies, and any `access_token`, `refresh_token`, `client_secret`, `code` or `code_verifier` value. The log is in memory only (the latest 300 calls) and is cleared on restart.
+
+Where to see it:
+- **Terminal:** one line per finished call, e.g. `[api] 200    41ms  box        POST   tools/call search_files_metadata`.
+- **Chat UI:** the **API inspector** shelf at the bottom of the Loan Copilot page (live mode only).
+- **HTTP:** `GET /calls` (JSON, newest first), `GET /calls/stream` (server-sent events: a snapshot, then each call), `DELETE /calls` (clear).
+
+The log holds loan data from your org, so keep the server on localhost.
+
 ## Layout
 
 | File | Role |
@@ -80,7 +95,8 @@ Events are numbered with `seq`.
 | `src/los.ts` | Parsers for the LOS invocable actions' output summaries. |
 | `src/mcpTools.ts` | Box and LOS over MCP Streamable HTTP. |
 | `src/fixtures.ts` | Seeded Harborview data in the real response formats. |
-| `src/server.ts` | `POST /chat` (NDJSON), `POST /actions/resolve`, `GET /health`, and the OAuth sign-in routes for both connectors. |
+| `src/server.ts` | `POST /chat` (NDJSON), `POST /actions/resolve`, `GET /health`, the OAuth sign-in routes for both connectors, and the `/calls` log endpoints. |
+| `src/callLog.ts` | The API call log: a logging `fetch` for every outbound call, credential redaction, and the terminal line. |
 | `src/oauth.ts` | OAuth sign-in (Salesforce with PKCE, Box), token files, and the refreshing fetch for both MCP connections. |
 
 ## Limits
