@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { AgentEvent, Proposal } from "../src/contract.js";
 import { LoanAgent } from "../src/engine.js";
 import { FixtureToolGateway } from "../src/fixtures.js";
+import { ActionRequiredError } from "../src/tools.js";
 import { TypeSafeError, type ChoiceDecision, type Decider } from "../src/typesafe.js";
 import { INTENTS, type Intent } from "../src/understand.js";
 
@@ -47,8 +48,6 @@ function setup(options: { confidence?: number; signer?: string } = {}) {
   const agent = new LoanAgent(tools, decider, {
     high: 0.85,
     medium: 0.5,
-    boxEnterpriseId: "12345",
-    docgenTemplateFileId: "700001",
     defaultSigner: options.signer ? { email: options.signer } : undefined,
     now: () => new Date("2026-09-23T12:00:00Z"),
   });
@@ -237,6 +236,19 @@ describe("decision gating", () => {
     const { agent } = setup();
     const turn = await send(agent, CLICKPATH[1][0]);
     expect(turn.text).toContain("Which loan?");
+  });
+});
+
+describe("tools that need a person first", () => {
+  it("passes the sign-in instruction through and waits for the officer", async () => {
+    const tools = new FixtureToolGateway();
+    tools.listLoans = async () => {
+      throw new ActionRequiredError("Salesforce isn't connected. Sign in at http://localhost:8787/oauth/salesforce/login.");
+    };
+    const agent = new LoanAgent(tools, new StubDecider({ "list loans": "list_loans" }), { high: 0.85, medium: 0.5 });
+    const turn = await send(agent, "list loans");
+    expect(turn.text).toBe("Salesforce isn't connected. Sign in at http://localhost:8787/oauth/salesforce/login.");
+    expect(turn.events.find(event => event.kind === "done")).toMatchObject({ status: "needs_input" });
   });
 });
 

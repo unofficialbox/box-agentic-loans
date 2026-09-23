@@ -17,7 +17,8 @@ Have administrators confirm licences; a successful CLI login proves nothing abou
 ## 2. Local configuration
 
 ```bash
-cp .env.sample .env
+cp -n .env.sample .env                                          # never overwrites an existing .env
+python3 scripts/sync_env.py --write                             # adds new variables, keeps your values
 cp config/runtime/demo-environment.example.json config/runtime/demo-environment.json
 python3 scripts/setup_los_dev.py                                  # dependencies and runtime config
 python3 scripts/setup_los_dev.py --automated --from-current-clis  # or: prefill from logged-in CLIs
@@ -127,7 +128,7 @@ The hosted server `LOSLoanTools` deploys with the metadata but is inert until th
 2. **Deploy the External Client App.** `externalClientApps/LOS_Claude_MCP` with its OAuth settings (`MCP` and `RefreshToken` scopes), global OAuth set (callback `https://claude.ai/api/mcp/auth_callback`, PKCE required, consumer secret optional, named-user JWT tokens) and policy (admin pre-authorized users). Read the consumer key from Setup → External Client App Manager → LOS Claude MCP → Settings → OAuth; never retrieve `ExtlClntAppGlobalOauthSettings` into source, it carries the secret.
 3. **Grant the user.** Assign `LOS_MCP_Client` to every presenter, and add them to the app's pre-authorized profiles or permission sets (Setup → External Client App Manager → LOS Claude MCP → Policies).
 
-Then each presenter connects their own client by following [docs/CLIENT-SETUP.md](CLIENT-SETUP.md), written for non-developers. Before they do, add that client's callback URL to the app's global OAuth set (`https://claude.ai/api/mcp/auth_callback` for Claude, `https://oauth2.slack.com/external/auth/callback` for Slack, the URL shown in Quick's or ChatGPT's connector dialog for those), and in the Box Admin Console → Integrations → Box MCP Server enable read and write tools for Box Doc Gen and Box AI (off by default); a Box token issued before that change keeps the old grants and every Doc Gen call answers "Access denied" until the presenter reconnects.
+Then each presenter connects their own client by following [docs/CLIENT-SETUP.md](CLIENT-SETUP.md), written for non-developers. Before they do, add that client's callback URL to the app's global OAuth set (`https://claude.ai/api/mcp/auth_callback` for Claude, `https://oauth2.slack.com/external/auth/callback` for Slack, the URL shown in Quick's or ChatGPT's connector dialog for those, `http://localhost:8787/oauth/salesforce/callback` for the `apps/loan-agent` backend), and in the Box Admin Console → Integrations → Box MCP Server enable read and write tools for Box Doc Gen and Box AI (off by default); a Box token issued before that change keeps the old grants and every Doc Gen call answers "Access denied" until the presenter reconnects.
 
 Expect: the connector lists seven tools (`listLoans`, `getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `classifyDocument`, `approveDocuments`, `prepareSignatureRequest`). Beat 2 uses Box MCP `query_metadata` directly.
 

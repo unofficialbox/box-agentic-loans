@@ -1,8 +1,16 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { loadRootEnv, readConfig } from "./config.js";
+import { fileURLToPath } from "node:url";
+import { ConfigError, loadRootEnv, readConfig, type AgentConfig } from "./config.js";
 import { LoanAgent } from "./engine.js";
 import { FixtureToolGateway } from "./fixtures.js";
-import { McpToolGateway } from "./mcpTools.js";
+import { McpToolGateway, bearerFetch } from "./mcpTools.js";
+import {
+  CALLBACK_PATH,
+  FileTokenStore,
+  LOGIN_PATH,
+  OAuthError,
+  SalesforceOAuth,
+} from "./salesforceOAuth.js";
 import type { ToolGateway } from "./tools.js";
 import { TypeSafeClient } from "./typesafe.js";
 
@@ -10,31 +18,42 @@ import { TypeSafeClient } from "./typesafe.js";
  * POST /chat             {message, sessionId, loan?} → NDJSON AgentEvent stream
  * POST /actions/resolve  {proposalId, decision, note?, sessionId} → Proposal
  * GET  /health
+ * GET  /oauth/salesforce/login     → redirect to Salesforce sign-in (PKCE)
+ * GET  /oauth/salesforce/callback  → Salesforce redirects back here
  *
  * The bearer token is the chat session ID, not a credential: this server has
- * no user auth, so it binds to localhost by default. Put it behind real auth
+ * no user auth, so bind it to localhost (LOAN_AGENT_HOST). Put it behind real auth
  * before exposing it.
  */
 
 loadRootEnv();
-const config = readConfig();
-
-if (!config.typesafe.apiKey) {
-  console.error("TYPESAFE_API_KEY is not set. Add it to the repo-root .env (see .env.sample).");
+let config: AgentConfig;
+try {
+  config = readConfig();
+} catch (error) {
+  console.error(error instanceof ConfigError ? error.message : error);
   process.exit(1);
 }
 
+// The browser reaches the server as localhost; this exact URL must be a
+// callback URL on the "LOS Claude MCP" External Client App.
+const baseUrl = `http://localhost:${config.port}`;
+const salesforce = config.losMcp
+  ? new SalesforceOAuth({
+      clientId: config.losMcp.clientId,
+      redirectUri: `${baseUrl}${CALLBACK_PATH}`,
+      loginPageUrl: `${baseUrl}${LOGIN_PATH}`,
+      store: new FileTokenStore(fileURLToPath(new URL("../.data/salesforce-token.json", import.meta.url))),
+    })
+  : undefined;
+
 function tools(): ToolGateway {
-  if (config.fixtures) {
+  if (!config.losMcp || !config.boxMcp || !salesforce) {
     return new FixtureToolGateway();
   }
-  if (!config.losMcp.url || !config.boxMcp.url) {
-    console.error("Set LOS_MCP_URL and BOX_MCP_URL, or LOAN_AGENT_FIXTURES=1 to use seeded fixtures.");
-    process.exit(1);
-  }
   return new McpToolGateway(
-    { url: config.losMcp.url, token: config.losMcp.token },
-    { url: config.boxMcp.url, token: config.boxMcp.token },
+    { url: config.losMcp.url, fetch: salesforce.authorizedFetch },
+    { url: config.boxMcp.url, fetch: bearerFetch(config.boxMcp.token) },
     config.boxEnterpriseId,
     config.docgenTemplateFileId
   );
@@ -51,8 +70,6 @@ const agent = new LoanAgent(
   {
     high: config.typesafe.high,
     medium: config.typesafe.medium,
-    boxEnterpriseId: config.boxEnterpriseId,
-    docgenTemplateFileId: config.docgenTemplateFileId,
     defaultSigner: config.defaultSigner,
   }
 );
@@ -128,16 +145,48 @@ async function resolveAction(req: IncomingMessage, res: ServerResponse) {
   }
 }
 
+function page(res: ServerResponse, status: number, title: string, message: string) {
+  const escape = (text: string) =>
+    text.replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);
+  res.writeHead(status, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+  res.end(
+    `<!doctype html><meta charset="utf-8"><title>${escape(title)}</title>` +
+      `<body style="font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem">` +
+      `<h1 style="font-size:1.25rem">${escape(title)}</h1><p>${escape(message)}</p></body>`
+  );
+}
+
+async function oauthCallback(oauth: SalesforceOAuth, params: URLSearchParams, res: ServerResponse) {
+  try {
+    await oauth.completeLogin(params);
+    page(res, 200, "Salesforce connected", "The loan agent can now call the LOS tools. You can close this tab.");
+  } catch (error) {
+    if (!(error instanceof OAuthError)) throw error;
+    page(res, 400, "Salesforce sign-in failed", error.message);
+  }
+}
+
 const server = createServer(async (req, res) => {
   cors(res);
   try {
+    const url = new URL(req.url ?? "/", baseUrl);
     if (req.method === "OPTIONS") {
       res.writeHead(204).end();
-    } else if (req.method === "GET" && req.url === "/health") {
-      res.writeHead(200, { "Content-Type": "application/json" }).end(JSON.stringify({ ok: true, fixtures: config.fixtures }));
-    } else if (req.method === "POST" && req.url === "/chat") {
+    } else if (req.method === "GET" && url.pathname === "/health") {
+      res.writeHead(200, { "Content-Type": "application/json" }).end(
+        JSON.stringify({
+          ok: true,
+          fixtures: config.fixtures,
+          salesforce: salesforce ? (salesforce.connected ? "connected" : "not_connected") : "fixtures",
+        })
+      );
+    } else if (req.method === "GET" && url.pathname === LOGIN_PATH && salesforce) {
+      res.writeHead(302, { Location: salesforce.beginLogin(), "Cache-Control": "no-store" }).end();
+    } else if (req.method === "GET" && url.pathname === CALLBACK_PATH && salesforce) {
+      await oauthCallback(salesforce, url.searchParams, res);
+    } else if (req.method === "POST" && url.pathname === "/chat") {
       await chat(req, res);
-    } else if (req.method === "POST" && req.url === "/actions/resolve") {
+    } else if (req.method === "POST" && url.pathname === "/actions/resolve") {
       await resolveAction(req, res);
     } else {
       throw new HttpError(404, "Not found");
@@ -158,4 +207,10 @@ server.listen(config.port, config.host, () => {
   console.log(
     `Loan agent on http://${config.host}:${config.port} (${config.fixtures ? "fixtures" : "Box + LOS MCP"}, TypeSafe ${config.typesafe.model})`
   );
+  if (salesforce) {
+    console.log(`Salesforce callback URL (add to the LOS Claude MCP app): ${baseUrl}${CALLBACK_PATH}`);
+    if (!salesforce.connected) {
+      console.log(`Salesforce is not connected yet. Sign in: ${baseUrl}${LOGIN_PATH}`);
+    }
+  }
 });

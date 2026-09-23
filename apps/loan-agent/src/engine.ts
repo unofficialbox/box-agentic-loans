@@ -10,7 +10,7 @@ import {
   type Terms,
 } from "./los.js";
 import { POLICIES, evaluateTerms, money, type PolicyFinding } from "./policy.js";
-import type { CovenantFields, ToolGateway } from "./tools.js";
+import { ActionRequiredError, type CovenantFields, type ToolGateway } from "./tools.js";
 import { TypeSafeError, runnerUp, type Decider } from "./typesafe.js";
 import {
   INTENTS,
@@ -45,8 +45,6 @@ export interface AgentOptions {
   high: number;
   /** Below this the agent asks instead of acting. */
   medium: number;
-  boxEnterpriseId?: string;
-  docgenTemplateFileId?: string;
   defaultSigner?: { name?: string; email: string };
   now?: () => Date;
 }
@@ -257,7 +255,7 @@ export class LoanAgent {
       if (turn.proposed) status = "needs_input";
     } catch (error) {
       turn.finishPlan(false);
-      if (error instanceof UserFacingError) {
+      if (error instanceof UserFacingError || error instanceof ActionRequiredError) {
         status = "needs_input";
         turn.say([error.message]);
       } else if (error instanceof TypeSafeError) {
@@ -359,11 +357,6 @@ export class LoanAgent {
     const loan = await this.resolveLoan(turn, session, message, loanHint, { preferLatest: true });
     const risk = riskLevel(message);
     const lines = [`Latest loan: ${loanLine(loan)}`];
-    if (!this.options.boxEnterpriseId) {
-      turn.note("Box · metadata query", "BOX_ENTERPRISE_ID is not set", "failed");
-      turn.say([...lines, "", "I can't search losDocument metadata until BOX_ENTERPRISE_ID is configured."]);
-      return;
-    }
     const hits = await turn.step("Box · search_files_metadata", `losDocument · policyRisk = '${risk}'`, () =>
       this.tools.findByPolicyRisk(requireFolder(loan), risk)
     );
@@ -534,12 +527,6 @@ export class LoanAgent {
   private async generateLetter(turn: Turn, session: Session, sessionId: string, message: string, loanHint?: string) {
     const loan = await this.resolveLoan(turn, session, message, loanHint);
     const loanId = requireLoanId(loan);
-    const templateId = this.options.docgenTemplateFileId;
-    if (!templateId) {
-      turn.note("Box Doc Gen", "LOS_DOCGEN_TEMPLATE_FILE_ID is not set", "failed");
-      turn.say(["I can't generate the letter until LOS_DOCGEN_TEMPLATE_FILE_ID is configured."]);
-      return;
-    }
     const extraction = await this.extract(turn, session, loan, "term sheet");
     const findings = session.findings ?? evaluateTerms(extraction.result.terms, extraction.covenants);
     session.findings = findings;

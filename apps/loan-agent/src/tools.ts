@@ -1,5 +1,8 @@
 import type { Extraction, LoanPackage, LoanRow, Terms } from "./los.js";
 
+/** A tool can't run until a person does something (e.g. signs in); the message says what. */
+export class ActionRequiredError extends Error {}
+
 export interface MetadataHit {
   fileId: string;
   name: string;

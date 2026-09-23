@@ -162,8 +162,8 @@ export interface BoxWorkspaceToken {
  * comes back in the response because the caller does not know it up front.
  *
  * `folderId` remains for pages with no record context and for the local harness. Opened
- * with neither, the default `demo-workspace` is not numeric and the endpoint rejects it
- * -- which is now a visible failure rather than the quiet trigger for a fixture.
+ * with neither, the folder is empty and the endpoint rejects it -- a visible failure
+ * rather than the quiet trigger for a fixture.
  */
 export async function fetchDownscopedBoxToken(
   context: { folderId: string; salesforceRecordId?: string },
