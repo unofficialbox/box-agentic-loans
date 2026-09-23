@@ -34,14 +34,14 @@ The agent signs in to both MCP servers itself with the OAuth 2.0 authorization-c
 
 | Connector | `.env` settings | Where the client ID and secret come from | Callback URL to register | Sign in at |
 |---|---|---|---|---|
-| Salesforce LOS tools | `LOS_MCP_URL`, `LOS_MCP_CLIENT_ID`, `LOS_MCP_CLIENT_SECRET` | Setup → External Client App Manager → **LOS Claude MCP** → Settings → OAuth (consumer key and secret) | `http://localhost:<LOAN_AGENT_PORT>/oauth/salesforce/callback` | `/oauth/salesforce/login` |
+| Salesforce LOS tools | `LOS_MCP_URL`, `LOS_MCP_CLIENT_ID`, `LOS_MCP_CLIENT_SECRET`, `LOS_MCP_LOGIN_URL` | Setup → External Client App Manager → **LOS Claude MCP** → Settings → OAuth (consumer key and secret); `LOS_MCP_LOGIN_URL` is the org's My Domain URL (Setup → My Domain), e.g. `https://<my-domain>.my.salesforce.com` | `http://localhost:<LOAN_AGENT_PORT>/oauth/salesforce/callback` | `/oauth/salesforce/login` |
 | Box MCP server | `BOX_MCP_URL`, `BOX_MCP_CLIENT_ID`, `BOX_MCP_CLIENT_SECRET` | Box Admin Console → Integrations → **Box MCP Server** → Integration Credentials ([guide](https://developer.box.com/guides/box-mcp/setup)) | `http://localhost:<LOAN_AGENT_PORT>/oauth/box/callback` | `/oauth/box/login` |
 
 1. **Register the callback URL** on the app in the table. The server prints each exact URL at startup.
 2. **Set the credentials** in `.env`. For Salesforce, the signing-in user needs the `LOS_MCP_Client` permission set and must be pre-authorized on the app. For Box, enable read and write tools for Box AI and Box Doc Gen on the Box MCP Server integration; the agent asks for `root_readwrite ai.readwrite docgen.readwrite`.
 3. **Sign in.** Start the server and open each login link, e.g. `http://localhost:<LOAN_AGENT_PORT>/oauth/box/login`.
 
-Salesforce uses PKCE as well as the client secret. How the tokens are handled:
+Salesforce sign-in goes to the org's My Domain (`LOS_MCP_LOGIN_URL`), not `login.salesforce.com`, and uses PKCE as well as the client secret. How the tokens are handled:
 - **Stored on disk.** They go in `apps/loan-agent/.data/salesforce-token.json` and `.data/box-token.json`, which are owner-only and gitignored, so a restart doesn't need a new sign-in.
 - **Renewed automatically.** The access token is refreshed when the MCP server answers 401. Box rotates the refresh token on every refresh; the new one is saved.
 - **Revoked refresh token.** The agent forgets it and asks you to sign in again.
@@ -49,7 +49,7 @@ Salesforce uses PKCE as well as the client secret. How the tokens are handled:
 
 ```bash
 npm install
-npm test                 # 62 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
+npm test                 # 63 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
 npm start                # http://LOAN_AGENT_HOST:LOAN_AGENT_PORT
 
 # Without MCP access, TypeSafe still decides but the tools are seeded fixtures:

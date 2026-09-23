@@ -44,6 +44,22 @@ class EnvReader {
     return value;
   }
 
+  /** An https origin (scheme and host, no path). */
+  httpsOrigin(name: string): string {
+    const raw = this.required(name);
+    if (!raw) return "";
+    try {
+      const url = new URL(raw);
+      if (url.protocol === "https:" && url.pathname === "/" && !url.search && !url.hash) {
+        return url.origin;
+      }
+    } catch {
+      // Reported below.
+    }
+    this.problems.push(`${name} must be an https URL with no path: the Current My Domain URL from Setup → My Domain`);
+    return "";
+  }
+
   check(): void {
     if (this.problems.length) {
       throw new ConfigError(
@@ -70,6 +86,11 @@ export interface ConnectorConfig {
   clientSecret: string;
 }
 
+export interface SalesforceConnectorConfig extends ConnectorConfig {
+  /** The org's My Domain login URL; sign-in goes to <loginUrl>/services/oauth2/…. */
+  loginUrl: string;
+}
+
 export interface AgentConfig {
   port: number;
   host: string;
@@ -78,7 +99,7 @@ export interface AgentConfig {
   fixtures: boolean;
   typesafe: TypeSafeConfig;
   /** Unset in fixtures mode. Each connector is signed in through OAuth. */
-  losMcp?: ConnectorConfig;
+  losMcp?: SalesforceConnectorConfig;
   boxMcp?: ConnectorConfig;
   boxEnterpriseId: string;
   docgenTemplateFileId: string;
@@ -121,7 +142,12 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): AgentConfig {
     fixtures,
     typesafe: typesafe(read),
     // Consumer key and secret of the "LOS Claude MCP" External Client App.
-    losMcp: connector("LOS_MCP_URL", "LOS_MCP_CLIENT_ID", "LOS_MCP_CLIENT_SECRET"),
+    losMcp: fixtures
+      ? undefined
+      : {
+          ...connector("LOS_MCP_URL", "LOS_MCP_CLIENT_ID", "LOS_MCP_CLIENT_SECRET")!,
+          loginUrl: read.httpsOrigin("LOS_MCP_LOGIN_URL"),
+        },
     // Integration credentials from Admin Console → Integrations → Box MCP Server.
     boxMcp: connector("BOX_MCP_URL", "BOX_MCP_CLIENT_ID", "BOX_MCP_CLIENT_SECRET"),
     boxEnterpriseId: read.required("BOX_ENTERPRISE_ID"),

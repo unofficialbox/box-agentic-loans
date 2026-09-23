@@ -10,7 +10,7 @@ import {
   NotConnectedError,
   OAuthClient,
   OAuthError,
-  SALESFORCE,
+  salesforce,
   callbackPath,
   loginPath,
   type FetchLike,
@@ -18,6 +18,8 @@ import {
 } from "../src/oauth.js";
 
 const BASE = "http://localhost:8787";
+const MY_DOMAIN = "https://example.my.salesforce.com";
+const SALESFORCE = salesforce(MY_DOMAIN);
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -56,10 +58,10 @@ describe("routes", () => {
 });
 
 describe("Salesforce sign-in", () => {
-  it("builds a PKCE authorize URL for the LOS app", () => {
+  it("builds a PKCE authorize URL for the LOS app on the org's My Domain", () => {
     const { oauth } = setup(vi.fn());
     const url = new URL(oauth.beginLogin());
-    expect(url.origin + url.pathname).toBe("https://login.salesforce.com/services/oauth2/authorize");
+    expect(url.origin + url.pathname).toBe(`${MY_DOMAIN}/services/oauth2/authorize`);
     expect(Object.fromEntries(url.searchParams)).toMatchObject({
       response_type: "code",
       client_id: "example-client",
@@ -77,7 +79,7 @@ describe("Salesforce sign-in", () => {
     const authorize = new URL(oauth.beginLogin());
     await oauth.completeLogin(new URLSearchParams({ code: "auth-code", state: authorize.searchParams.get("state")! }));
 
-    expect(String(fetchImpl.mock.calls[0][0])).toBe("https://login.salesforce.com/services/oauth2/token");
+    expect(String(fetchImpl.mock.calls[0][0])).toBe(`${MY_DOMAIN}/services/oauth2/token`);
     const form = formOf(fetchImpl.mock.calls[0]);
     expect(form.get("grant_type")).toBe("authorization_code");
     expect(form.get("redirect_uri")).toBe(`${BASE}/oauth/salesforce/callback`);

@@ -22,16 +22,17 @@ export interface OAuthProvider {
 
 /**
  * The "LOS Claude MCP" External Client App: PKCE required, refresh tokens on.
+ * Sign-in goes through the org's My Domain (loginUrl, an https origin).
  * Scope names as Setup shows them (metadata: MCP, RefreshToken).
  */
-export const SALESFORCE: OAuthProvider = {
+export const salesforce = (loginUrl: string): OAuthProvider => ({
   id: "salesforce",
   label: "Salesforce",
-  authorizeUrl: "https://login.salesforce.com/services/oauth2/authorize",
-  tokenUrl: "https://login.salesforce.com/services/oauth2/token",
+  authorizeUrl: `${loginUrl}/services/oauth2/authorize`,
+  tokenUrl: `${loginUrl}/services/oauth2/token`,
   scope: "mcp_api refresh_token",
   pkce: true,
-};
+});
 
 /**
  * Box MCP Server integration credentials (Admin Console → Integrations → Box

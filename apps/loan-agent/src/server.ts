@@ -9,7 +9,7 @@ import {
   FileTokenStore,
   OAuthClient,
   OAuthError,
-  SALESFORCE,
+  salesforce,
   callbackPath,
   loginPath,
   type OAuthProvider,
@@ -56,7 +56,7 @@ function oauthClient(provider: OAuthProvider, connector: ConnectorConfig): OAuth
 const connectors =
   config.losMcp && config.boxMcp
     ? {
-        salesforce: { config: config.losMcp, oauth: oauthClient(SALESFORCE, config.losMcp) },
+        salesforce: { config: config.losMcp, oauth: oauthClient(salesforce(config.losMcp.loginUrl), config.losMcp) },
         box: { config: config.boxMcp, oauth: oauthClient(BOX, config.boxMcp) },
       }
     : undefined;
