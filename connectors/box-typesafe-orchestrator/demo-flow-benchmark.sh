@@ -4,7 +4,17 @@
 
 set -e
 
-TYPESAFE_KEY="${TYPESAFE_API_KEY:-apikey_2177853eb42e0d54c2cb5f148d156e5ea34_2a371a210e195002e696ff68282229e4338a27f384d84a9b8ba75342e748ea0d}"
+# Load keys from the repo-root .env (gitignored; copy from .env.sample).
+ENV_FILE="$(cd "$(dirname "$0")/../.." && pwd)/.env"
+if [ -f "$ENV_FILE" ]; then
+    set -a; . "$ENV_FILE"; set +a
+fi
+
+if [ -z "$TYPESAFE_API_KEY" ]; then
+    echo "❌ Error: TYPESAFE_API_KEY not set. Add it to .env (see .env.sample)."
+    exit 1
+fi
+TYPESAFE_KEY="$TYPESAFE_API_KEY"
 
 echo ""
 echo "🎬 Demo Flow Performance Benchmark"

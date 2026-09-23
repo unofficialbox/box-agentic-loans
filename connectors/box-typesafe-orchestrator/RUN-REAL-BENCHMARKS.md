@@ -44,10 +44,11 @@ Or if you're running from Claude Desktop, you already have access to Claude API.
 
 ## Step 2: Set Environment Variables
 
-```bash
-export TYPESAFE_API_KEY="apikey_2177853eb42e0d54c2cb5f148d156e5ea34_2a371a210e195002e696ff68282229e4338a27f384d84a9b8ba75342e748ea0d"
+Add both keys to the repo-root `.env` (gitignored; copy from `.env.sample`). The scripts load it automatically:
 
-export ANTHROPIC_API_KEY="your_anthropic_key_here"
+```bash
+TYPESAFE_API_KEY=<your TypeSafe key>
+ANTHROPIC_API_KEY=<your Anthropic key>
 ```
 
 ---
@@ -164,7 +165,7 @@ Then divide total time by 30 to get average latency.
 ## Troubleshooting
 
 ### "ANTHROPIC_API_KEY not set"
-Set it with: `export ANTHROPIC_API_KEY=your_key_here`
+Set it with: `export ANTHROPIC_API_KEY=<your-anthropic-key>`
 
 ### "curl: command not found"
 Install curl: `brew install curl` (macOS)
@@ -209,6 +210,6 @@ Then share `real-benchmark-results.txt` with the team.
 Ready to run? Just execute:
 
 ```bash
-export ANTHROPIC_API_KEY="your_key_here"
+export ANTHROPIC_API_KEY="<your-anthropic-key>"
 ./side-by-side-comparison.sh
 ```

@@ -28,7 +28,7 @@ npm run build
 ### Run Full Benchmark Suite
 
 ```bash
-export TYPESAFE_API_KEY=your_key_here
+export TYPESAFE_API_KEY=<your-typesafe-key>  # or add it to the repo-root .env
 npm run benchmark
 ```
 
@@ -340,7 +340,7 @@ TypeSafe orchestrator (Node.js process):
    cd connectors/box-typesafe-orchestrator
    npm install
    npm run build
-   export TYPESAFE_API_KEY=your_key_here
+   export TYPESAFE_API_KEY=<your-typesafe-key>  # or add it to the repo-root .env
    ```
 
 2. **Run benchmarks**:

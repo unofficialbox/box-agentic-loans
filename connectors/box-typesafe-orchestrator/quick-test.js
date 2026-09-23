@@ -4,9 +4,21 @@
  * Tests real API performance without TypeScript compilation
  */
 
+import { fileURLToPath } from 'node:url';
 import { TypeSafeClient, choice, noul, score } from 'typesafe-sdk';
 
-const apiKey = process.env.TYPESAFE_API_KEY || 'apikey_2177853eb42e0d54c2cb5f148d156e5ea34_2a371a210e195002e696ff68282229e4338a27f384d84a9b8ba75342e748ea0d';
+// Load keys from the repo-root .env (gitignored; copy from .env.sample).
+try {
+  process.loadEnvFile(fileURLToPath(new URL('../../.env', import.meta.url)));
+} catch {
+  // No .env file; fall back to the shell environment.
+}
+
+const apiKey = process.env.TYPESAFE_API_KEY;
+if (!apiKey) {
+  console.error('❌ TYPESAFE_API_KEY not set. Add it to .env (see .env.sample).');
+  process.exit(1);
+}
 
 async function runQuickBenchmark() {
   console.log('\n🚀 TypeSafe Real API Benchmark\n');

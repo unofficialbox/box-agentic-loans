@@ -178,7 +178,7 @@ npm install
 npm run build
 
 # Run benchmarks
-export TYPESAFE_API_KEY=your_key_here
+export TYPESAFE_API_KEY=<your-typesafe-key>
 npm run benchmark
 ```
 
@@ -217,7 +217,7 @@ Add to `claude_desktop_config.json`:
       "command": "node",
       "args": ["path/to/box-typesafe-orchestrator/dist/index.js"],
       "env": {
-        "TYPESAFE_API_KEY": "your_key_here"
+        "TYPESAFE_API_KEY": "<your-typesafe-key>"
       }
     }
   }
@@ -353,7 +353,6 @@ connectors/box-typesafe-orchestrator/
 ├─ BENCHMARKS.md (540 lines)
 ├─ STANDALONE-REPO.md (230 lines)
 ├─ benchmark.ts (runner)
-├─ .env.example
 └─ .gitignore
 
 docs/

@@ -424,7 +424,8 @@ Replace `DemoTransport` with `MCPTransport` that:
 **Example:**
 ```bash
 # .env.local
-VITE_TYPESAFE_API_KEY=apikey_2177853eb42e0d54c2cb5f148d156e5ea34_2a371a210e195002e696ff68282229e4338a27f384d84a9b8ba75342e748ea0d
+# TYPESAFE_API_KEY lives in the repo-root .env (see .env.sample), server-side only.
+# Never add it as a VITE_ variable: Vite inlines those into the browser bundle.
 VITE_BOX_MCP_URL=http://localhost:3000
 VITE_LOS_MCP_URL=http://localhost:3001
 ```

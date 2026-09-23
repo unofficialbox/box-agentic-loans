@@ -22,11 +22,11 @@ npm install
 ### 2. Configure Environment
 
 ```bash
-# Copy example
-cp .env.example .env
+# From the repo root, copy the sample (.env is gitignored)
+cp .env.sample .env
 
 # Edit .env
-TYPESAFE_API_KEY=your_key_here
+TYPESAFE_API_KEY=<your-typesafe-key>
 TYPESAFE_MODEL=jev-latest
 
 # Confidence thresholds (optional)
@@ -89,7 +89,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
         "/Users/kadams/Developer/partner-integrations/salesforce/dreamforce-demos/box-claudeforce-loans/connectors/box-typesafe-orchestrator/dist/index.js"
       ],
       "env": {
-        "TYPESAFE_API_KEY": "your_key_here"
+        "TYPESAFE_API_KEY": "<your-typesafe-key>"
       }
     }
   }
@@ -280,10 +280,10 @@ ${result.confidence.autoProcess ? '✓ Auto-processed' : '⚠ Needs review'}
 echo $TYPESAFE_API_KEY
 
 # If empty, set it
-export TYPESAFE_API_KEY=your_key_here
+export TYPESAFE_API_KEY=<your-typesafe-key>
 
 # Or add to .env
-echo "TYPESAFE_API_KEY=your_key_here" >> .env
+echo "TYPESAFE_API_KEY=<your-typesafe-key>" >> .env
 ```
 
 ### "Module not found: typesafe-sdk"

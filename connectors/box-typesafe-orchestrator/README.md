@@ -29,7 +29,7 @@ pnpm install
 
 ## Configuration
 
-1. Copy `.env.example` to `.env`
+1. From the repo root, copy `.env.sample` to `.env` (gitignored)
 2. Add your TypeSafe API key:
    ```bash
    TYPESAFE_API_KEY=your_key_from_console.typesafe.ai

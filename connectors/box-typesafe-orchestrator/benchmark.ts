@@ -23,7 +23,7 @@ async function main() {
   const config = loadConfigFromEnv();
   if (!config.apiKey) {
     console.error('❌ Error: TYPESAFE_API_KEY environment variable not set');
-    console.error('   Set it with: export TYPESAFE_API_KEY=your_key_here');
+    console.error('   Add TYPESAFE_API_KEY to the repo-root .env (see .env.sample)');
     process.exit(1);
   }
 
