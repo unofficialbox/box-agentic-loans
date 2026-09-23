@@ -9,6 +9,7 @@ import type {
 import type { RunStep, RunTrace } from "@unofficialbox/box-open-elements";
 import { STARTER_PROMPTS } from "../prompts";
 import {
+  agentBaseUrl,
   createTransport,
   type LoanContext,
   type PromptOption,
@@ -16,6 +17,7 @@ import {
   type TraceEvent,
   type TurnSummary,
 } from "../transport";
+import { ApiInspector } from "./ApiInspector";
 import { PromptLibrary } from "./PromptLibrary";
 import "./LoanCopilot.css";
 
@@ -146,6 +148,7 @@ export function LoanCopilot({ loan }: { loan?: string }) {
   };
 
   const isDemo = transport.mode === "demo";
+  const baseUrl = agentBaseUrl();
   const started = messages.length > 0;
   const shownLoan = isDemo ? DEMO_LOAN : (loanContext ?? (loan ? { loanId: loan } : null));
   const chips = nextOptions ?? STARTERS;
@@ -283,6 +286,8 @@ export function LoanCopilot({ loan }: { loan?: string }) {
           </section>
         </aside>
       </main>
+
+      {!isDemo && baseUrl && <ApiInspector baseUrl={baseUrl} />}
 
       <PromptLibrary open={libraryOpen} onClose={() => setLibraryOpen(false)} onPick={ask} />
     </div>

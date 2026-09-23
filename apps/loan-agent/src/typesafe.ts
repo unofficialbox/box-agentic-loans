@@ -8,6 +8,8 @@
  * branch the engine can take is a key we wrote.
  */
 
+import type { FetchLike } from "./oauth.js";
+
 export interface ChoiceDecision<K extends string> {
   choice: K;
   confidence: number;
@@ -39,7 +41,7 @@ export class TypeSafeClient implements Decider {
   private readonly cache = new Map<string, Promise<ChoiceDecision<string>>>();
 
   constructor(
-    private readonly options: { apiKey: string; apiUrl: string; model: string; timeoutMs: number }
+    private readonly options: { apiKey: string; apiUrl: string; model: string; timeoutMs: number; fetch?: FetchLike }
   ) {}
 
   choose<K extends string>(
@@ -62,7 +64,7 @@ export class TypeSafeClient implements Decider {
     instructions: string,
     criteria: Record<K, string>
   ): Promise<ChoiceDecision<K>> {
-    const response = await fetch(this.options.apiUrl, {
+    const response = await (this.options.fetch ?? fetch)(this.options.apiUrl, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${this.options.apiKey}`,
