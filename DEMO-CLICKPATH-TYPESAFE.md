@@ -413,4 +413,4 @@ Add:
 - **[TypeSafe Integration Plan](TYPESAFE-INTEGRATION-PLAN.md)** - Complete implementation guide
 - **[Architecture Summary](docs/TYPESAFE-ARCHITECTURE-SUMMARY.md)** - Simple patterns
 - **[Separation of Concerns](docs/TYPESAFE-SEPARATION-OF-CONCERNS.md)** - Component boundaries
-- **[box-typesafe-orchestrator](connectors/box-typesafe-orchestrator/)** - Package source
+- **[loan-agent](apps/loan-agent/README.md)** - TypeSafe-driven backend (no LLM)

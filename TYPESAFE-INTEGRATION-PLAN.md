@@ -1,5 +1,7 @@
 # TypeSafe.ai Integration - Execution Plan
 
+> **Superseded.** The `TypeSafeOrchestrator` package this plan describes was removed. The working implementation is [`apps/loan-agent`](apps/loan-agent/README.md), which calls TypeSafe over REST. Do not `npm install typesafe-sdk`: that npm name belongs to an unrelated placeholder package, not TypeSafe.
+
 ## Executive Summary
 
 This plan integrates **TypeSafe.ai's Jev model** as the intelligent orchestration layer between users and the Box MCP + Salesforce MCP connectors. TypeSafe becomes the "harness" that makes all routing, classification, and validation decisions while Box and Salesforce MCP tools handle data operations.

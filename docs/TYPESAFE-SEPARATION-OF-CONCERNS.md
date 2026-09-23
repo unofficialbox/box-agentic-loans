@@ -1,5 +1,7 @@
 # TypeSafe Separation of Concerns
 
+> **Superseded.** The `TypeSafeOrchestrator` package this plan describes was removed. The working implementation is [`apps/loan-agent`](../apps/loan-agent/README.md), which calls TypeSafe over REST. Do not `npm install typesafe-sdk`: that npm name belongs to an unrelated placeholder package, not TypeSafe.
+
 Clear boundaries between TypeSafe orchestration and MCP data operations.
 
 ## Core Principle
