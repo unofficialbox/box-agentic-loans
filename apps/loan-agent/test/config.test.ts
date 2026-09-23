@@ -14,6 +14,7 @@ const COMPLETE = {
   LOS_MCP_URL: "https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools",
   LOS_MCP_CLIENT_ID: "example-sf-client",
   LOS_MCP_CLIENT_SECRET: "example-sf-secret",
+  LOS_MCP_LOGIN_URL: "https://example.my.salesforce.com",
   BOX_MCP_URL: "https://mcp.box.com",
   BOX_MCP_CLIENT_ID: "example-box-client",
   BOX_MCP_CLIENT_SECRET: "example-box-secret",
@@ -32,6 +33,7 @@ describe("readConfig", () => {
         url: "https://api.salesforce.com/platform/mcp/v1/custom/LOSLoanTools",
         clientId: "example-sf-client",
         clientSecret: "example-sf-secret",
+        loginUrl: "https://example.my.salesforce.com",
       },
       boxMcp: { url: "https://mcp.box.com", clientId: "example-box-client", clientSecret: "example-box-secret" },
       typesafe: { model: "jev-latest", timeoutMs: 30000, high: 0.85, medium: 0.5 },
@@ -51,6 +53,17 @@ describe("readConfig", () => {
       expect(message).toContain("LOAN_AGENT_PORT is not set");
       expect(message).toContain("BOX_MCP_CLIENT_SECRET is not set");
       expect(message).toContain("LOS_MCP_URL is not set");
+    }
+  });
+
+  it("needs the My Domain login URL as a bare https origin", () => {
+    const { LOS_MCP_LOGIN_URL: _login, ...withoutLogin } = COMPLETE;
+    expect(() => readConfig(withoutLogin)).toThrow(/LOS_MCP_LOGIN_URL is not set/);
+    expect(readConfig({ ...COMPLETE, LOS_MCP_LOGIN_URL: "https://example.my.salesforce.com/" }).losMcp?.loginUrl).toBe(
+      "https://example.my.salesforce.com"
+    );
+    for (const bad of ["http://example.my.salesforce.com", "https://example.my.salesforce.com/services/oauth2", "example.my.salesforce.com"]) {
+      expect(() => readConfig({ ...COMPLETE, LOS_MCP_LOGIN_URL: bad })).toThrow(/LOS_MCP_LOGIN_URL must be an https URL with no path/);
     }
   });
 
