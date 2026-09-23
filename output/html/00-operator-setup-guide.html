@@ -221,7 +221,8 @@
 </section>
 <section class="guide-section" id="2-local-configuration">
 <h2>2. Local configuration</h2>
-<pre><code class="language-bash">cp .env.sample .env
+<pre><code class="language-bash">cp -n .env.sample .env                                          # never overwrites an existing .env
+python3 scripts/sync_env.py --write                             # adds new variables, keeps your values
 cp config/runtime/demo-environment.example.json config/runtime/demo-environment.json
 python3 scripts/setup_los_dev.py                                  # dependencies and runtime config
 python3 scripts/setup_los_dev.py --automated --from-current-clis  # or: prefill from logged-in CLIs</code></pre>

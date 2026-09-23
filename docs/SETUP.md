@@ -17,7 +17,8 @@ Have administrators confirm licences; a successful CLI login proves nothing abou
 ## 2. Local configuration
 
 ```bash
-cp .env.sample .env
+cp -n .env.sample .env                                          # never overwrites an existing .env
+python3 scripts/sync_env.py --write                             # adds new variables, keeps your values
 cp config/runtime/demo-environment.example.json config/runtime/demo-environment.json
 python3 scripts/setup_los_dev.py                                  # dependencies and runtime config
 python3 scripts/setup_los_dev.py --automated --from-current-clis  # or: prefill from logged-in CLIs

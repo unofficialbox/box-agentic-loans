@@ -36,7 +36,7 @@ interface CachedToken {
 }
 
 export interface LiveBoxOptions {
-  /** Box folder id to mint against. Defaults to the LOS_BOX_FOLDER_ID env var. */
+  /** Box folder id to mint against. Defaults to VITE_BOX_FOLDER_ID, the folder the page previews. */
   folderId?: string;
   /** Salesforce CLI target org alias. Defaults to LOS_ORG_ALIAS, then "agentforce". */
   orgAlias?: string;
@@ -54,7 +54,7 @@ function mintToken(folderId: string, orgAlias: string): TokenResponse {
 }
 
 export function liveBoxToken(options: LiveBoxOptions = {}): Plugin {
-  const folderId = options.folderId || process.env.LOS_BOX_FOLDER_ID || "";
+  const folderId = options.folderId || process.env.VITE_BOX_FOLDER_ID || "";
   const orgAlias = options.orgAlias || process.env.LOS_ORG_ALIAS || "agentforce";
   let cached: CachedToken | null = null;
 
@@ -68,7 +68,7 @@ export function liveBoxToken(options: LiveBoxOptions = {}): Plugin {
       res.statusCode = 500;
       res.end(JSON.stringify({
         error: "missing_folder_id",
-        detail: "Set LOS_BOX_FOLDER_ID to the Box folder to mint against.",
+        detail: "Set VITE_BOX_FOLDER_ID to the Box folder to mint against.",
       }));
       return;
     }
