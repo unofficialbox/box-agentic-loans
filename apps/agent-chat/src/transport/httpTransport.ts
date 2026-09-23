@@ -3,8 +3,8 @@ import type {
   AgentResolveActionRequest,
   AgentSendRequest,
 } from "@unofficialbox/box-open-elements/patterns/agent-chat";
-import { readNdjson } from "./ndjson";
-import type { LoanAgentTransport, LoanContext, TraceListener } from "./types";
+import { TurnTracker, readNdjson } from "./ndjson";
+import type { LoanAgentTransport, LoanContext, PromptOption, Todo, TraceListener, TurnSummary } from "./types";
 
 /**
  * Talks to a loan-agent backend (for example a Strands agent that routes with
@@ -21,6 +21,9 @@ export class HttpLoanAgentTransport implements LoanAgentTransport {
   onTurnStart?: () => void;
   onTrace?: TraceListener;
   onContext?: (loan: LoanContext) => void;
+  onTodos?: (todos: Todo[]) => void;
+  onOptions?: (options: PromptOption[]) => void;
+  onTurnEnd?: (summary: TurnSummary) => void;
 
   constructor(
     private readonly baseUrl: string,
@@ -38,14 +41,32 @@ export class HttpLoanAgentTransport implements LoanAgentTransport {
     if (!response.ok || !response.body) {
       throw new Error(`Agent backend returned ${response.status} ${response.statusText}`.trim());
     }
-    for await (const event of readNdjson(response.body)) {
-      if (event.kind === "trace") {
-        this.onTrace?.(event);
-      } else if (event.kind === "context") {
-        this.onContext?.(event.loan);
-      } else {
-        request.onEvent(event);
+    const tracker = new TurnTracker();
+    try {
+      for await (const event of readNdjson(response.body)) {
+        tracker.observe(event);
+        switch (event.kind) {
+          case "trace":
+            this.onTrace?.(event);
+            break;
+          case "context":
+            this.onContext?.(event.loan);
+            break;
+          case "todos":
+            this.onTodos?.(event.todos);
+            break;
+          case "options":
+            this.onOptions?.(event.options);
+            break;
+          case "done":
+            break;
+          default:
+            request.onEvent(event);
+        }
       }
+    } finally {
+      // Reported on abort too: a stopped turn reads as incomplete, which it is.
+      this.onTurnEnd?.(tracker.summary());
     }
   }
 

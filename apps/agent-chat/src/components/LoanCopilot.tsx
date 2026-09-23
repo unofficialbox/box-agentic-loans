@@ -7,8 +7,16 @@ import type {
   AgentCitation,
 } from "@unofficialbox/box-open-elements/patterns/agent-chat";
 import type { RunStep, RunTrace } from "@unofficialbox/box-open-elements";
-import { SUGGESTED_PROMPTS } from "../transport/demoScript";
-import { createTransport, type LoanContext, type TraceEvent } from "../transport";
+import { STARTER_PROMPTS } from "../prompts";
+import {
+  createTransport,
+  type LoanContext,
+  type PromptOption,
+  type Todo,
+  type TraceEvent,
+  type TurnSummary,
+} from "../transport";
+import { PromptLibrary } from "./PromptLibrary";
 import "./LoanCopilot.css";
 
 const newSessionId = () => `session-${Date.now().toString(36)}`;
@@ -20,33 +28,61 @@ const DEMO_LOAN: LoanContext = {
   status: "Underwriting",
 };
 
+const STARTERS: PromptOption[] = STARTER_PROMPTS.map(prompt => ({ label: prompt.title, prompt: prompt.content }));
+
+function incompleteNotice(summary: TurnSummary): string | null {
+  if (summary.status === "incomplete") {
+    return "The reply stopped before the agent finished, so it may be incomplete.";
+  }
+  if (summary.missing.length) {
+    const n = summary.missing.length;
+    return `${n} part${n === 1 ? "" : "s"} of that reply didn't arrive, so it may be incomplete. Ask again to be sure.`;
+  }
+  return null;
+}
+
 export function LoanCopilot({ loan }: { loan?: string }) {
   const transport = useMemo(() => createTransport(loan), [loan]);
   const [sessionId, setSessionId] = useState(newSessionId);
   const [steps, setSteps] = useState<RunStep[]>([]);
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [nextOptions, setNextOptions] = useState<PromptOption[] | null>(null);
   const [messages, setMessages] = useState<AgentChatMessage[]>([]);
   const [selectedSource, setSelectedSource] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [loanContext, setLoanContext] = useState<LoanContext | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
   const chatRef = useRef<AgentChat>(null);
   const traceRef = useRef<RunTrace>(null);
 
-  // Trace steps replace by id, so a step can move running → succeeded.
   useEffect(() => {
-    transport.onTurnStart = () => setSteps([]);
+    transport.onTurnStart = () => {
+      setSteps([]);
+      setTodos([]);
+      setNextOptions(null);
+      setNotice(null);
+    };
     transport.onContext = setLoanContext;
+    transport.onTodos = setTodos;
+    transport.onOptions = setNextOptions;
+    transport.onTurnEnd = summary => {
+      const message = incompleteNotice(summary);
+      if (message) setNotice(message);
+    };
+    // Trace steps replace by id, so a step can move running → succeeded.
     transport.onTrace = ({ step }: TraceEvent) =>
       setSteps(current => {
         const index = current.findIndex(entry => entry.id === step.id);
-        return index === -1
-          ? [...current, step]
-          : current.map((entry, i) => (i === index ? step : entry));
+        return index === -1 ? [...current, step] : current.map((entry, i) => (i === index ? step : entry));
       });
     return () => {
       transport.onTurnStart = undefined;
       transport.onTrace = undefined;
       transport.onContext = undefined;
+      transport.onTodos = undefined;
+      transport.onOptions = undefined;
+      transport.onTurnEnd = undefined;
     };
   }, [transport]);
 
@@ -94,12 +130,15 @@ export function LoanCopilot({ loan }: { loan?: string }) {
   }, [messages]);
 
   const ask = useCallback((prompt: string) => {
+    setLibraryOpen(false);
     void chatRef.current?.send(prompt);
   }, []);
 
   const newChat = () => {
     setSessionId(newSessionId());
     setSteps([]);
+    setTodos([]);
+    setNextOptions(null);
     setMessages([]);
     setSelectedSource(null);
     setNotice(null);
@@ -109,12 +148,18 @@ export function LoanCopilot({ loan }: { loan?: string }) {
   const isDemo = transport.mode === "demo";
   const started = messages.length > 0;
   const shownLoan = isDemo ? DEMO_LOAN : (loanContext ?? (loan ? { loanId: loan } : null));
+  const chips = nextOptions ?? STARTERS;
+  const doneCount = todos.filter(todo => todo.status === "completed").length;
 
   return (
     <div className="copilot">
       <header className="topbar">
         <div className="brand">
-          <span className="brand-mark" aria-hidden="true">A</span>
+          <span className="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path d="M12 2.5l2.1 6.4 6.4 2.1-6.4 2.1L12 19.5l-2.1-6.4L3.5 11l6.4-2.1z" />
+            </svg>
+          </span>
           <div>
             <p className="brand-name">Acme Bank</p>
             <p className="brand-product">Loan Copilot</p>
@@ -167,16 +212,41 @@ export function LoanCopilot({ loan }: { loan?: string }) {
             </p>
           )}
           <nav className="suggestions" aria-label={started ? "Next steps" : "Suggested prompts"}>
-            <span className="suggestions-label">{started ? "Next" : "Try"}</span>
-            {SUGGESTED_PROMPTS.map(({ label, prompt }) => (
+            <span className="suggestions-label">{started && nextOptions ? "Next" : "Try"}</span>
+            {chips.map(({ label, prompt }) => (
               <button key={label} type="button" className="chip" title={prompt} onClick={() => ask(prompt)}>
                 {label}
               </button>
             ))}
+            <button type="button" className="chip chip-library" onClick={() => setLibraryOpen(true)}>
+              Prompt library
+            </button>
           </nav>
         </section>
 
         <aside className="rail" aria-label="Turn details">
+          {todos.length > 0 && (
+            <section className="card" aria-labelledby="plan-title">
+              <div className="card-heading">
+                <h2 className="card-title" id="plan-title">
+                  Plan
+                </h2>
+                <span className="card-count">
+                  {doneCount} of {todos.length}
+                </span>
+              </div>
+              <ol className="todos">
+                {todos.map(todo => (
+                  <li key={todo.id} className={`todo todo-${todo.status}`}>
+                    <span className="todo-mark" aria-hidden="true" />
+                    <span className="todo-text">{todo.content}</span>
+                    <span className="visually-hidden">, {todo.status.replace("_", " ")}</span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          )}
+
           <section className="card">
             <h2 className="card-title">Decision trace</h2>
             <p className="card-hint">
@@ -213,6 +283,8 @@ export function LoanCopilot({ loan }: { loan?: string }) {
           </section>
         </aside>
       </main>
+
+      <PromptLibrary open={libraryOpen} onClose={() => setLibraryOpen(false)} onPick={ask} />
     </div>
   );
 }

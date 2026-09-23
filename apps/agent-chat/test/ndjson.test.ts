@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseEvent, readNdjson } from "../src/transport/ndjson";
+import { TurnTracker, parseEvent, readNdjson } from "../src/transport/ndjson";
 
 function streamOf(chunks: Uint8Array[]): ReadableStream<Uint8Array> {
   return new ReadableStream({
@@ -54,5 +54,21 @@ describe("readNdjson", () => {
     const text = 'noise\n{"kind":"delta","text":"a"}\n\n{"kind":"delta","text":"b"}\n';
     const events = await collect(streamOf([new TextEncoder().encode(text)]));
     expect(events.map(event => (event.kind === "delta" ? event.text : ""))).toEqual(["a", "b"]);
+  });
+});
+
+describe("TurnTracker", () => {
+  it("reports a complete turn", () => {
+    const tracker = new TurnTracker();
+    tracker.observe({ kind: "delta", text: "a", seq: 1 });
+    tracker.observe({ kind: "done", status: "complete", seq: 2 });
+    expect(tracker.summary()).toEqual({ status: "complete", missing: [] });
+  });
+
+  it("flags gaps and a stream that ended without done", () => {
+    const tracker = new TurnTracker();
+    tracker.observe({ kind: "delta", text: "a", seq: 1 });
+    tracker.observe({ kind: "delta", text: "c", seq: 3 });
+    expect(tracker.summary()).toEqual({ status: "incomplete", missing: [2] });
   });
 });

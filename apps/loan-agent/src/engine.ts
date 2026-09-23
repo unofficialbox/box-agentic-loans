@@ -1,4 +1,4 @@
-import type { Citation, Emit, Proposal, StepStatus } from "./contract.js";
+import type { AgentEventBody, Citation, Emit, PromptOption, Proposal, StepStatus, Todo, TurnStatus } from "./contract.js";
 import {
   TERM_FIELDS,
   newestFirst,
@@ -88,6 +88,45 @@ const FIELD_LABELS: Record<TermField, string> = {
   maturityDate: "Maturity",
 };
 
+/** The plan shown while each intent runs (Box AI's TodoList). */
+const PLANS: Record<Intent, string[]> = {
+  find_risk_documents: ["Resolve the loan", "Search losDocument metadata", "List the flagged documents"],
+  extract_and_check: ["Resolve the loan", "Extract terms with Box AI", "Check credit policy", "Summarize findings"],
+  validate_record: ["Resolve the loan", "Get the extracted terms", "Compare with the loan record"],
+  apply_terms: ["Resolve the loan", "Collect the terms to apply", "Hold the write for your approval"],
+  compare_history: ["Resolve the loan", "Find prior executed loans", "Extract covenants from each agreement", "Compare with this markup"],
+  generate_letter: ["Resolve the loan", "Build the 15 Doc Gen fields", "Hold generation for your approval"],
+  send_for_signature: ["Find the letter generated in this session", "Confirm the signer", "Hold the Box Sign request for your approval"],
+  list_loans: ["Query LOS loans"],
+  out_of_scope: [],
+};
+
+/** One canonical prompt per intent, matching the chat app's prompt library. */
+const INTENT_PROMPTS: Record<Intent, PromptOption> = {
+  find_risk_documents: { label: "Find critical risk", prompt: "Which documents in this loan are flagged critical policy risk?" },
+  extract_and_check: { label: "Extract & check policy", prompt: "Extract loan terms from the marked-up term sheet for that loan and check them against credit policy." },
+  validate_record: { label: "Validate record", prompt: "Validate those terms against the Salesforce record." },
+  apply_terms: { label: "Apply terms", prompt: "apply the amount, rate and term to the record, confirm" },
+  compare_history: { label: "Compare history", prompt: "Compare the covenant terms across Harborview's prior executed loans and this 2026 markup." },
+  generate_letter: { label: "Commitment letter", prompt: "Generate the commitment letter for this loan." },
+  send_for_signature: { label: "Send for signature", prompt: "Send the commitment letter for signature." },
+  list_loans: { label: "Borrower's closed loans", prompt: "What closed loans does Harborview Logistics have with us?" },
+  out_of_scope: { label: "What can you do?", prompt: "What can you help with?" },
+};
+
+/** Next steps offered after each intent completes. */
+const NEXT: Record<Intent, Intent[]> = {
+  find_risk_documents: ["extract_and_check", "compare_history"],
+  extract_and_check: ["validate_record", "compare_history"],
+  validate_record: ["apply_terms"],
+  apply_terms: ["generate_letter"],
+  compare_history: ["generate_letter"],
+  generate_letter: ["send_for_signature"],
+  send_for_signature: [],
+  list_loans: ["compare_history"],
+  out_of_scope: ["find_risk_documents", "list_loans"],
+};
+
 const ACTIVE_STATUSES = new Set(["Underwriting", "Credit Review", "Approved", "Commitment"]);
 
 class UserFacingError extends Error {}
@@ -95,9 +134,49 @@ class UserFacingError extends Error {}
 /** One turn's output channel: trace steps, streamed text, citations, proposals. */
 class Turn {
   private stepCount = 0;
+  private seq = 0;
   private readonly cited = new Set<string>();
+  private todos: Todo[] = [];
+  private current = 0;
+  proposed = false;
 
-  constructor(private readonly emit: Emit) {}
+  constructor(private readonly sink: Emit) {}
+
+  private emit(event: AgentEventBody) {
+    this.sink({ ...event, seq: ++this.seq });
+  }
+
+  /** Announce the turn's plan; the first item starts in progress. */
+  plan(items: string[]) {
+    this.todos = items.map((content, i) => ({ id: `todo-${i}`, content, status: i === 0 ? "in_progress" : "pending" }));
+    this.current = 0;
+    if (this.todos.length) this.emit({ kind: "todos", todos: this.todos });
+  }
+
+  /** Finish the current plan item and start the next. */
+  advance() {
+    if (this.current >= this.todos.length - 1) return;
+    this.current += 1;
+    this.publishTodos(i => (i < this.current ? "completed" : i === this.current ? "in_progress" : "pending"));
+  }
+
+  finishPlan(succeeded: boolean) {
+    this.publishTodos(i => (succeeded || i < this.current ? "completed" : "skipped"));
+  }
+
+  private publishTodos(status: (index: number) => Todo["status"]) {
+    if (!this.todos.length) return;
+    this.todos = this.todos.map((todo, i) => ({ ...todo, status: status(i) }));
+    this.emit({ kind: "todos", todos: this.todos });
+  }
+
+  options(options: PromptOption[]) {
+    if (options.length) this.emit({ kind: "options", options });
+  }
+
+  done(status: TurnStatus) {
+    this.emit({ kind: "done", status });
+  }
 
   async step<T>(title: string, description: string, work: () => Promise<T>, status?: (value: T) => StepStatus): Promise<T> {
     const id = `step-${++this.stepCount}`;
@@ -139,6 +218,7 @@ class Turn {
   }
 
   propose(proposal: Proposal) {
+    this.proposed = true;
     this.emit({ kind: "proposal", proposal });
   }
 
@@ -163,20 +243,32 @@ export class LoanAgent {
   async handle(sessionId: string, message: string, loanHint: string | undefined, emit: Emit): Promise<void> {
     const turn = new Turn(emit);
     const session = this.session(sessionId);
+    let status: TurnStatus = "complete";
     try {
       const intent = await this.route(turn, session, message);
       if (!intent) {
+        status = "needs_input";
         return;
       }
+      turn.plan(PLANS[intent]);
       await this.dispatch(intent, turn, session, sessionId, message, loanHint);
+      turn.finishPlan(true);
+      turn.options(NEXT[intent].map(next => INTENT_PROMPTS[next]));
+      if (turn.proposed) status = "needs_input";
     } catch (error) {
+      turn.finishPlan(false);
       if (error instanceof UserFacingError) {
+        status = "needs_input";
         turn.say([error.message]);
       } else if (error instanceof TypeSafeError) {
+        status = "error";
         turn.say([`I couldn't get a decision from TypeSafe, so I took no action. (${error.message})`]);
       } else {
+        status = "error";
         turn.say([`That step failed, so I stopped. (${error instanceof Error ? error.message : String(error)})`]);
       }
+    } finally {
+      turn.done(status);
     }
   }
 
@@ -225,6 +317,7 @@ export class LoanAgent {
           (second ? ` or ${INTENT_LABELS[second]}?` : "?"),
         "Rephrase or pick a suggestion below.",
       ]);
+      turn.options([decision.choice, second].filter((intent): intent is Intent => Boolean(intent) && intent !== "out_of_scope").map(intent => INTENT_PROMPTS[intent]));
       return undefined;
     }
     return decision.choice;
@@ -274,6 +367,7 @@ export class LoanAgent {
     const hits = await turn.step("Box · search_files_metadata", `losDocument · policyRisk = '${risk}'`, () =>
       this.tools.findByPolicyRisk(requireFolder(loan), risk)
     );
+    turn.advance();
     if (hits.length === 0) {
       turn.say([...lines, "", `No documents in this loan are flagged ${risk} policy risk.`]);
       return;
@@ -292,9 +386,11 @@ export class LoanAgent {
   private async extractAndCheck(turn: Turn, session: Session, message: string, loanHint?: string) {
     const loan = await this.resolveLoan(turn, session, message, loanHint);
     const extraction = await this.extract(turn, session, loan, message);
+    turn.advance();
     const findings = evaluateTerms(extraction.result.terms, extraction.covenants);
     session.findings = findings;
     turn.note("Credit policy rules", `${findings.length} checks against the approved library`, "succeeded");
+    turn.advance();
 
     turn.say([
       `Terms from ${extraction.file.name}:`,
@@ -310,6 +406,7 @@ export class LoanAgent {
   private async validateRecord(turn: Turn, session: Session, message: string, loanHint?: string) {
     const loan = await this.resolveLoan(turn, session, message, loanHint);
     const extraction = await this.extract(turn, session, loan, message);
+    turn.advance();
     const checks = extraction.result.checks;
     if (checks.length === 0) {
       turn.say(["The extraction returned no field comparison, so there is nothing to validate."]);
@@ -357,6 +454,7 @@ export class LoanAgent {
       return;
     }
     const loanId = requireLoanId(loan);
+    turn.advance();
     const proposal = this.propose(sessionId, {
       title: `Apply ${fields.length} term${fields.length === 1 ? "" : "s"} to ${loanId}`,
       summary: `From ${extraction.file.name}${Object.keys(overrides).length ? ", with your changes" : ""}. Policy findings stay open.`,
@@ -383,6 +481,7 @@ export class LoanAgent {
     const prior = rows
       .filter(row => row.loanId !== loanId && loanYear(row.loanId) < year)
       .sort((a, b) => a.loanId.localeCompare(b.loanId));
+    turn.advance();
     if (prior.length === 0) {
       turn.say([`${borrower} has no loans before ${year} to compare with.`]);
       return;
@@ -404,6 +503,7 @@ export class LoanAgent {
       turn.cite(documentCitation(pkg, agreement.fileId, agreement.name));
     }
     const current = await this.currentCovenants(turn, session, loan);
+    turn.advance();
     session.precedent = precedent;
 
     const columns = [
@@ -446,6 +546,7 @@ export class LoanAgent {
     const userInput = this.letterPayload(loan, extraction, findings, session.precedent);
     const folderId = requireFolder(loan);
     const fileName = `${loanId}-Commitment-Letter`;
+    turn.advance();
 
     const proposal = this.propose(sessionId, {
       title: `Generate commitment letter for ${loanId}`,
@@ -476,11 +577,13 @@ export class LoanAgent {
       // Only a letter generated in this session: an earlier file with the same name may be a failed attempt.
       throw new UserFacingError("Generate the commitment letter first; I only send a letter generated in this conversation.");
     }
+    turn.advance();
     const email = emailAddress(message) ?? this.options.defaultSigner?.email;
     if (!email) {
       throw new UserFacingError("Who should sign? Reply with the signer's email address.");
     }
     const name = emailAddress(message) ? undefined : this.options.defaultSigner?.name;
+    turn.advance();
     const proposal = this.propose(sessionId, {
       title: "Send commitment letter for signature",
       summary: "Creates a Box Sign request and stores the embed link on the loan record.",
@@ -534,6 +637,7 @@ export class LoanAgent {
   ): Promise<LoanPackage> {
     const loan = await this.findLoan(turn, session, message, loanHint, options);
     turn.context(loan);
+    turn.advance();
     return loan;
   }
 

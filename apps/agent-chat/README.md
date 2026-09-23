@@ -3,8 +3,13 @@
 A loan officer's chat for the Harborview demo. It is built on the [box-open-elements agent-chat pattern](https://unofficialbox.github.io/box-open-elements/patterns/agent-chat/). `<box-agent-chat>` handles the whole conversation: the streaming thread, citation chips, approval cards, and the composer. This app adds three things around it:
 
 - a top bar with the loan in context and whether the app is in demo or live mode
-- one-click prompts for the demo beats in [DEMO-CLICKPATH.md](../../DEMO-CLICKPATH.md)
-- a side rail with the **decision trace** for each turn (`<box-run-trace>`: routing, tool calls, approval gates) and the **sources** it cited
+- next-step chips, and a **prompt library** (`src/prompts.ts`) that follows Box AI's prompt structure: Research / Analyze / Create / Act tabs, scoped to the Finance department and the Financial services industry
+- a side rail with the turn's **plan** (like Box AI's to-do list), its **decision trace** (`<box-run-trace>`: routing, tool calls, approval gates), and the **sources** it cited
+
+Styling follows Box's Blueprint design system:
+- Lato at 14px on a 20px line
+- the 4px spacing scale, Blueprint radii and drop shadows
+- the Box AI gradient (`#fe03dc → #2784fa`) on the product mark and on AI controls
 
 ```bash
 npm install
@@ -31,6 +36,11 @@ The loan comes from `?recordId=` or `?loan=` in the URL when the page is opened 
 | `{"kind":"proposal","proposal":{"id","title","summary?","params?":[{"label","value"}]}}` | A governed write held for approval. |
 | `{"kind":"trace","step":{"id","title","description?","status","startedAt?","finishedAt?"}}` | A trace step. Sending the same `id` again updates that step. `status` is `running`, `succeeded`, `warning`, `failed`, or `skipped`. |
 | `{"kind":"context","loan":{"loanId","name?","borrower?","status?"}}` | The loan this turn resolved to. The top bar shows it. |
+| `{"kind":"todos","todos":[{"id","content","status"}]}` | The plan for this turn, sent as a full snapshot each time. `status` is `pending`, `in_progress`, `completed`, or `skipped`. The **Plan** card shows it. |
+| `{"kind":"options","options":[{"label","prompt"}]}` | Prompts to offer next. These replace the starter chips. |
+| `{"kind":"done","status":"complete"\|"needs_input"\|"error"}` | Always the last event. `needs_input` means the agent asked a question or is waiting on an approval. |
+
+Every event may also carry `seq` (1, 2, 3… per turn). If the stream ends without `done`, or a `seq` number never arrives, the page tells the officer the reply may be incomplete. Box AI's own client checks its stream the same way.
 
 `POST {VITE_AGENT_API_URL}/actions/resolve` takes `{ proposalId, decision: "approved" | "rejected", note?, sessionId }` and returns the updated proposal, with `decision` and an optional `note` describing what happened.
 

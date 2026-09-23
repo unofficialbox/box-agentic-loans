@@ -3,8 +3,9 @@ import type {
   AgentResolveActionRequest,
   AgentSendRequest,
 } from "@unofficialbox/box-open-elements/patterns/agent-chat";
+import { PROMPT_LIBRARY } from "../prompts";
 import { routeIntent, type DemoBeat } from "./demoScript";
-import type { LoanAgentTransport, RunStep, TraceListener } from "./types";
+import type { LoanAgentTransport, PromptOption, RunStep, Todo, TraceListener, TurnSummary } from "./types";
 
 export interface DemoTimings {
   /** Delay before each streamed chunk, and per trace step. */
@@ -23,6 +24,9 @@ export class DemoLoanAgentTransport implements LoanAgentTransport {
   readonly mode = "demo" as const;
   onTurnStart?: () => void;
   onTrace?: TraceListener;
+  onTodos?: (todos: Todo[]) => void;
+  onOptions?: (options: PromptOption[]) => void;
+  onTurnEnd?: (summary: TurnSummary) => void;
 
   private readonly pending = new Map<string, DemoBeat>();
   private proposalCounter = 0;
@@ -33,7 +37,18 @@ export class DemoLoanAgentTransport implements LoanAgentTransport {
     this.onTurnStart?.();
     const { beat, confidence } = routeIntent(request.body);
     const aborted = () => request.signal?.aborted ?? false;
+    // Plan item k is in progress; everything before it is done.
+    const advance = (k: number) =>
+      this.onTodos?.(
+        beat.plan.map((content, i) => ({
+          id: `todo-${i}`,
+          content,
+          status: i < k ? "completed" : i === k ? "in_progress" : "pending",
+        }))
+      );
+    const end = (status: TurnSummary["status"]) => this.onTurnEnd?.({ status, missing: [] });
 
+    if (beat.plan.length) advance(0);
     await this.step(
       {
         id: "route",
@@ -45,17 +60,18 @@ export class DemoLoanAgentTransport implements LoanAgentTransport {
 
     for (const [index, call] of beat.tools.entries()) {
       if (aborted()) {
-        return;
+        return end("incomplete");
       }
       await this.step(
         { id: `tool-${index}`, title: `${call.connector} · ${call.tool}`, description: call.detail },
         call.gated ? "warning" : "succeeded"
       );
+      if (beat.plan.length) advance(Math.min(index + 1, beat.plan.length - 1));
     }
 
     for (const chunk of chunks(beat.reply)) {
       if (aborted()) {
-        return;
+        return end("incomplete");
       }
       await sleep(this.timings.chunkMs);
       request.onEvent({ kind: "delta", text: chunk });
@@ -70,6 +86,14 @@ export class DemoLoanAgentTransport implements LoanAgentTransport {
       this.pending.set(id, beat);
       request.onEvent({ kind: "proposal", proposal: { id, ...beat.proposal } });
     }
+    if (beat.plan.length) advance(beat.plan.length);
+    this.onOptions?.(
+      PROMPT_LIBRARY.filter(prompt => beat.next.includes(prompt.id)).map(prompt => ({
+        label: prompt.title,
+        prompt: prompt.content,
+      }))
+    );
+    end(beat.proposal ? "needs_input" : "complete");
   }
 
   async resolveAction(request: AgentResolveActionRequest): Promise<AgentActionProposal> {

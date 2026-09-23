@@ -17,6 +17,8 @@ export type Intent =
   | "update_record"
   | "review_history"
   | "generate_letter"
+  | "send_for_signature"
+  | "list_loans"
   | "help";
 
 export interface ToolCall {
@@ -32,6 +34,10 @@ export interface DemoBeat {
   /** Lower-case phrases that route a prompt to this beat; more hits wins. */
   keywords: string[];
   tools: ToolCall[];
+  /** The plan shown while the turn runs (Box AI's TodoList). */
+  plan: string[];
+  /** Prompt-library IDs to offer next. */
+  next: string[];
   reply: string;
   citations: AgentCitation[];
   proposal?: Omit<AgentActionProposal, "id">;
@@ -55,6 +61,8 @@ const LOAN_RECORD = doc("loan-record", "LOS loan record");
 export const DEMO_BEATS: DemoBeat[] = [
   {
     intent: "search_documents",
+    plan: ["Find the borrower's latest loan", "Search losDocument metadata for critical risk", "List the flagged documents"],
+    next: ["extract-check", "compare-history"],
     keywords: ["latest loan", "critical", "policy risk", "flagged", "which documents"],
     tools: [
       { connector: "LOS MCP", tool: "listLoans", detail: "borrower = Harborview Logistics, newest first" },
@@ -71,6 +79,8 @@ export const DEMO_BEATS: DemoBeat[] = [
   },
   {
     intent: "extract_terms",
+    plan: ["Load the loan package", "Extract terms with Box AI", "Check credit policy", "Summarize findings"],
+    next: ["validate-record", "compare-history"],
     keywords: ["extract", "term sheet", "credit policy", "marked-up", "markup"],
     tools: [
       { connector: "LOS MCP", tool: "getLoanPackage", detail: "governed document set for this loan" },
@@ -89,6 +99,8 @@ export const DEMO_BEATS: DemoBeat[] = [
   },
   {
     intent: "validate_record",
+    plan: ["Reuse the extracted terms", "Compare with the loan record"],
+    next: ["apply-terms"],
     keywords: ["validate", "salesforce record", "against the record", "record"],
     tools: [
       { connector: "LOS MCP", tool: "getLoanPackage", detail: "current LOS_Loan__c values" },
@@ -104,6 +116,8 @@ export const DEMO_BEATS: DemoBeat[] = [
   },
   {
     intent: "update_record",
+    plan: ["Collect the terms to apply", "Hold the write for your approval"],
+    next: ["commitment-letter"],
     keywords: ["apply", "confirm", "write", "update the record"],
     tools: [
       { connector: "LOS MCP", tool: "applyLoanTerms", detail: "amount, rate, term · held for approval", gated: true },
@@ -124,6 +138,8 @@ export const DEMO_BEATS: DemoBeat[] = [
   },
   {
     intent: "review_history",
+    plan: ["Find prior executed loans", "Extract covenants from each agreement", "Compare with this markup"],
+    next: ["commitment-letter"],
     keywords: ["compare", "covenant", "prior", "history", "executed loans"],
     tools: [
       { connector: "LOS MCP", tool: "listLoans", detail: "Harborview Logistics · status Closed" },
@@ -140,16 +156,36 @@ export const DEMO_BEATS: DemoBeat[] = [
   },
   {
     intent: "generate_letter",
-    keywords: ["commitment letter", "generate", "signature", "sign"],
+    plan: ["Load the loan package", "Build the 15 Doc Gen fields", "Hold generation for your approval"],
+    next: ["send-signature"],
+    keywords: ["commitment letter", "generate", "draft"],
     tools: [
       { connector: "LOS MCP", tool: "getLoanPackage", detail: "Doc Gen destination folder" },
-      { connector: "Box MCP", tool: "create_docgen_batch", detail: "commitment letter template · 15 merge fields" },
+      { connector: "Box MCP", tool: "create_docgen_batch", detail: "commitment letter template · held for approval", gated: true },
+    ],
+    reply: "Commitment letter is ready to generate with all 15 merge fields. Approve to create it in the loan folder.",
+    citations: [TERM_SHEET, LOAN_RECORD],
+    proposal: {
+      title: "Generate commitment letter",
+      summary: "Box Doc Gen fills the template from the record, extraction, and policy findings.",
+      params: [
+        { label: "Borrower", value: "Harborview Logistics" },
+        { label: "Amount", value: "$4.8M" },
+        { label: "Policy findings", value: "3 open" },
+      ],
+    },
+    approvedNote: "Letter generated (demo mode: no file was created).",
+    rejectedNote: "Not generated.",
+  },
+  {
+    intent: "send_for_signature",
+    plan: ["Find the letter generated in this session", "Confirm the signer", "Hold the Box Sign request for your approval"],
+    next: [],
+    keywords: ["signature", "sign ", "send"],
+    tools: [
       { connector: "LOS MCP", tool: "prepareSignatureRequest", detail: "Box Sign · held for approval", gated: true },
     ],
-    reply: [
-      "Commitment letter generated; all 15 merge fields populated.",
-      "Signature requires the loan to be Approved or Commitment. Approve to send.",
-    ].join("\n"),
+    reply: "Signature requires the loan to be Approved or Commitment. Approve to send.",
     citations: [doc("commitment-letter", "Commitment letter (generated)")],
     proposal: {
       title: "Send commitment letter for signature",
@@ -162,10 +198,25 @@ export const DEMO_BEATS: DemoBeat[] = [
     approvedNote: "Signature request prepared (demo mode: nothing was sent).",
     rejectedNote: "Not sent. The letter stays in the loan workspace.",
   },
+  {
+    intent: "list_loans",
+    plan: ["Query LOS loans by borrower and status"],
+    next: ["compare-history"],
+    keywords: ["closed loans", "loans does", "portfolio", "list loans"],
+    tools: [{ connector: "LOS MCP", tool: "listLoans", detail: "borrower = Harborview Logistics, status = Closed" }],
+    reply: [
+      "2 closed loans for Harborview Logistics:",
+      "• LN-2025-0148 · Equipment Term Loan 2025 · $2.15M",
+      "• LN-2023-0311 · Revolving Line of Credit 2023 · $1.5M",
+    ].join("\n"),
+    citations: [],
+  },
 ];
 
 export const HELP_BEAT: DemoBeat = {
   intent: "help",
+  plan: [],
+  next: ["find-risk", "extract-check", "compare-history"],
   keywords: [],
   tools: [],
   reply: [
@@ -177,29 +228,6 @@ export const HELP_BEAT: DemoBeat = {
   ].join("\n"),
   citations: [],
 };
-
-/** The demo prompts, in clickpath order, for the suggestion chips. */
-export const SUGGESTED_PROMPTS: Array<{ label: string; prompt: string }> = [
-  {
-    label: "Find critical risk",
-    prompt:
-      "What's the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?",
-  },
-  {
-    label: "Extract & check policy",
-    prompt: "Extract loan terms from the marked-up term sheet for that loan and check them against credit policy.",
-  },
-  { label: "Validate record", prompt: "Validate those terms against the Salesforce record." },
-  { label: "Apply terms", prompt: "apply the amount, rate and term to the record, confirm" },
-  {
-    label: "Compare history",
-    prompt: "Compare the covenant terms across Harborview's prior executed loans and this 2026 markup.",
-  },
-  {
-    label: "Commitment letter",
-    prompt: "Generate the commitment letter for this loan and send it for signature using the confirmed signer.",
-  },
-];
 
 /**
  * Stand-in for TypeSafe's intent routing: score each beat by keyword hits.

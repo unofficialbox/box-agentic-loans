@@ -30,7 +30,7 @@ Configuration comes from the repo-root `.env`; see `.env.sample`, section *Loan 
 
 ```bash
 npm install
-npm test                 # 39 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
+npm test                 # 44 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
 npm start                # http://127.0.0.1:8787
 
 # Without MCP access, TypeSafe still decides but the tools are seeded fixtures:
@@ -42,7 +42,13 @@ npm run check:typesafe -- 5
 
 Point the chat app at it with `VITE_AGENT_API_URL=http://localhost:8787`.
 
-Each `/chat` response streams the wire contract described in the agent-chat README, plus `{"kind":"context","loan":{…}}` so the header shows the loan the agent actually resolved.
+Each `/chat` response streams the wire contract described in the agent-chat README:
+- a `context` event naming the loan the agent resolved
+- the intent's plan as `todos`, advanced at each phase
+- next-step `options`, or the two likeliest intents when it asks for clarification
+- a closing `done`
+
+Events are numbered with `seq`.
 
 ## Layout
 

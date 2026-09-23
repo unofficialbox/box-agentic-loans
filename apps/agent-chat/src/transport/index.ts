@@ -2,7 +2,15 @@ import { DemoLoanAgentTransport } from "./demoTransport";
 import { HttpLoanAgentTransport } from "./httpTransport";
 import type { LoanAgentTransport } from "./types";
 
-export type { LoanAgentEvent, LoanAgentTransport, LoanContext, TraceEvent } from "./types";
+export type {
+  LoanAgentEvent,
+  LoanAgentTransport,
+  LoanContext,
+  PromptOption,
+  Todo,
+  TraceEvent,
+  TurnSummary,
+} from "./types";
 
 /**
  * `VITE_AGENT_API_URL` set → live backend; unset → the offline demo script.

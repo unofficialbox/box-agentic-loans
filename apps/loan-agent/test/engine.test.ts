@@ -73,7 +73,7 @@ describe("clickpath on fixtures", () => {
     expect(turn.text).toContain("harborview-term-sheet-2026-borrower-markup.pdf (Term Sheet)");
     expect(turn.citations).toEqual(["harborview-term-sheet-2026-borrower-markup.pdf"]);
     expect(turn.trace).toContain("Rule · latest loan:succeeded");
-    expect(turn.events.find(event => event.kind === "context")).toEqual({
+    expect(turn.events.find(event => event.kind === "context")).toMatchObject({
       kind: "context",
       loan: { loanId: "LN-2026-0003", name: "Harborview Logistics Commercial Real Estate 2026", borrower: "Harborview Logistics", status: "Approved" },
     });
@@ -165,6 +165,55 @@ describe("clickpath on fixtures", () => {
   });
 });
 
+describe("turn protocol", () => {
+  it("numbers events 1..n with no gaps and ends every turn with done", async () => {
+    const { agent } = setup();
+    for (const [message] of CLICKPATH) {
+      const turn = await send(agent, message);
+      expect(turn.events.map(event => event.seq)).toEqual(turn.events.map((_, i) => i + 1));
+      expect(turn.events.filter(event => event.kind === "done")).toHaveLength(1);
+      expect(turn.events[turn.events.length - 1].kind).toBe("done");
+    }
+  });
+
+  it("streams the plan as it progresses and completes it", async () => {
+    const { agent } = setup();
+    await send(agent, CLICKPATH[0][0]);
+    const turn = await send(agent, CLICKPATH[1][0]);
+    const snapshots = turn.events.flatMap(event => (event.kind === "todos" ? [event.todos.map(todo => todo.status)] : []));
+    expect(snapshots[0]).toEqual(["in_progress", "pending", "pending", "pending"]);
+    expect(snapshots[1]).toEqual(["completed", "in_progress", "pending", "pending"]);
+    expect(snapshots[snapshots.length - 1]).toEqual(["completed", "completed", "completed", "completed"]);
+    expect(turn.events.find(event => event.kind === "options")).toMatchObject({
+      options: [{ label: "Validate record" }, { label: "Compare history" }],
+    });
+    expect(turn.events.find(event => event.kind === "done")).toMatchObject({ status: "complete" });
+  });
+
+  it("marks a turn waiting on approval as needs_input", async () => {
+    const { agent } = setup();
+    await send(agent, CLICKPATH[0][0]);
+    const turn = await send(agent, CLICKPATH[3][0]);
+    expect(turn.events.find(event => event.kind === "done")).toMatchObject({ status: "needs_input" });
+  });
+
+  it("skips the rest of the plan when a step stops the turn", async () => {
+    const { agent } = setup();
+    const turn = await send(agent, CLICKPATH[1][0]); // no loan in context
+    const last = turn.events.filter(event => event.kind === "todos").pop();
+    expect(last).toMatchObject({ todos: [{ status: "skipped" }, { status: "skipped" }, { status: "skipped" }, { status: "skipped" }] });
+    expect(turn.events.find(event => event.kind === "done")).toMatchObject({ status: "needs_input" });
+  });
+
+  it("offers the two likeliest intents when it asks for clarification", async () => {
+    const { agent } = setup({ confidence: 0.4 });
+    const turn = await send(agent, CLICKPATH[1][0]);
+    expect(turn.events.find(event => event.kind === "options")).toMatchObject({
+      options: [{ label: "Extract & check policy" }, { label: "Borrower's closed loans" }],
+    });
+  });
+});
+
 describe("decision gating", () => {
   it("asks instead of acting when TypeSafe is not confident", async () => {
     const { agent, tools } = setup({ confidence: 0.4 });
@@ -181,6 +230,7 @@ describe("decision gating", () => {
     const turn = await send(agent, CLICKPATH[0][0]);
     expect(turn.text).toContain("couldn't get a decision from TypeSafe");
     expect(turn.trace).toEqual(["TypeSafe · route intent:failed"]);
+    expect(turn.events.find(event => event.kind === "done")).toMatchObject({ status: "error" });
   });
 
   it("asks which loan rather than guessing", async () => {

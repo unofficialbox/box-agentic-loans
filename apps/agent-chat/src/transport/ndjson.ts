@@ -1,6 +1,6 @@
-import type { LoanAgentEvent } from "./types";
+import type { LoanAgentEvent, TurnSummary } from "./types";
 
-const KINDS = new Set(["delta", "citation", "proposal", "trace", "context"]);
+const KINDS = new Set(["delta", "citation", "proposal", "trace", "context", "todos", "options", "done"]);
 
 /** Narrow one decoded line to a known event; anything else is dropped. */
 export function parseEvent(line: string): LoanAgentEvent | null {
@@ -19,6 +19,31 @@ export function parseEvent(line: string): LoanAgentEvent | null {
   }
   const kind = (value as { kind?: unknown }).kind;
   return typeof kind === "string" && KINDS.has(kind) ? (value as LoanAgentEvent) : null;
+}
+
+/** Tracks `seq` numbers and the `done` event to judge whether a turn arrived whole. */
+export class TurnTracker {
+  private readonly seen = new Set<number>();
+  private highest = 0;
+  private status: TurnSummary["status"] = "incomplete";
+
+  observe(event: LoanAgentEvent) {
+    if (typeof event.seq === "number" && Number.isInteger(event.seq) && event.seq > 0) {
+      this.seen.add(event.seq);
+      this.highest = Math.max(this.highest, event.seq);
+    }
+    if (event.kind === "done") {
+      this.status = event.status;
+    }
+  }
+
+  summary(): TurnSummary {
+    const missing: number[] = [];
+    for (let seq = 1; seq <= this.highest; seq++) {
+      if (!this.seen.has(seq)) missing.push(seq);
+    }
+    return { status: this.status, missing };
+  }
 }
 
 /**
