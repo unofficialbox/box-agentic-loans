@@ -1,27 +1,37 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import "./App.css";
-import { AgentChatInterface } from "./components/AgentChatInterface";
-import { registerBoxDefaultDesignSystem, applyDesignTokens } from "@unofficialbox/box-open-elements/foundations/tokens";
+import { LoanCopilot } from "./components/LoanCopilot";
+import {
+  applyDesignTokens,
+  registerBoxDarkDesignSystem,
+  registerBoxDefaultDesignSystem,
+} from "@unofficialbox/box-open-elements/foundations/tokens";
 
-function App() {
-  const [initialized, setInitialized] = useState(false);
+registerBoxDefaultDesignSystem({ setActive: true });
+registerBoxDarkDesignSystem();
 
+/** Box tokens on <html>, following the OS light/dark preference. */
+function useBoxTheme() {
   useEffect(() => {
-    // Initialize Box design tokens
-    registerBoxDefaultDesignSystem({ setActive: true });
-    applyDesignTokens(document.documentElement, "box-default");
-    setInitialized(true);
+    const query = window.matchMedia("(prefers-color-scheme: dark)");
+    const apply = () => {
+      const theme = query.matches ? "box-dark" : "box-default";
+      applyDesignTokens(document.documentElement, theme);
+      document.documentElement.dataset.theme = query.matches ? "dark" : "light";
+    };
+    apply();
+    query.addEventListener("change", apply);
+    return () => query.removeEventListener("change", apply);
   }, []);
-
-  if (!initialized) {
-    return <div className="loading">Initializing...</div>;
-  }
-
-  return (
-    <div className="app">
-      <AgentChatInterface />
-    </div>
-  );
 }
 
-export default App;
+/** Loan from the URL (`?recordId=` or `?loan=`), else the demo loan. */
+function loanFromUrl(): string {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("recordId") ?? params.get("loan") ?? "LN-2026-0042";
+}
+
+export default function App() {
+  useBoxTheme();
+  return <LoanCopilot loan={loanFromUrl()} />;
+}

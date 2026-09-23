@@ -1,22 +1,10 @@
 /// <reference types="vite/client" />
 
-declare module '*.css' {
-  const content: Record<string, string>;
-  export default content;
+interface ImportMetaEnv {
+  /** Loan agent backend (for example a Strands agent). Unset runs the offline demo script. */
+  readonly VITE_AGENT_API_URL?: string;
 }
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'box-agent-chat': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
-        ref?: React.Ref<HTMLElement>;
-        heading?: string;
-        'agent-name'?: string;
-        placeholder?: string;
-        token?: string;
-      };
-    }
-  }
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
 }
-
-export {};

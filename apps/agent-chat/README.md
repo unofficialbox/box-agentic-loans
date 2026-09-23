@@ -1,168 +1,54 @@
-# Box AI Agent Chat
+# Loan Copilot chat
 
-A Box AI-inspired chat interface built with:
-- **React 19** for UI
-- **box-open-elements** Web Components for the chat interface
-- **box-open-elements-react** adapter for React integration
-- **Vite** for dev server and build
+A loan officer's chat for the Harborview demo. It is built on the [box-open-elements agent-chat pattern](https://unofficialbox.github.io/box-open-elements/patterns/agent-chat/). `<box-agent-chat>` handles the whole conversation: the streaming thread, citation chips, approval cards, and the composer. This app adds three things around it:
 
-## Features
-
-- 🎨 Box-style design with authentic UI elements
-- 💬 Streaming agent responses with citations
-- 📄 Document grid showing context sources
-- 🔄 Session history management
-- 🎯 Agent selection and Pro mode toggle
-- 📱 Responsive layout
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────┐
-│  React App (Vite)                          │
-│                                             │
-│  ┌──────────────────────────────────────┐  │
-│  │  AgentChatInterface.tsx              │  │
-│  │  - Layout & State Management         │  │
-│  │  - Document Grid                     │  │
-│  │  - Input Bar Controls                │  │
-│  └──────────────────────────────────────┘  │
-│                    │                        │
-│                    ▼                        │
-│  ┌──────────────────────────────────────┐  │
-│  │  <box-agent-chat>                    │  │
-│  │  Web Component from box-open-elements│  │
-│  │  - Streaming message thread          │  │
-│  │  - Citation chips                    │  │
-│  │  - Human-in-loop proposals           │  │
-│  └──────────────────────────────────────┘  │
-│                    │                        │
-│                    ▼                        │
-│  ┌──────────────────────────────────────┐  │
-│  │  AgentChatTransport                  │  │
-│  │  - sendMessage() streams events      │  │
-│  │  - resolveAction() for HITL          │  │
-│  └──────────────────────────────────────┘  │
-└─────────────────────────────────────────────┘
-```
-
-## Getting Started
+- a top bar with the loan in context and whether the app is in demo or live mode
+- one-click prompts for the demo beats in [DEMO-CLICKPATH.md](../../DEMO-CLICKPATH.md)
+- a side rail with the **decision trace** for each turn (`<box-run-trace>`: routing, tool calls, approval gates) and the **sources** it cited
 
 ```bash
-# Install dependencies
 npm install
-
-# Start dev server (opens at http://localhost:3003)
-npm run dev
-
-# Build for production
+npm run dev        # http://localhost:3003
+npm test           # transport + NDJSON unit tests
 npm run build
-
-# Preview production build
-npm run preview
 ```
 
-## Integration with LOS Demo
+The loan comes from `?recordId=` or `?loan=` in the URL. Without either, it defaults to `LN-2026-0042`.
 
-This chat interface can be integrated with the LOS demo's MCP connectors:
+## Demo vs live
 
-1. **Box MCP** - Document search, Box AI extraction, metadata queries
-2. **LOS Loan Tools** - Loan operations, term validation, policy checks
-3. **TypeSafe Orchestrator** - Decision routing, risk scoring
+- **Demo script (default).** When `VITE_AGENT_API_URL` is empty, `DemoLoanAgentTransport` replays the six clickpath beats offline. It uses figures from the seeded Harborview sample data and matches prompts by keyword. The routing step in the trace is labelled as simulated. Approving a card makes no write.
+- **Live agent.** Set `VITE_AGENT_API_URL` in the repo-root `.env` (see `.env.sample`; Vite reads `envDir: ../..`), and `HttpLoanAgentTransport` talks to a backend over the contract below. Only `VITE_` values reach the browser. Keep `TYPESAFE_API_KEY`, Box, and Salesforce credentials in the backend.
 
-See the main demo's `CLAUDE.md` for the connector strategy.
+## Backend contract
 
-## Component Reference
+`POST {VITE_AGENT_API_URL}/chat`, with `Authorization: Bearer <sessionId>` and body `{ message, sessionId, loan }`. It responds with `application/x-ndjson`, one event per line:
 
-### AgentChatInterface
+| Event | Meaning |
+|---|---|
+| `{"kind":"delta","text":"…"}` | The **next chunk** of the reply. It is appended, not a replacement. |
+| `{"kind":"citation","citation":{"id","label","href?"}}` | A cited document or policy. |
+| `{"kind":"proposal","proposal":{"id","title","summary?","params?":[{"label","value"}]}}` | A governed write held for approval. |
+| `{"kind":"trace","step":{"id","title","description?","status","startedAt?","finishedAt?"}}` | A trace step. Sending the same `id` again updates that step. `status` is `running`, `succeeded`, `warning`, `failed`, or `skipped`. |
 
-Main React component managing:
-- Box sidebar navigation
-- Document grid display
-- Chat container with box-agent-chat element
-- Input bar with controls
-- History sidebar
+`POST {VITE_AGENT_API_URL}/actions/resolve` takes `{ proposalId, decision: "approved" | "rejected", note?, sessionId }` and returns the updated proposal, with `decision` and an optional `note` describing what happened.
 
-### box-agent-chat Element
+Writes such as `applyLoanTerms`, `prepareSignatureRequest`, and Doc Gen must never run on `/chat`. Emit a `proposal` and run the write only after `/actions/resolve` approves it.
 
-Web Component from `@unofficialbox/box-open-elements/patterns/agent-chat`:
+### Strands agent backend
 
-**Properties:**
-- `heading` - Panel heading text
-- `agent-name` - Display name on agent bubbles
-- `placeholder` - Input placeholder text
-- `token` - Auth token for transport
-- `transport` - AgentChatTransport implementation
-- `chatController` - Optional external controller
+A [Strands Agents](https://strandsagents.com/) server maps onto this contract directly:
 
-**Events:**
-- `citation-selected` - User clicked a citation chip
-- `action-resolved` - Proposal approved/rejected
-- `proposal-modify-requested` - User wants to modify proposal
+- Text-delta stream events become `delta`.
+- Before- and after-tool-call events become `trace` steps, keyed by the tool-use id.
+- A `BeforeToolCallEvent` hook on write tools calls TypeSafe System One as a policy guard and raises a Strands **interrupt**, which becomes the `proposal`.
+- `/actions/resolve` resumes the agent with the interrupt response.
 
-**Methods:**
-- `send(body?)` - Send user message
-- `stop()` - Stop streaming generation
+The backend has to keep a `proposalId → session` mapping. It should also cache the TypeSafe verdict per tool-use id, because the hook runs again on resume.
 
-## Customization
+## Files
 
-### Transport Implementation
-
-Create a custom transport to connect to your backend:
-
-```typescript
-class MyTransport implements AgentChatTransport {
-  async sendMessage(request: AgentSendRequest): Promise<void> {
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${request.token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ message: request.body }),
-      signal: request.signal
-    });
-
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const { done, value } = await reader!.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value);
-      const events = chunk.split('\n').filter(Boolean);
-
-      for (const eventData of events) {
-        const event = JSON.parse(eventData);
-        request.onEvent(event);
-      }
-    }
-  }
-
-  async resolveAction(request: AgentResolveActionRequest): Promise<AgentActionProposal> {
-    const response = await fetch('/api/resolve', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${request.token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(request)
-    });
-
-    return response.json();
-  }
-}
-```
-
-### Styling
-
-The interface uses Box design tokens from `box-open-elements/foundations`. Customize via:
-
-1. **CSS custom properties** - Override `--boe-token-*` variables
-2. **Component CSS** - Modify `AgentChatInterface.css`
-3. **Theme controller** - Use `createThemeController()` for programmatic theming
-
-## License
-
-See main repository LICENSE.
+- `src/components/LoanCopilot.tsx`: the page shell around the pattern
+- `src/transport/httpTransport.ts`: the live backend transport
+- `src/transport/ndjson.ts`: the stream reader
+- `src/transport/demoTransport.ts` and `demoScript.ts`: offline demo beats and the keyword router

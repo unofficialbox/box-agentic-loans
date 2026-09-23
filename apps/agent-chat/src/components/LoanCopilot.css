@@ -1,0 +1,322 @@
+/* Layout shell around box-agent-chat. Colours come from the Box design
+   tokens applied to <html> (light or dark), never hard-coded. */
+
+.copilot {
+  --brand: var(--boe-token-surface-surface-brand, #0061d5);
+  --surface: var(--boe-token-surface-surface, #ffffff);
+  --surface-hover: var(--boe-token-surface-surface-hover, #f4f4f4);
+  --selected: var(--boe-token-surface-item-surface-selected, #f2f7fd);
+  --stroke: var(--boe-token-stroke-stroke, #e8e8e8);
+  --text: var(--boe-token-text-text, #222222);
+  --muted: var(--boe-token-text-text-secondary, #6f6f6f);
+  --warning: var(--boe-token-surface-status-surface-inprogress, #f5b31b);
+  --danger: var(--boe-token-surface-status-surface-error, #ed3757);
+  --focus: 0 0 0 3px color-mix(in srgb, var(--brand) 22%, transparent);
+
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100%;
+}
+
+/* ── Top bar ─────────────────────────────────────────────── */
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  padding: 12px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--stroke);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--brand);
+  color: var(--boe-token-text-text-on-brand, #ffffff);
+  font-weight: 700;
+}
+
+.brand-name,
+.brand-product {
+  margin: 0;
+  line-height: 1.2;
+}
+
+.brand-name {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.brand-product {
+  font-weight: 700;
+}
+
+.loan-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.loan-title {
+  font-weight: 600;
+}
+
+.pill {
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--stroke);
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.pill-risk {
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+  color: color-mix(in srgb, var(--danger) 80%, var(--text));
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-inline-start: auto;
+}
+
+.mode {
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mode-demo {
+  background: color-mix(in srgb, var(--warning) 18%, transparent);
+  color: color-mix(in srgb, var(--warning) 45%, var(--text));
+}
+
+.mode-live {
+  background: color-mix(in srgb, var(--boe-token-surface-status-surface-success, #26c281) 18%, transparent);
+  color: color-mix(in srgb, var(--boe-token-surface-status-surface-success, #26c281) 45%, var(--text));
+}
+
+.button,
+.chip,
+.source,
+.notice-dismiss {
+  appearance: none;
+  cursor: pointer;
+  color: inherit;
+}
+
+.button {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--stroke);
+  background: var(--surface);
+  font-weight: 600;
+}
+
+.button:hover,
+.chip:hover,
+.source:hover {
+  background: var(--surface-hover);
+}
+
+.button:focus-visible,
+.chip:focus-visible,
+.source:focus-visible,
+.notice-dismiss:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+/* ── Workspace ───────────────────────────────────────────── */
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 20px 24px;
+  min-height: 0;
+}
+
+.conversation {
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  gap: 12px;
+  min-height: 0;
+}
+
+/* Let the pattern fill the column: the thread grows, the composer stays put. */
+box-agent-chat {
+  min-height: 0;
+}
+
+box-agent-chat::part(panel) {
+  box-sizing: border-box;
+  height: 100%;
+  grid-template-rows: auto 1fr auto;
+  background: var(--surface);
+}
+
+box-agent-chat::part(thread) {
+  max-block-size: none;
+  min-block-size: 0;
+  align-content: start;
+}
+
+box-agent-chat::part(empty) {
+  border-style: solid;
+  background: var(--boe-token-surface-surface-secondary, #fbfbfb);
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--selected);
+  font-size: 13px;
+}
+
+.notice-dismiss {
+  margin-inline-start: auto;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.suggestions-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.chip {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--stroke);
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ── Right rail ──────────────────────────────────────────── */
+
+.rail {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.card {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--stroke);
+  background: var(--surface);
+}
+
+.card-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.card-hint,
+.empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.sources {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.source {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  text-align: start;
+  font-size: 13px;
+}
+
+.source.is-selected {
+  background: var(--selected);
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.source-icon {
+  flex: none;
+  width: 10px;
+  height: 12px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--brand) 70%, transparent);
+}
+
+/* ── Narrow screens: rail drops below the conversation ───── */
+
+@media (max-width: 900px) {
+  .copilot {
+    height: auto;
+    min-height: 100%;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+
+  .conversation {
+    grid-template-rows: auto auto auto;
+  }
+
+  box-agent-chat::part(thread) {
+    max-block-size: 60vh;
+  }
+
+  .topbar {
+    padding: 12px 16px;
+  }
+}

@@ -1,17 +1,19 @@
-import 'react';
+import type { DetailedHTMLProps, HTMLAttributes } from "react";
+import type { AgentChat } from "@unofficialbox/box-open-elements/patterns/agent-chat";
+import type { RunTrace } from "@unofficialbox/box-open-elements";
 
-declare global {
+type ElementProps<T> = DetailedHTMLProps<HTMLAttributes<T>, T>;
+
+declare module "react" {
   namespace JSX {
     interface IntrinsicElements {
-      'box-agent-chat': React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement>,
-        HTMLElement
-      > & {
+      "box-agent-chat": ElementProps<AgentChat> & {
         heading?: string;
-        'agent-name'?: string;
+        "agent-name"?: string;
         placeholder?: string;
-        token?: string | null;
+        token?: string;
       };
+      "box-run-trace": ElementProps<RunTrace> & { heading?: string };
     }
   }
 }
