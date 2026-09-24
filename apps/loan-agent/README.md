@@ -79,7 +79,7 @@ Each entry has the method, URL, status, timing, and request and response headers
 
 Where to see it:
 - **Terminal:** one line per finished call, e.g. `[api] 200    41ms  box        POST   tools/call search_files_metadata`.
-- **Chat UI:** the **API console** on the chat's developer tools page (`/devtools.html`, linked as **API calls ↗** from the copilot's top bar in live mode).
+- **Chat UI:** the **API console** on the chat's developer tools page (`/devtools.html`, linked as **API calls ↗** from the copilot's chats sidebar in live mode).
 - **HTTP:** `GET /calls` (JSON, newest first), `GET /calls/stream` (server-sent events: a snapshot, then each call), `DELETE /calls` (clear).
 
 An MCP server that offers no server-to-client event stream answers the client's `GET` with 405, which the MCP spec allows; the log marks that call (and a 405 to the session-closing `DELETE`) as expected, not failed.

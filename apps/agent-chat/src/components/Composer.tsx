@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useId, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 
 /**
  * One field: the message box with its send button inside the frame. Enter
@@ -16,6 +16,8 @@ export function Composer({
   inputRef: React.RefObject<HTMLTextAreaElement | null>;
 }) {
   const [text, setText] = useState("");
+  // Unique per conversation: every chat keeps its own composer mounted.
+  const inputId = useId();
   const composing = useRef(false);
   const canSend = text.trim().length > 0 && !streaming;
 
@@ -43,11 +45,12 @@ export function Composer({
 
   return (
     <form className="composer" onSubmit={submit}>
-      <label className="visually-hidden" htmlFor="composer-input">
+      <label className="visually-hidden" htmlFor={inputId}>
         Message the Loan Copilot
       </label>
       <textarea
-        id="composer-input"
+        id={inputId}
+        name="message"
         ref={inputRef}
         className="composer-input"
         rows={1}
