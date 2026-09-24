@@ -104,16 +104,16 @@ locals {
           "enterpriseId" = ""
           "provider" = "generic"
           "providerObjectId" = "box/docgen-template-data"
-          "scenario" = "box-claudeforce-loans"
+          "scenario" = "box-agentic-loans"
         }
         "name" = "config_box_docgen-template-data"
         "provider" = "generic"
-        "scenario" = "box-claudeforce-loans"
+        "scenario" = "box-agentic-loans"
         "terraformType" = "null_resource"
         "type" = "config_file"
       }
     ]
-    "scenario" = "box-claudeforce-loans"
+    "scenario" = "box-agentic-loans"
     "version" = "1.0"
   }
 }

@@ -372,16 +372,16 @@ locals {
           "enterpriseId" = ""
           "provider" = "generic"
           "providerObjectId" = "box/metadata-templates"
-          "scenario" = "box-claudeforce-loans"
+          "scenario" = "box-agentic-loans"
         }
         "name" = "config_box_metadata-templates"
         "provider" = "generic"
-        "scenario" = "box-claudeforce-loans"
+        "scenario" = "box-agentic-loans"
         "terraformType" = "null_resource"
         "type" = "config_file"
       }
     ]
-    "scenario" = "box-claudeforce-loans"
+    "scenario" = "box-agentic-loans"
     "version" = "1.0"
   }
 }

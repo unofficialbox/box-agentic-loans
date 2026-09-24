@@ -8,8 +8,8 @@ from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 GUIDE = Path('docs/demo-storyboard')
-PUBLIC_URL = 'https://unofficialbox.github.io/box-claudeforce-loans/'
-REPO_URL = 'https://github.com/unofficialbox/box-claudeforce-loans/blob/main/'
+PUBLIC_URL = 'https://unofficialbox.github.io/box-agentic-loans/'
+REPO_URL = 'https://github.com/unofficialbox/box-agentic-loans/blob/main/'
 
 class Links(HTMLParser):
     def __init__(self, content):

@@ -3,7 +3,7 @@
 Enhanced demo showing TypeSafe orchestration for 10-20x faster decision-making.
 
 **Standard demo**: [DEMO-CLICKPATH.md](DEMO-CLICKPATH.md)  
-**Full guide**: [Public storyboard](https://unofficialbox.github.io/box-claudeforce-loans/)
+**Full guide**: [Public storyboard](https://unofficialbox.github.io/box-agentic-loans/)
 
 ---
 
