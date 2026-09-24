@@ -69,12 +69,14 @@ Doc Gen fails for reasons only Box can see: the sign-in lacks the Doc Gen scope,
 
 The fixes it gives:
 - **Access denied / scopes:** give the Box MCP Server integration the Doc Gen scope (`docgen.readwrite`), then sign in to Box again.
-- **Template not found:** check `LOS_DOCGEN_TEMPLATE_FILE_ID`; the file must be a Doc Gen template shared with the signed-in user.
+- **Template not found** (Box answers an unknown or inaccessible template ID with "Internal Server Error", not "not found"): check `LOS_DOCGEN_TEMPLATE_FILE_ID`; the file must be a Doc Gen template shared with the signed-in user.
 - **Folder not found:** invite the signed-in user to the loan workspace as an Editor.
+
+The check proves the template file exists and the user can open it. It can't prove the file is a Doc Gen template: Box's template lookup answers for an ordinary PDF too.
 
 ```bash
 npm install
-npm test                 # 98 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
+npm test                 # 110 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
 npm start                # http://LOAN_AGENT_HOST:LOAN_AGENT_PORT
 
 # Without MCP access, TypeSafe still decides but the tools are seeded fixtures:
@@ -93,6 +95,17 @@ Each `/chat` response streams the wire contract described in the agent-chat READ
 - a closing `done`
 
 Events are numbered with `seq`.
+
+### Conversations across restarts
+
+Each conversation's state (the loan, the extraction and policy findings, the generated letter, the Box Sign request) and every pending approval are saved to `.data/sessions.json` (`.data/sessions-fixtures.json` in fixtures mode), owner-only and gitignored. A restart mid-demo loses nothing: at startup the agent prints `[sessions] Restored N conversation(s) and M pending approval(s)`, the chat's restored conversations carry on, and an approval card from before the restart still runs.
+- **Approvals are saved as data**, not code: the exact write the card showed (tool, loan, values, file, signer). Approving after a restart runs that, nothing recomputed.
+- **Closed before it runs.** An approval is marked decided on disk before its write starts, so a crash mid-write can never run it a second time.
+- **The 50 most recent conversations** are kept; older ones are dropped with their pending approvals.
+- **Box AI results in flight** (the per-conversation covenant cache) aren't saved; the first comparison after a restart extracts again.
+- An unreadable file is moved aside (`sessions.json.unreadable-<time>`) and the agent starts empty.
+
+The file holds loan data from your org, like the call log: keep it on the machine running the agent.
 
 ### API call log
 
@@ -124,12 +137,12 @@ The log holds loan data from your org, so keep the server on localhost.
 | `src/fixtures.ts` | Seeded Harborview data in the real response formats. |
 | `src/server.ts` | `POST /chat` (NDJSON), `POST /actions/resolve`, `GET /health`, the OAuth sign-in routes for both connectors, and the `/calls` log endpoints. |
 | `src/callLog.ts` | The API call log: a logging `fetch` for every outbound call, credential redaction, and the terminal line. |
+| `src/sessionStore.ts` | Conversations and pending approvals on disk, written atomically. |
 | `src/oauth.ts` | OAuth sign-in (Salesforce with PKCE, Box), token files, and the refreshing fetch for both MCP connections. |
 
 ## Limits
 
 - **No user authentication.** The bearer token is the chat session ID, not a credential, so keep `LOAN_AGENT_HOST=127.0.0.1`. Put real auth in front before exposing it.
-- **Unverified Box response formats.** The shapes of the Box MCP responses for `search_files_metadata`, `ai_extract_structured_from_fields`, and `create_docgen_batch` haven't been checked against a live server. They are parsed defensively. If a Doc Gen response doesn't name its output file, the agent refuses to send anything for signature rather than choosing a file by name.
+- **Box response formats.** `search_files_metadata`, `get_file_details`, `ai_extract_structured_from_fields`, `get_docgen_template_by_id` and `get_folder_details` are tested against responses captured from a live Box MCP server (`test/boxResponses.ts`, identifiers replaced). A successful `create_docgen_batch` hasn't been captured yet, because that means generating a real letter. If its response doesn't name the output file, the agent refuses to send anything for signature rather than choosing a file by name.
 - **Pricing check is partial.** SOFR isn't returned by any tool, so the pricing rule checks only the 6.50% absolute floor.
 - **Guaranty check is partial.** It covers limited vs unlimited. It does not yet detect an omitted owner.
-- **Sessions are in memory.** A restart drops conversations and pending approvals.

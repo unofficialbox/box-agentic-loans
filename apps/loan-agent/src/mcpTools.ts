@@ -101,19 +101,7 @@ export class McpToolGateway implements ToolGateway {
       ancestor_folder_id: folderId,
       fields: ["name", `${scope}.documentType`, `${scope}.policyRisk`],
     });
-    const entries = findArray(result, "entries") ?? [];
-    return entries.flatMap(entry => {
-      const id = stringAt(entry, "id");
-      if (!id) return [];
-      return [
-        {
-          fileId: id,
-          name: stringAt(entry, "name") ?? id,
-          documentType: deepString(entry, "documentType"),
-          policyRisk: deepString(entry, "policyRisk"),
-        },
-      ];
-    });
+    return parseMetadataHits(result);
   }
 
   /**
@@ -125,7 +113,7 @@ export class McpToolGateway implements ToolGateway {
       file_id: fileId,
       fields: ["id", "name", `metadata.enterprise_${this.boxEnterpriseId}.losDocument`],
     });
-    return deepString(result, "documentType");
+    return parseDocumentType(result);
   }
 
   async extractCovenants(fileId: string): Promise<CovenantFields> {
@@ -133,20 +121,7 @@ export class McpToolGateway implements ToolGateway {
       file_ids: [fileId],
       fields: COVENANT_FIELDS,
     });
-    const answer = findObjectWithAny(unwrapAnswer(result), COVENANT_FIELDS.map(field => field.key));
-    if (!answer) return {};
-    const number = (key: string) => {
-      const value = Number(answer[key]);
-      return answer[key] === null || answer[key] === "" || !Number.isFinite(value) ? undefined : value;
-    };
-    const text = (key: string) => (typeof answer[key] === "string" && answer[key] ? String(answer[key]).toLowerCase() : undefined);
-    return {
-      ltvMax: number("ltvMax"),
-      dscrMin: number("dscrMin"),
-      testFrequency: text("testFrequency"),
-      guarantyType: text("guarantyType"),
-      guarantyCapPerPerson: number("guarantyCapPerPerson"),
-    };
+    return parseCovenants(result);
   }
 
   async applyLoanTerms(loanId: string, terms: Terms): Promise<WriteResult> {
@@ -158,7 +133,7 @@ export class McpToolGateway implements ToolGateway {
     const check = async (what: DocGenCheckItem["what"], itemId: string, run: () => Promise<unknown>): Promise<DocGenCheckItem> => {
       try {
         const result = await run();
-        return { what, ok: true, detail: firstString(result, ["name", "file_name", "friendly_name"]) ?? itemId };
+        return { what, ok: true, detail: itemName(result) ?? itemId };
       } catch (error) {
         // Not signed in is not a Doc Gen problem: let the usual sign-in prompt through.
         if (error instanceof ActionRequiredError) throw error;
@@ -179,9 +154,7 @@ export class McpToolGateway implements ToolGateway {
       output_type: "pdf",
       document_generation_data: [{ generated_file_name: input.fileName, user_input: input.userInput }],
     });
-    // Only an ID the response ties to the *output*; never the template's own file ID.
-    const output = findObjectUnder(result, /^(output_file|generated_file|output)$/);
-    return { outputFileId: output ? stringAt(output, "id") : undefined, raw: JSON.stringify(result) };
+    return parseDocgenBatch(result);
   }
 
   async prepareSignatureRequest(input: { loanId: string; fileId: string; signerEmail: string; signerName?: string }): Promise<SignatureResult> {
@@ -280,6 +253,63 @@ function unwrapAnswer(result: unknown): unknown {
   return result;
 }
 
+// ── Box responses, as the Box MCP server returns them ─────────────────────
+// test/boxResponses.ts holds captured examples of each.
+
+/** search_files_metadata: only id, type and name come back, whatever `fields` asks for. */
+export function parseMetadataHits(result: unknown): MetadataHit[] {
+  const entries = findArray(result, "entries") ?? [];
+  return entries.flatMap(entry => {
+    const id = stringAt(entry, "id");
+    if (!id) return [];
+    return [
+      {
+        fileId: id,
+        name: stringAt(entry, "name") ?? id,
+        documentType: deepString(entry, "documentType"),
+        policyRisk: deepString(entry, "policyRisk"),
+      },
+    ];
+  });
+}
+
+/** get_file_details with the losDocument fields: the values sit under metadata…losDocument.extraData. */
+export function parseDocumentType(result: unknown): string | undefined {
+  return deepString(result, "documentType");
+}
+
+/** ai_extract_structured_from_fields: a flat object keyed by field, or a JSON string under `answer`. */
+export function parseCovenants(result: unknown): CovenantFields {
+  const answer = findObjectWithAny(unwrapAnswer(result), COVENANT_FIELDS.map(field => field.key));
+  if (!answer) return {};
+  const number = (key: string) => {
+    const value = Number(answer[key]);
+    return answer[key] === null || answer[key] === "" || !Number.isFinite(value) ? undefined : value;
+  };
+  const text = (key: string) => (typeof answer[key] === "string" && answer[key] ? String(answer[key]).toLowerCase() : undefined);
+  return {
+    ltvMax: number("ltvMax"),
+    dscrMin: number("dscrMin"),
+    testFrequency: text("testFrequency"),
+    guarantyType: text("guarantyType"),
+    guarantyCapPerPerson: number("guarantyCapPerPerson"),
+  };
+}
+
+/** A Doc Gen template (`fileName`) or folder (`name`) by name. */
+export function itemName(result: unknown): string | undefined {
+  return firstString(result, ["fileName", "name", "file_name", "friendly_name"]);
+}
+
+/**
+ * create_docgen_batch. Only an ID the response ties to the *output* counts;
+ * never the batch's own ID or the template's file ID.
+ */
+export function parseDocgenBatch(result: unknown): DocgenResult {
+  const output = findObjectUnder(result, /^(output_file|generated_file|output)$/);
+  return { outputFileId: output ? stringAt(output, "id") : undefined, raw: JSON.stringify(result) };
+}
+
 /**
  * What a Box error on a Doc Gen prerequisite means, and what to do about it.
  * Box answers "not found" for items the user can't see, so not found and no
@@ -295,7 +325,8 @@ export function docGenProblem(what: DocGenCheckItem["what"], itemId: string, mes
       fix: "Give the Box MCP Server integration the Doc Gen scope (docgen.readwrite) in the Box Admin Console, then sign in to Box again so the new scope takes effect.",
     };
   }
-  if (/not found|404|not_found/i.test(reason)) {
+  // Box answers a template ID it can't open, including one that doesn't exist, with a server error.
+  if (/not found|404|not_found/i.test(reason) || (what === "template" && /internal server error|\b500\b/i.test(reason))) {
     return what === "template"
       ? {
           what,
