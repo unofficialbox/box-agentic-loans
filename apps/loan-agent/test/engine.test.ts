@@ -186,6 +186,25 @@ describe("clickpath on fixtures", () => {
     expect(resolved.note).toContain("jordan.pike@example.com");
   });
 
+  it("reports an approved action that then fails as failed, and records no letter", async () => {
+    const { agent, tools } = setup({ signer: "dana@example.com" });
+    tools.generateCommitmentLetter = () => Promise.reject(new Error("Box create_docgen_batch: Item not found"));
+    await send(agent, CLICKPATH[0][0]);
+    const generate = await send(agent, CLICKPATH[5][0]);
+    const resolved = await agent.resolve("s1", generate.proposals[0].id, "approved");
+    expect(resolved).toMatchObject({ decision: "approved", outcome: "failed" });
+    expect(resolved.note).toBe("Box create_docgen_batch: Item not found");
+    const sign = await send(agent, "Send it for signature");
+    expect(sign.proposals).toEqual([]);
+  });
+
+  it("marks an approved action that ran as done", async () => {
+    const { agent } = setup();
+    await send(agent, CLICKPATH[0][0]);
+    const apply = await send(agent, CLICKPATH[3][0]);
+    expect(await agent.resolve("s1", apply.proposals[0].id, "approved")).toMatchObject({ outcome: "done" });
+  });
+
   it("will not send a letter this conversation did not generate", async () => {
     const { agent } = setup({ signer: "dana@example.com" });
     await send(agent, CLICKPATH[0][0]);

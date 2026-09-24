@@ -1,7 +1,15 @@
 import { useState } from "react";
 import type { AgentActionDecision, AgentActionProposal } from "@unofficialbox/box-open-elements/patterns/agent-chat";
-import { proposalAnchor } from "../conversations";
+import { approvalState, proposalAnchor } from "../conversations";
+import { proposalOutcome } from "../transport";
 import { StatusIcon } from "./StatusIcon";
+
+/** A decided proposal's one line: the officer's decision, and whether the action then ran. */
+const RECORD = {
+  approved: { label: "Approved", icon: "done" },
+  failed: { label: "Approved · didn't complete", icon: "failed" },
+  rejected: { label: "Rejected", icon: "skipped" },
+} as const;
 
 /**
  * A governed action held for the officer. While it waits it is the one card
@@ -30,12 +38,19 @@ export function ApprovalCard({
   };
 
   if (proposal.decision) {
-    const approved = proposal.decision === "approved";
+    const state = approvalState({ decision: proposal.decision, outcome: proposalOutcome(proposal) });
+    const record = RECORD[state as Exclude<typeof state, "waiting">];
     return (
-      <section id={anchor} tabIndex={-1} className={`approval-record approval-${proposal.decision}`} aria-label={`${approved ? "Approved" : "Rejected"}: ${proposal.title}`}>
+      <section
+        id={anchor}
+        tabIndex={-1}
+        className={`approval-record approval-${state}`}
+        aria-label={`${record.label}: ${proposal.title}`}
+        role={state === "failed" ? "alert" : undefined}
+      >
         <p className="approval-record-line">
-          <StatusIcon kind={approved ? "done" : "skipped"} />
-          <span className="approval-record-state">{approved ? "Approved" : "Rejected"}</span>
+          <StatusIcon kind={record.icon} />
+          <span className="approval-record-state">{record.label}</span>
           <span className="approval-record-title">{proposal.title}</span>
         </p>
         {proposal.note && <p className="approval-note">{proposal.note}</p>}

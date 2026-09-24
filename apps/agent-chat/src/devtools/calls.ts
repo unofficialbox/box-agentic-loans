@@ -23,6 +23,8 @@ export interface CallEntry {
   error?: string;
   /** A non-2xx answer that is normal for this call; not counted as a failure. */
   expected?: string;
+  /** An MCP failure inside a 200: a JSON-RPC error or a tool result with isError. */
+  rpcError?: string;
 }
 
 export type CallStreamEvent =
@@ -68,6 +70,7 @@ export const SERVICE_LABELS: Record<CallService, string> = {
 };
 
 export function isFailure(entry: CallEntry): boolean {
+  if (entry.rpcError) return true;
   if (entry.expected) return false;
   return Boolean(entry.error) || (!entry.pending && (entry.status === 0 || entry.status >= 400));
 }

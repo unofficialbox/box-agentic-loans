@@ -3,13 +3,15 @@ import type {
   AgentChatMessage,
   AgentCitation,
 } from "@unofficialbox/box-open-elements/patterns/agent-chat";
-import type { LoanContext } from "./transport";
+import { proposalOutcome, type ActionOutcome, type LoanContext } from "./transport";
 
 /** One governed action proposed in a conversation, and where its card is. */
 export interface ApprovalSummary {
   id: string;
   title: string;
   decision?: AgentActionDecision;
+  /** Once approved: whether the action ran or failed. */
+  outcome?: ActionOutcome;
 }
 
 /** What the sidebars show about a conversation, without holding its messages. */
@@ -57,8 +59,25 @@ export function collectSources(messages: AgentChatMessage[]): AgentCitation[] {
 /** Every proposal in the conversation, oldest first, with its decision once made. */
 export function collectApprovals(messages: AgentChatMessage[]): ApprovalSummary[] {
   return messages.flatMap(message =>
-    message.proposals.map(({ id, title, decision }) => ({ id, title, ...(decision ? { decision } : {}) }))
+    message.proposals.map(proposal => {
+      const outcome = proposalOutcome(proposal);
+      return {
+        id: proposal.id,
+        title: proposal.title,
+        ...(proposal.decision ? { decision: proposal.decision } : {}),
+        ...(outcome ? { outcome } : {}),
+      };
+    })
   );
+}
+
+/** How a proposal reads once handled: approval is a decision; failing is what happened after. */
+export type ApprovalState = "waiting" | "approved" | "failed" | "rejected";
+
+export function approvalState(approval: Pick<ApprovalSummary, "decision" | "outcome">): ApprovalState {
+  if (!approval.decision) return "waiting";
+  if (approval.decision === "rejected") return "rejected";
+  return approval.outcome === "failed" ? "failed" : "approved";
 }
 
 export function summarize(

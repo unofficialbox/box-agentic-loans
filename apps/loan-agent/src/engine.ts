@@ -297,12 +297,15 @@ export class LoanAgent {
       return { ...action.proposal, decision, note: note ?? "Not applied. Nothing was changed." };
     }
     try {
-      return { ...action.proposal, decision, note: await action.run() };
+      return { ...action.proposal, decision, outcome: "done", note: await action.run() };
     } catch (error) {
+      // Approved is the officer's decision; failed is what happened next. Keep both.
       return {
         ...action.proposal,
         decision,
-        note: `Approved, but the action failed: ${error instanceof Error ? error.message : String(error)}`,
+        outcome: "failed",
+        // The reason only: the client says "didn't complete" beside it.
+        note: error instanceof Error ? error.message : String(error),
       };
     }
   }

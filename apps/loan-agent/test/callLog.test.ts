@@ -6,6 +6,7 @@ import {
   loggedFetch,
   redactBody,
   redactHeaders,
+  rpcError,
   type CallEntry,
   type CallEvent,
 } from "../src/callLog.js";
@@ -144,6 +145,33 @@ describe("loggedFetch", () => {
     await expect(doFetch("https://api.example/systemone", { method: "POST", body: "{}" })).rejects.toThrow("ECONNREFUSED");
     expect(finished(log)[0]).toMatchObject({ status: 0, error: "connect ECONNREFUSED" });
     expect(formatCallLine(finished(log)[0])).toMatch(/^\[api\] ERR/);
+  });
+});
+
+describe("MCP failures inside a 200", () => {
+  it("reads a tool result marked isError, and a JSON-RPC error, in JSON or an event stream", () => {
+    const toolError = JSON.stringify({ jsonrpc: "2.0", id: 5, result: { content: [{ type: "text", text: "Item not found" }], isError: true } });
+    expect(rpcError(toolError, "application/json")).toBe("Item not found");
+    expect(rpcError(`event: message\ndata: ${toolError}\n\n`, "text/event-stream")).toBe("Item not found");
+    const rpc = JSON.stringify({ jsonrpc: "2.0", id: 1, error: { code: -32602, message: "Invalid arguments" } });
+    expect(rpcError(rpc, "application/json")).toBe("Invalid arguments");
+    const ok = JSON.stringify({ jsonrpc: "2.0", id: 1, result: { content: [{ type: "text", text: "{}" }] } });
+    expect(rpcError(ok, "application/json")).toBeUndefined();
+    expect(rpcError("not json", "application/json")).toBeUndefined();
+  });
+
+  it("flags the call in the log, and only for MCP services", async () => {
+    const body = JSON.stringify({ jsonrpc: "2.0", id: 5, result: { content: [{ type: "text", text: "Item not found" }], isError: true } });
+    const respond = async () => new Response(body, { status: 200, headers: { "Content-Type": "application/json" } });
+    const request = { method: "POST", body: JSON.stringify({ method: "tools/call", params: { name: "create_docgen_batch" } }) };
+    const log = new CallLog();
+    await loggedFetch(log, "box", respond)("https://mcp.example", request);
+    await loggedFetch(log, "typesafe", respond)("https://api.example", request);
+    await settle();
+    const [typesafe, box] = finished(log);
+    expect(box).toMatchObject({ status: 200, rpcError: "Item not found" });
+    expect(formatCallLine(box)).toMatch(/\(tool error: Item not found\)$/);
+    expect(typesafe.rpcError).toBeUndefined();
   });
 });
 

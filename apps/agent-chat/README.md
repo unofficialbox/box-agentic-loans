@@ -22,6 +22,8 @@ A loan officer's chat for the Harborview demo. The conversation runs on the head
 
 Every status uses one 16px icon family (`StatusIcon.tsx`), always with text beside it, so colour is never the only signal.
 
+The full design guidelines, with the anti-patterns to avoid and a pre-ship checklist, are in [DESIGN.md](./DESIGN.md).
+
 Design principles, from Apple's HIG (clarity, deference, consistency), Linear's calmer 2025 interface (little colour, colour for meaning), and agentic-UX practice (plans visible, steps collapsed until wanted, approval before any write):
 - the conversation is the content; chrome defers to it, and the work behind a reply is one click away rather than always on screen
 - colour means something: blue for the primary action, amber for "waiting on you", green for done, red for failed
@@ -68,6 +70,7 @@ The API console is a page of its own, `devtools.html`, so the officer's page car
 - select a row to see its URL and its request and response headers and bodies
 - **Copy request**, **Copy response** or **Copy both** puts the call on the clipboard as HTTP-style text (request or status line, headers, blank line, body), already redacted
 - each code block (request or response headers or body) has a copy icon in its corner that copies exactly what the block shows
+- an MCP call that answers HTTP 200 but fails inside (a JSON-RPC `error`, or a tool result with `isError: true`, e.g. Box's "Item not found") counts as a failure: marked **tool error** in the list, with the reason in the details
 - filter by service or errors, or **Clear** the log (`DELETE /calls`)
 - drag the divider (or focus it and use the arrow keys) to resize the list; the split is remembered in this browser. On a narrow window the list sits above the details.
 
@@ -91,7 +94,7 @@ If the agent answers but has no call log (it is still running code from before t
 
 Every event may also carry `seq` (1, 2, 3… per turn). If the stream ends without `done`, or a `seq` number never arrives, the page tells the officer the reply may be incomplete. Box AI's own client checks its stream the same way.
 
-`POST {VITE_AGENT_API_URL}/actions/resolve` takes `{ proposalId, decision: "approved" | "rejected", note?, sessionId }` and returns the updated proposal, with `decision` and an optional `note` describing what happened.
+`POST {VITE_AGENT_API_URL}/actions/resolve` takes `{ proposalId, decision: "approved" | "rejected", note?, sessionId }` and returns the updated proposal, with `decision`, an `outcome` once approved (`"done"` if the action ran, `"failed"` if it didn't), and an optional `note`: what happened, or why it failed. Approving and succeeding are separate facts: an approved action that fails reads "Approved · didn't complete" in red, never a green "Approved", and the next step offered is **Try again**, not the step that assumed it worked.
 
 Writes such as `applyLoanTerms`, `prepareSignatureRequest`, and Doc Gen must never run on `/chat`. Emit a `proposal` and run the write only after `/actions/resolve` approves it.
 

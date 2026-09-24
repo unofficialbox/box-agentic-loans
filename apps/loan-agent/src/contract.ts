@@ -15,6 +15,8 @@ export interface Proposal {
   summary?: string;
   params?: Array<{ label: string; value: string }>;
   decision?: "approved" | "rejected";
+  /** Once approved: whether the action then ran ("done") or failed ("failed"). */
+  outcome?: "done" | "failed";
   note?: string;
 }
 
