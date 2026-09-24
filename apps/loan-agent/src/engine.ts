@@ -59,7 +59,29 @@ export interface AgentOptions {
   medium: number;
   defaultSigner?: { name?: string; email: string };
   now?: () => Date;
+  /** Keeps conversations and pending approvals across restarts. Without one they live in memory only. */
+  store?: SessionStore;
 }
+
+/** Where the agent keeps its conversations between restarts. */
+export interface SessionStore {
+  load(): AgentSnapshot | undefined;
+  save(snapshot: AgentSnapshot): void;
+}
+
+/** Everything a restarted agent needs to carry on: what each conversation knows, and what waits for approval. */
+export interface AgentSnapshot {
+  version: 1;
+  proposalCounter: number;
+  sessions: Array<{ id: string; usedAt: string; state: SavedSession }>;
+  pending: PendingAction[];
+}
+
+/** A session without its in-flight Box AI caches, which are only worth keeping while the process runs. */
+type SavedSession = Omit<Session, "covenants" | "packages">;
+
+/** Enough recent conversations to survive a restart mid-demo, without growing forever. */
+export const MAX_SAVED_SESSIONS = 50;
 
 interface Session {
   loan?: LoanPackage;
@@ -82,10 +104,20 @@ interface Session {
 /** What an approved action reports: a note, and anything it produced worth linking. */
 type ActionResult = string | { note: string; details?: NonNullable<Proposal["details"]> };
 
+/**
+ * An approved write, as data rather than a closure, so an approval can be
+ * saved and still run after a restart. Everything it needs was fixed when it
+ * was proposed: approving runs exactly what the card showed.
+ */
+type Action =
+  | { kind: "applyTerms"; loanId: string; terms: Terms }
+  | { kind: "generateLetter"; loanId: string; folderId: string; fileName: string; userInput: Record<string, unknown> }
+  | { kind: "sendForSignature"; loanId: string; fileId: string; email: string; name?: string };
+
 interface PendingAction {
   sessionId: string;
   proposal: Proposal;
-  run: () => Promise<ActionResult>;
+  action: Action;
 }
 
 const INTENT_LABELS: Record<Intent, string> = {
@@ -263,6 +295,8 @@ class Turn {
 
 export class LoanAgent {
   private readonly sessions = new Map<string, Session>();
+  /** When each session last had a turn or a decision, least recent first: the oldest are dropped first when saving. */
+  private readonly usedAt = new Map<string, string>();
   private readonly pending = new Map<string, PendingAction>();
   private proposalCounter = 0;
 
@@ -270,7 +304,25 @@ export class LoanAgent {
     private readonly tools: ToolGateway,
     private readonly decider: Decider,
     private readonly options: AgentOptions
-  ) {}
+  ) {
+    const saved = options.store?.load();
+    if (saved) {
+      // Saved most recent first; kept here least recent first.
+      for (const { id, usedAt, state } of [...saved.sessions].reverse()) {
+        this.sessions.set(id, state);
+        this.usedAt.set(id, usedAt);
+      }
+      for (const action of saved.pending) {
+        if (this.sessions.has(action.sessionId)) this.pending.set(action.proposal.id, action);
+      }
+      this.proposalCounter = saved.proposalCounter;
+    }
+  }
+
+  /** How many conversations and approvals were carried over from the last run. */
+  get restored(): { sessions: number; pending: number } {
+    return { sessions: this.sessions.size, pending: this.pending.size };
+  }
 
   async handle(sessionId: string, message: string, loanHint: string | undefined, emit: Emit): Promise<void> {
     const turn = new Turn(emit);
@@ -300,6 +352,7 @@ export class LoanAgent {
         turn.say([`That step failed, so I stopped. (${error instanceof Error ? error.message : String(error)})`]);
       }
     } finally {
+      this.save(sessionId);
       turn.done(status);
     }
   }
@@ -307,17 +360,19 @@ export class LoanAgent {
   async resolve(sessionId: string, proposalId: string, decision: "approved" | "rejected", note?: string): Promise<Proposal> {
     const action = this.pending.get(proposalId);
     if (!action || action.sessionId !== sessionId) {
-      // Also what a page restored after an agent restart sees: the agent's memory is gone.
+      // Also what a page sees for a conversation the agent dropped, or never saved.
       throw new UserFacingError(
-        "This approval is no longer pending: it was already decided, or the loan agent restarted since it was proposed. Nothing was changed. Ask again to get a new one."
+        "This approval is no longer pending: it was already decided, or the loan agent no longer has this conversation. Nothing was changed. Ask again to get a new one."
       );
     }
     this.pending.delete(proposalId);
+    // Saved before anything runs: a crash mid-write must never leave the approval open to run twice.
+    this.save(sessionId);
     if (decision === "rejected") {
       return { ...action.proposal, decision, note: note ?? "Not applied. Nothing was changed." };
     }
     try {
-      const result = await action.run();
+      const result = await this.run(sessionId, action.action);
       return typeof result === "string"
         ? { ...action.proposal, decision, outcome: "done", note: result }
         : { ...action.proposal, decision, outcome: "done", note: result.note, ...(result.details?.length ? { details: result.details } : {}) };
@@ -523,10 +578,7 @@ export class LoanAgent {
       title: `Apply ${fields.length} term${fields.length === 1 ? "" : "s"} to ${loanId}`,
       summary: `From ${extraction.file.name}${Object.keys(overrides).length ? ", with your changes" : ""}. Policy findings stay open.`,
       params: fields.map(field => ({ label: FIELD_LABELS[field], value: formatTerm(field, terms[field]) })),
-      run: async () => {
-        const result = await this.tools.applyLoanTerms(loanId, terms);
-        return result.ok ? result.message : `The LOS refused: ${result.message}`;
-      },
+      action: { kind: "applyTerms", loanId, terms },
     });
     turn.note("Held for approval · applyLoanTerms", "Nothing happens until you approve it in the chat", "succeeded");
     turn.say([`Ready to write ${fields.length} field${fields.length === 1 ? "" : "s"} to ${loanId}. Nothing is written until you approve.`]);
@@ -663,18 +715,7 @@ export class LoanAgent {
         { label: "Policy findings", value: `${findings.filter(f => f.verdict !== "within").length} open` },
         { label: "File", value: `${fileName}.pdf` },
       ],
-      run: async () => {
-        const result = await this.tools.generateCommitmentLetter({ folderId, fileName, userInput });
-        if (!result.outputFileId) {
-          return "Doc Gen accepted the batch but did not name the output file, so it can't be sent for signature from here. Check the job in Box.";
-        }
-        session.letter = { loanId, fileId: result.outputFileId, fileName: `${fileName}.pdf` };
-        session.signature = undefined;
-        return {
-          note: "Letter generated. Ask me to send it for signature when ready.",
-          details: [{ label: "File", value: `${fileName}.pdf`, href: `https://app.box.com/file/${result.outputFileId}` }],
-        };
-      },
+      action: { kind: "generateLetter", loanId, folderId, fileName, userInput },
     });
     turn.note("Held for approval · create_docgen_batch", "Nothing happens until you approve it in the chat", "succeeded");
     turn.say([`Commitment letter for ${loanId} is ready to generate. Approve to create it in the loan folder.`]);
@@ -727,20 +768,7 @@ export class LoanAgent {
         { label: "Document", value: letter.fileName },
         { label: "Loan", value: letter.loanId },
       ],
-      run: async () => {
-        const result = await this.tools.prepareSignatureRequest({ loanId: letter.loanId, fileId: letter.fileId, signerEmail: email, signerName: name });
-        // A request that exists but isn't prepared still blocks a duplicate.
-        if (result.requestId) session.signature = { fileId: letter.fileId, requestId: result.requestId };
-        if (!result.prepared) throw new Error(result.summary);
-        return {
-          note: result.summary,
-          details: [
-            ...(result.requestId ? [{ label: "Request", value: result.requestId }] : []),
-            ...(result.embedUrl ? [{ label: "Signing page", value: "Open in Box Sign", href: result.embedUrl }] : []),
-            ...(result.prepareUrl ? [{ label: "Review", value: "Open to review and send", href: result.prepareUrl }] : []),
-          ],
-        };
-      },
+      action: { kind: "sendForSignature", loanId: letter.loanId, fileId: letter.fileId, email, ...(name ? { name } : {}) },
     });
     turn.note("Held for approval · prepareSignatureRequest", "Nothing happens until you approve it in the chat", "succeeded");
     turn.say(["Ready to send the letter for signature. Approve to create the Box Sign request."]);
@@ -936,11 +964,86 @@ export class LoanAgent {
     return matches.find(doc => doc.fileId === decision.choice)!;
   }
 
-  private propose(sessionId: string, spec: Omit<Proposal, "id"> & { run: () => Promise<ActionResult> }): Proposal {
-    const { run, ...proposal } = spec;
+  private propose(sessionId: string, spec: Omit<Proposal, "id"> & { action: Action }): Proposal {
+    const { action, ...proposal } = spec;
     const full: Proposal = { id: `proposal-${++this.proposalCounter}`, ...proposal };
-    this.pending.set(full.id, { sessionId, proposal: full, run });
+    this.pending.set(full.id, { sessionId, proposal: full, action });
     return full;
+  }
+
+  /** Run an approved write. What it produced is recorded on the session and saved. */
+  private async run(sessionId: string, action: Action): Promise<ActionResult> {
+    const session = this.session(sessionId);
+    try {
+      switch (action.kind) {
+        case "applyTerms": {
+          const result = await this.tools.applyLoanTerms(action.loanId, action.terms);
+          return result.ok ? result.message : `The LOS refused: ${result.message}`;
+        }
+        case "generateLetter": {
+          const result = await this.tools.generateCommitmentLetter({ folderId: action.folderId, fileName: action.fileName, userInput: action.userInput });
+          if (!result.outputFileId) {
+            return "Doc Gen accepted the batch but did not name the output file, so it can't be sent for signature from here. Check the job in Box.";
+          }
+          session.letter = { loanId: action.loanId, fileId: result.outputFileId, fileName: `${action.fileName}.pdf` };
+          session.signature = undefined;
+          return {
+            note: "Letter generated. Ask me to send it for signature when ready.",
+            details: [{ label: "File", value: `${action.fileName}.pdf`, href: `https://app.box.com/file/${result.outputFileId}` }],
+          };
+        }
+        case "sendForSignature": {
+          const result = await this.tools.prepareSignatureRequest({
+            loanId: action.loanId,
+            fileId: action.fileId,
+            signerEmail: action.email,
+            signerName: action.name,
+          });
+          // A request that exists but isn't prepared still blocks a duplicate.
+          if (result.requestId) session.signature = { fileId: action.fileId, requestId: result.requestId };
+          if (!result.prepared) throw new Error(result.summary);
+          return {
+            note: result.summary,
+            details: [
+              ...(result.requestId ? [{ label: "Request", value: result.requestId }] : []),
+              ...(result.embedUrl ? [{ label: "Signing page", value: "Open in Box Sign", href: result.embedUrl }] : []),
+              ...(result.prepareUrl ? [{ label: "Review", value: "Open to review and send", href: result.prepareUrl }] : []),
+            ],
+          };
+        }
+      }
+    } finally {
+      this.save(sessionId);
+    }
+  }
+
+  /** Save every conversation, most recently used first, up to MAX_SAVED_SESSIONS. */
+  private save(sessionId: string) {
+    const store = this.options.store;
+    if (!store) return;
+    this.usedAt.delete(sessionId);
+    this.usedAt.set(sessionId, new Date().toISOString());
+    const kept = [...this.usedAt.keys()].reverse().slice(0, MAX_SAVED_SESSIONS);
+    for (const id of this.sessions.keys()) {
+      if (!kept.includes(id)) this.forget(id);
+    }
+    store.save({
+      version: 1,
+      proposalCounter: this.proposalCounter,
+      sessions: kept.map(id => {
+        const { covenants: _covenants, packages: _packages, ...state } = this.sessions.get(id)!;
+        return { id, usedAt: this.usedAt.get(id) ?? "", state };
+      }),
+      pending: [...this.pending.values()],
+    });
+  }
+
+  private forget(sessionId: string) {
+    this.sessions.delete(sessionId);
+    this.usedAt.delete(sessionId);
+    for (const [id, action] of this.pending) {
+      if (action.sessionId === sessionId) this.pending.delete(id);
+    }
   }
 
   /** The 15 Doc Gen paths (skills/loan-origination/SKILL.md), from sourced data only. */

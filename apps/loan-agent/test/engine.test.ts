@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AgentEvent, Proposal } from "../src/contract.js";
-import { LoanAgent, policySummary } from "../src/engine.js";
+import { LoanAgent, MAX_SAVED_SESSIONS, policySummary, type AgentSnapshot, type SessionStore } from "../src/engine.js";
 import { FixtureToolGateway } from "../src/fixtures.js";
 import type { PolicyFinding } from "../src/policy.js";
 import { ActionRequiredError } from "../src/tools.js";
@@ -536,6 +536,107 @@ describe("extraction speed", () => {
     const retried = await send(agent, CLICKPATH[4][0]);
     expect(calls).toBeGreaterThan(before);
     expect(retried.blocks[0]).toMatchObject({ type: "table" });
+  });
+});
+
+describe("restarts", () => {
+  /** Saves as JSON, like the file store, so nothing survives that wouldn't survive the disk. */
+  class JsonStore implements SessionStore {
+    json?: string;
+    load() {
+      return this.json ? (JSON.parse(this.json) as AgentSnapshot) : undefined;
+    }
+    save(snapshot: AgentSnapshot) {
+      this.json = JSON.stringify(snapshot);
+    }
+  }
+
+  function agentOn(store: SessionStore, tools = new FixtureToolGateway()) {
+    const decider = new StubDecider({
+      ...Object.fromEntries(CLICKPATH),
+      "Send it for signature": "send_for_signature",
+    });
+    const agent = new LoanAgent(tools, decider, {
+      high: 0.85,
+      medium: 0.5,
+      defaultSigner: { email: "jordan.pike@example.com" },
+      now: () => new Date("2026-09-23T12:00:00Z"),
+      store,
+    });
+    return { agent, tools };
+  }
+
+  it("runs an approval proposed before the restart, once", async () => {
+    const store = new JsonStore();
+    const before = agentOn(store).agent;
+    await send(before, CLICKPATH[0][0]);
+    await send(before, CLICKPATH[1][0]);
+    const [proposal] = (await send(before, CLICKPATH[3][0])).proposals;
+
+    const { agent, tools } = agentOn(store);
+    expect(agent.restored).toEqual({ sessions: 1, pending: 1 });
+    const applied: string[] = [];
+    const apply = tools.applyLoanTerms.bind(tools);
+    tools.applyLoanTerms = async (loanId, terms) => {
+      applied.push(loanId);
+      return apply(loanId, terms);
+    };
+    const resolved = await agent.resolve("s1", proposal.id, "approved");
+    expect(resolved).toMatchObject({ id: proposal.id, decision: "approved", outcome: "done" });
+    expect(applied).toHaveLength(1);
+    await expect(agentOn(store).agent.resolve("s1", proposal.id, "approved")).rejects.toThrow(/no longer pending/);
+  });
+
+  it("closes the approval on disk before the write runs, so a crash can't run it twice", async () => {
+    const store = new JsonStore();
+    const { agent, tools } = agentOn(store);
+    await send(agent, CLICKPATH[0][0]);
+    await send(agent, CLICKPATH[1][0]);
+    const [proposal] = (await send(agent, CLICKPATH[3][0])).proposals;
+    let pendingDuringWrite = -1;
+    tools.applyLoanTerms = async () => {
+      pendingDuringWrite = store.load()!.pending.length;
+      throw new Error("process died here");
+    };
+    await agent.resolve("s1", proposal.id, "approved");
+    expect(pendingDuringWrite).toBe(0);
+  });
+
+  it("keeps what the conversation knows: the loan, the extraction, and the generated letter", async () => {
+    const store = new JsonStore();
+    const before = agentOn(store).agent;
+    for (const [message] of CLICKPATH.slice(0, 2)) await send(before, message);
+    const [letter] = (await send(before, CLICKPATH[5][0])).proposals;
+    await before.resolve("s1", letter.id, "approved");
+
+    const { agent, tools } = agentOn(store);
+    let extractions = 0;
+    const extract = tools.extractLoanTerms.bind(tools);
+    tools.extractLoanTerms = async (loanId, fileId) => {
+      extractions++;
+      return extract(loanId, fileId);
+    };
+    const validated = await send(agent, CLICKPATH[2][0]);
+    expect(extractions).toBe(0);
+    expect(validated.blocks.length).toBeGreaterThan(0);
+    const signature = await send(agent, "Send it for signature");
+    expect(signature.proposals[0]).toMatchObject({ title: "Send commitment letter for signature" });
+    // Proposal IDs carry on from before the restart.
+    expect(signature.proposals[0].id).not.toBe(letter.id);
+  });
+
+  it("keeps the most recent conversations and drops the rest with their approvals", async () => {
+    const store = new JsonStore();
+    const { agent } = agentOn(store);
+    await send(agent, CLICKPATH[0][0], "oldest");
+    await send(agent, CLICKPATH[1][0], "oldest");
+    await send(agent, CLICKPATH[3][0], "oldest");
+    for (let i = 0; i < MAX_SAVED_SESSIONS; i++) await send(agent, "hello", `s-${i}`);
+    const saved = store.load()!;
+    expect(saved.sessions).toHaveLength(MAX_SAVED_SESSIONS);
+    expect(saved.sessions[0].id).toBe(`s-${MAX_SAVED_SESSIONS - 1}`);
+    expect(saved.sessions.some(entry => entry.id === "oldest")).toBe(false);
+    expect(saved.pending).toEqual([]);
   });
 });
 

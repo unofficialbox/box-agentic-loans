@@ -1,5 +1,51 @@
 import { describe, expect, it } from "vitest";
-import { docGenProblem, parseSignatureResult } from "../src/mcpTools.js";
+import {
+  docGenProblem,
+  itemName,
+  parseCovenants,
+  parseDocgenBatch,
+  parseDocumentType,
+  parseMetadataHits,
+  parseSignatureResult,
+} from "../src/mcpTools.js";
+import * as box from "./boxResponses.js";
+
+describe("Box responses as the Box MCP server returns them", () => {
+  it("reads metadata search hits, which carry no metadata values", () => {
+    expect(parseMetadataHits(box.searchFilesMetadata)).toEqual([
+      { fileId: "1001", name: "harborview-term-sheet-2026-borrower-markup.pdf", documentType: undefined, policyRisk: undefined },
+      { fileId: "1002", name: "Commercial Loan Commitment Letter (1).pdf", documentType: undefined, policyRisk: undefined },
+      { fileId: "1003", name: "Commercial Loan Commitment Letter.pdf", documentType: undefined, policyRisk: undefined },
+    ]);
+  });
+
+  it("reads the document type from the file's losDocument metadata", () => {
+    expect(parseDocumentType(box.fileDetailsWithMetadata)).toBe("Term Sheet");
+    expect(parseDocumentType(box.fileDetailsWithoutMetadata)).toBeUndefined();
+  });
+
+  it("reads covenants from a flat extraction, and from one wrapped as a JSON answer", () => {
+    const expected = { ltvMax: 75, dscrMin: 1.1, testFrequency: "annual", guarantyType: "limited", guarantyCapPerPerson: 1000000 };
+    expect(parseCovenants(box.covenantExtraction)).toEqual(expected);
+    expect(parseCovenants({ answer: JSON.stringify(box.covenantExtraction), created_at: "2026-09-24" })).toEqual(expected);
+    expect(parseCovenants({ ...box.covenantExtraction, guarantyType: "Limited", guarantyCapPerPerson: null, ltvMax: "" })).toMatchObject({
+      guarantyType: "limited",
+      guarantyCapPerPerson: undefined,
+      ltvMax: undefined,
+    });
+  });
+
+  it("names the Doc Gen template by fileName and the folder by name", () => {
+    expect(itemName(box.docgenTemplate)).toBe("los-commitment-letter-template.docx");
+    expect(itemName(box.folderDetails)).toBe("Harborview Logistics Commercial Real Estate 2026_22");
+  });
+
+  it("never takes the batch or template ID for the generated file", () => {
+    expect(parseDocgenBatch({ id: "4001", type: "docgen_batch" }).outputFileId).toBeUndefined();
+    expect(parseDocgenBatch({ ...box.docgenTemplate }).outputFileId).toBeUndefined();
+    expect(parseDocgenBatch({ entries: [{ id: "5001", status: "completed", output_file: { id: "6001", type: "file" } }] }).outputFileId).toBe("6001");
+  });
+});
 
 describe("Doc Gen readiness problems", () => {
   it("reads a missing scope as a permission problem, with the fix", () => {
@@ -20,6 +66,12 @@ describe("Doc Gen readiness problems", () => {
     const folder = docGenProblem("folder", "414659140160", "Box get_folder_details: Item not found");
     expect(folder.detail).toMatch(/^The loan folder 414659140160 isn't visible/);
     expect(folder.fix).toMatch(/Editor/);
+  });
+
+  it("reads a server error on the template as a template Box can't open", () => {
+    const problem = docGenProblem("template", "2001", `Box get_docgen_template_by_id: ${box.errors.templateUnknown}`);
+    expect(problem.detail).toBe("Template 2001 isn't a Doc Gen template the signed-in Box user can open (Box: Internal Server Error).");
+    expect(problem.fix).toMatch(/LOS_DOCGEN_TEMPLATE_FILE_ID/);
   });
 
   it("passes anything else through with Box's own words", () => {

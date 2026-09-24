@@ -4,6 +4,7 @@ import { CallLog, MAX_BODY_CHARS, formatCallLine, loggedFetch, redactBody, redac
 import { ConfigError, loadRootEnv, readConfig, type AgentConfig, type ConnectorConfig } from "./config.js";
 import { LoanAgent } from "./engine.js";
 import { FixtureToolGateway } from "./fixtures.js";
+import { FileSessionStore } from "./sessionStore.js";
 import { McpToolGateway } from "./mcpTools.js";
 import {
   BOX,
@@ -122,8 +123,13 @@ const agent = new LoanAgent(
     high: config.typesafe.high,
     medium: config.typesafe.medium,
     defaultSigner: config.defaultSigner,
+    // Fixture conversations never mix with live ones.
+    store: new FileSessionStore(fileURLToPath(new URL(`../.data/${config.fixtures ? "sessions-fixtures" : "sessions"}.json`, import.meta.url))),
   }
 );
+if (agent.restored.sessions) {
+  console.log(`[sessions] Restored ${agent.restored.sessions} conversation(s) and ${agent.restored.pending} pending approval(s).`);
+}
 
 const MAX_BODY = 64 * 1024;
 

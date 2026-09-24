@@ -18,7 +18,7 @@ A loan officer's chat for the Harborview demo. The conversation runs on the head
   - **Kept across reloads.** Conversations are saved in this browser (`localStorage`): messages, each reply's steps and results, and the loan in context, for the 20 most recent. They come back after a reload, and the chat that was open reopens.
     - Demo mode and each live agent URL keep separate lists.
     - A reply cut off by a reload is closed and marked "The page reloaded before this reply finished".
-    - The agent keeps its own memory per chat (the loan, the extraction, a pending approval) until it restarts. After a restart, a restored approval says it is no longer pending instead of acting, and you ask again.
+    - The agent keeps its own memory per chat (the loan, the extraction, the letter, a pending approval) on disk, so a restored chat picks up where it left off even after the agent restarts. It keeps the 50 most recent conversations; an approval from an older one says it is no longer pending instead of acting, and you ask again.
 - **Welcome state.** Before the first message: a greeting by the time of day ("Good evening. Which loan are we working on?"), what the copilot does, and four ways in as a list of rows (from `src/prompts.ts`), on the same left edge as the conversation that replaces them.
 - **One column.** A single centred column at a reading measure, with the composer docked under it. Enter sends and Shift+Enter adds a line. While a reply streams, the send button becomes Stop. The thread follows new content to the bottom, and stops following while you scroll up to read.
 - **No developer tooling on the page.** In live mode a quiet **API calls ↗** link at the foot of the chats sidebar opens the API console (below) in its own tab.
