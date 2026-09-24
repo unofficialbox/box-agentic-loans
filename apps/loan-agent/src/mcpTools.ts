@@ -62,18 +62,28 @@ class McpServer {
   }
 }
 
+/** Box's REST API, for the one thing the Box MCP server has no tool for: a Doc Gen batch's jobs. */
+const BOX_API = "https://api.box.com/2.0";
+
+/** How long to wait for Doc Gen to produce the letter: a one-page letter takes a few seconds. */
+export interface DocgenPoll {
+  attempts: number;
+  intervalMs: number;
+}
+
 export class McpToolGateway implements ToolGateway {
   private readonly los: McpServer;
   private readonly box: McpServer;
 
   constructor(
     los: ServerConfig,
-    box: ServerConfig,
+    private readonly boxConfig: ServerConfig,
     private readonly boxEnterpriseId: string,
-    private readonly docgenTemplateFileId: string
+    private readonly docgenTemplateFileId: string,
+    private readonly docgenPoll: DocgenPoll = { attempts: 30, intervalMs: 1000 }
   ) {
     this.los = new McpServer("LOS", los);
-    this.box = new McpServer("Box", box);
+    this.box = new McpServer("Box", boxConfig);
   }
 
   async listLoans(filter: { borrower?: string; status?: string }) {
@@ -154,7 +164,11 @@ export class McpToolGateway implements ToolGateway {
       output_type: "pdf",
       document_generation_data: [{ generated_file_name: input.fileName, user_input: input.userInput }],
     });
-    return parseDocgenBatch(result);
+    const accepted = parseDocgenBatch(result);
+    if (accepted.outputFileId || !accepted.batchId) return accepted;
+    // create_docgen_batch answers with the batch alone; its job names the file it produced.
+    const output = await waitForDocgenOutput(this.boxConfig.fetch, accepted.batchId, this.docgenPoll);
+    return { ...accepted, ...(output ? { outputFileId: output } : {}) };
   }
 
   async prepareSignatureRequest(input: { loanId: string; fileId: string; signerEmail: string; signerName?: string }): Promise<SignatureResult> {
@@ -318,7 +332,43 @@ export function itemName(result: unknown): string | undefined {
  */
 export function parseDocgenBatch(result: unknown): DocgenResult {
   const output = findObjectUnder(result, /^(output_file|generated_file|output)$/);
-  return { outputFileId: output ? stringAt(output, "id") : undefined, raw: JSON.stringify(result) };
+  const batchId = isObject(result) && result.type === "docgen_batch" ? stringAt(result, "id") : undefined;
+  return {
+    outputFileId: output ? stringAt(output, "id") : undefined,
+    ...(batchId ? { batchId } : {}),
+    raw: JSON.stringify(result),
+  };
+}
+
+/** GET /docgen_batch_jobs/{batch}: where this batch's one job stands. */
+export function parseDocgenJobs(result: unknown): { state: "completed" | "failed" | "running"; status?: string; outputFileId?: string } {
+  const job = findArray(result, "entries")?.[0];
+  if (!job) return { state: "running" };
+  const status = stringAt(job, "status");
+  const output = isObject(job.output_file) ? stringAt(job.output_file, "id") : undefined;
+  if (status === "completed" && output) return { state: "completed", status, outputFileId: output };
+  // completed_with_error included: a letter with errors in it is not one to send.
+  if (status === "failed" || status === "completed_with_error") return { state: "failed", status };
+  return { state: "running", ...(status ? { status } : {}) };
+}
+
+/**
+ * The file a Doc Gen batch produced, read from that batch's own job, never
+ * found by name: an earlier failed letter can have the same name. Undefined
+ * if the job is still running when the wait is over; throws if it failed.
+ */
+export async function waitForDocgenOutput(fetch: FetchLike, batchId: string, poll: DocgenPoll): Promise<string | undefined> {
+  for (let attempt = 0; attempt < poll.attempts; attempt++) {
+    if (attempt > 0) await new Promise(resolve => setTimeout(resolve, poll.intervalMs));
+    const response = await fetch(`${BOX_API}/docgen_batch_jobs/${encodeURIComponent(batchId)}`);
+    if (!response.ok) {
+      throw new Error(`Box docgen_batch_jobs ${batchId}: HTTP ${response.status} ${(await response.text()).slice(0, 300)}`);
+    }
+    const job = parseDocgenJobs(await response.json());
+    if (job.state === "completed") return job.outputFileId;
+    if (job.state === "failed") throw new Error(`Box Doc Gen couldn't generate the letter (batch ${batchId}, job ${job.status}). Nothing was created to sign.`);
+  }
+  return undefined;
 }
 
 /**

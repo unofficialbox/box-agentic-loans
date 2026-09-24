@@ -67,6 +67,13 @@ Doc Gen fails for reasons only Box can see: the sign-in lacks the Doc Gen scope,
 - **When Box connects** (at startup, or right after sign-in), it looks up the template `LOS_DOCGEN_TEMPLATE_FILE_ID` with `get_docgen_template_by_id`. It prints `[docgen] Template ready: …`, or the problem and the fix, and `/health` reports the result under `docgen`.
 - **On every letter request** it checks the template and the loan's folder (`get_folder_details`). If either fails, there is no approval card. The reply says nothing was created and lists each check, what's wrong and how to fix it, and it offers **Check again**.
 
+**Finding the generated letter.** `create_docgen_batch` answers with the batch ID only (`{"id": …, "type": "docgen_batch"}`), not the file it produced. The Box MCP server has no tool for Doc Gen jobs, so after an approved generation the agent asks Box's REST API directly, `GET https://api.box.com/2.0/docgen_batch_jobs/{batch}`, with the same Box sign-in, once a second for up to 30 seconds:
+- **completed** with an output file: that file is the letter, and the only one the agent will send for signature.
+- **failed** or **completed_with_error**: the approval reports failed, and nothing is recorded to sign.
+- **still running after 30 seconds**: the approval reports done, with the batch ID and no letter to sign. Check the job in Box before generating again; a second batch makes a second letter.
+
+The agent never picks the letter by file name or metadata search: an earlier failed attempt can have the same name. The lookup appears in the API call log like every other call.
+
 The fixes it gives:
 - **Access denied / scopes:** give the Box MCP Server integration the Doc Gen scope (`docgen.readwrite`), then sign in to Box again.
 - **Template not found** (Box answers an unknown or inaccessible template ID with "Internal Server Error", not "not found"): check `LOS_DOCGEN_TEMPLATE_FILE_ID`; the file must be a Doc Gen template shared with the signed-in user.
@@ -76,7 +83,7 @@ The check proves the template file exists and the user can open it. It can't pro
 
 ```bash
 npm install
-npm test                 # 112 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
+npm test                 # 117 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
 npm start                # http://LOAN_AGENT_HOST:LOAN_AGENT_PORT
 
 # Without MCP access, TypeSafe still decides but the tools are seeded fixtures:
@@ -143,6 +150,6 @@ The log holds loan data from your org, so keep the server on localhost.
 ## Limits
 
 - **No user authentication.** The bearer token is the chat session ID, not a credential, so keep `LOAN_AGENT_HOST=127.0.0.1`. Put real auth in front before exposing it.
-- **Box response formats.** `search_files_metadata`, `get_file_details`, `ai_extract_structured_from_fields`, `get_docgen_template_by_id` and `get_folder_details` are tested against responses captured from a live Box MCP server (`test/boxResponses.ts`, identifiers replaced). A successful `create_docgen_batch` hasn't been captured yet, because that means generating a real letter. If its response doesn't name the output file, the agent refuses to send anything for signature rather than choosing a file by name.
+- **Box response formats.** `search_files_metadata`, `get_file_details`, `ai_extract_structured_from_fields`, `get_docgen_template_by_id`, `get_folder_details` and `create_docgen_batch` are tested against responses captured from a live Box MCP server (`test/boxResponses.ts`, identifiers replaced). The `docgen_batch_jobs` response is Box's documented shape and hasn't been captured yet: it needs the agent's own Box sign-in.
 - **Pricing check is partial.** SOFR isn't returned by any tool, so the pricing rule checks only the 6.50% absolute floor.
 - **Guaranty check is partial.** It covers limited vs unlimited, and flags anyone the document leaves out of the guaranty ("Harborview Employee Holdings LP gives no guaranty") as **Needs confirmation**. It can't rule on it: every owner of 20% or more must guarantee, but no tool returns ownership percentages yet. Once an ownership schedule or record field exists, the same check can say outside policy.

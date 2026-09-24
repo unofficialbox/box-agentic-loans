@@ -40,8 +40,10 @@ export interface DocGenCheck {
 }
 
 export interface DocgenResult {
-  /** The output file this generation produced, when the response names it. */
+  /** The output file this generation produced, from this batch's own job. */
   outputFileId?: string;
+  /** The batch Box accepted, for finding the job in Box when there is no output file yet. */
+  batchId?: string;
   raw: string;
 }
 
