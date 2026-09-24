@@ -49,6 +49,23 @@ export interface WriteResult {
 }
 
 /**
+ * What LOS prepareSignatureRequest (LosSendForSignature) returns. `prepared`
+ * is the only success signal: a status refusal, a file outside the loan's
+ * folder, or a Box Sign error all come back with prepared = false and the
+ * reason in `summary`. A request can exist (requestId) without being prepared.
+ */
+export interface SignatureResult {
+  prepared: boolean;
+  summary: string;
+  requestId?: string;
+  embedUrl?: string;
+  prepareUrl?: string;
+}
+
+/** The loan statuses LosSendForSignature will sign from; anything else is refused. */
+export const SIGNABLE_STATUSES = ["Approved", "Commitment"] as const;
+
+/**
  * Every side effect the agent can have. Reads run during a turn; the three
  * writes run only from an approved proposal. Implemented over MCP
  * (mcpTools.ts) and by seeded fixtures (fixtures.ts).
@@ -76,7 +93,7 @@ export interface ToolGateway {
     fileId: string;
     signerEmail: string;
     signerName?: string;
-  }): Promise<WriteResult>;
+  }): Promise<SignatureResult>;
 }
 
 /** Box AI structured-extraction fields for covenant comparison. */

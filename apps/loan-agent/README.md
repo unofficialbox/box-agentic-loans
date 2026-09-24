@@ -14,7 +14,12 @@ The backend for the Loan Copilot chat ([apps/agent-chat](../agent-chat/README.md
 3. **Run a fixed tool program per intent** against the LOS and Box MCP servers, then check the results against **credit policy in code** (`src/policy.ts`, which encodes `sample-data/policies/approved`). Every finding cites its policy ID.
 4. **Render from templates.** The reply text, citations, and approval cards are built in code. A reply is a sentence or two; its detail (terms, policy checks, comparisons, loan lists, flagged documents) goes out as structured `block` events that the chat renders as tables and status rows.
 
-Writes (`applyLoanTerms`, `create_docgen_batch`, `prepareSignatureRequest`) never run during a turn. They become approval cards and run only from `POST /actions/resolve`, once, and only for the same session. The resolved proposal says `outcome: "done"` if the write ran and `outcome: "failed"` (with the reason as its note) if it didn't; a failed Doc Gen records no letter, so signature stays unavailable.
+Writes (`applyLoanTerms`, `create_docgen_batch`, `prepareSignatureRequest`) never run during a turn. They become approval cards and run only from `POST /actions/resolve`, once, and only for the same session. The resolved proposal says `outcome: "done"` if the write ran and `outcome: "failed"` (with the reason as its note) if it didn't; a failed Doc Gen records no letter, so signature stays unavailable. A done action can carry `details` the chat shows under the record: the generated letter's Box link, the Box Sign request ID and signing page.
+
+Signature follows `LosSendForSignature`:
+- **Status check first.** Before asking, the agent reads the loan's current status. Salesforce only signs from **Approved** or **Commitment**, so for any other status it explains why and offers no approval.
+- **`prepared` is the only success signal.** A refusal (status, a file outside the loan folder, a Box Sign error) comes back as `outcome: "failed"` with Salesforce's summary.
+- **One request per letter.** Once a request exists for a letter, even one Box Sign created without a signing URL, the agent won't create a second.
 
 ## What is and isn't deterministic
 
@@ -60,7 +65,7 @@ The fixes it gives:
 
 ```bash
 npm install
-npm test                 # 89 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
+npm test                 # 95 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
 npm start                # http://LOAN_AGENT_HOST:LOAN_AGENT_PORT
 
 # Without MCP access, TypeSafe still decides but the tools are seeded fixtures:

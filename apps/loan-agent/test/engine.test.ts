@@ -138,7 +138,7 @@ describe("clickpath on fixtures", () => {
     expect(tools.writes).toEqual([
       { tool: "applyLoanTerms", input: { loanId: "LN-2026-0003", terms: { loanAmount: 4800000, interestRate: 6.85, termMonths: 120 } } },
     ]);
-    await expect(agent.resolve("s1", proposal.id, "approved")).rejects.toThrow(/No pending proposal/);
+    await expect(agent.resolve("s1", proposal.id, "approved")).rejects.toThrow(/no longer pending/);
   });
 
   it("uses values the officer states over extracted ones", async () => {
@@ -230,6 +230,65 @@ describe("clickpath on fixtures", () => {
     await send(agent, CLICKPATH[0][0]);
     const apply = await send(agent, CLICKPATH[3][0]);
     expect(await agent.resolve("s1", apply.proposals[0].id, "approved")).toMatchObject({ outcome: "done" });
+  });
+
+  describe("signature", () => {
+    async function withLetter(options: { signer?: string } = { signer: "dana@example.com" }) {
+      const env = setup(options);
+      await send(env.agent, CLICKPATH[0][0]);
+      const generate = await send(env.agent, CLICKPATH[5][0]);
+      const generated = await env.agent.resolve("s1", generate.proposals[0].id, "approved");
+      return { ...env, generated };
+    }
+
+    it("links the generated letter", async () => {
+      const { generated } = await withLetter();
+      expect(generated.details).toEqual([{ label: "File", value: "LN-2026-0003-Commitment-Letter.pdf", href: "https://app.box.com/file/900099" }]);
+    });
+
+    it("reports a prepared request with its ID, and refuses a second one for the same letter", async () => {
+      const { agent } = await withLetter();
+      const sign = await send(agent, "Send it for signature");
+      expect(sign.trace).toContain("LOS · getLoanPackage:succeeded");
+      const resolved = await agent.resolve("s1", sign.proposals[0].id, "approved");
+      expect(resolved).toMatchObject({ outcome: "done", details: [{ label: "Request", value: "fixture-sign-request" }] });
+      const again = await send(agent, "Send it for signature");
+      expect(again.proposals).toEqual([]);
+      expect(again.text).toMatch(/already exists for LN-2026-0003-Commitment-Letter\.pdf, so I won't create another/);
+    });
+
+    it("treats a refusal from Salesforce as a failure, never as done", async () => {
+      const { agent, tools } = await withLetter();
+      tools.prepareSignatureRequest = async () => ({
+        prepared: false,
+        summary: "Box Sign refused the request (400). Nothing was prepared and nothing was sent.",
+      });
+      const sign = await send(agent, "Send it for signature");
+      const resolved = await agent.resolve("s1", sign.proposals[0].id, "approved");
+      expect(resolved).toMatchObject({ outcome: "failed", note: "Box Sign refused the request (400). Nothing was prepared and nothing was sent." });
+    });
+
+    it("blocks a duplicate after a request was created but not prepared", async () => {
+      const { agent, tools } = await withLetter();
+      tools.prepareSignatureRequest = async () => ({ prepared: false, summary: "Box Sign created request 77, but has not returned an iframe signing URL.", requestId: "77" });
+      const sign = await send(agent, "Send it for signature");
+      expect(await agent.resolve("s1", sign.proposals[0].id, "approved")).toMatchObject({ outcome: "failed" });
+      const again = await send(agent, "Send it for signature");
+      expect(again.text).toMatch(/A Box Sign request \(77\) already exists/);
+    });
+
+    it("checks the loan's current status before asking, and says why it can't be signed", async () => {
+      const { agent, tools } = await withLetter();
+      const read = tools.getLoanPackage.bind(tools);
+      tools.getLoanPackage = async loan => ({ ...(await read(loan)), status: "Underwriting", risk: "High" });
+      const sign = await send(agent, "Send it for signature");
+      expect(sign.proposals).toEqual([]);
+      expect(sign.text).toBe(
+        "LN-2026-0003 is Underwriting, so it can't go for signature yet. Salesforce allows signature once the loan is Approved or Commitment, after Credit Committee approval is recorded. Nothing was sent."
+      );
+      expect(sign.trace).toContain("Rule · signature status:failed");
+      expect(tools.writes.filter(write => write.tool === "prepareSignatureRequest")).toEqual([]);
+    });
   });
 
   it("will not send a letter this conversation did not generate", async () => {

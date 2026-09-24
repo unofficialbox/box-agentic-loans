@@ -9,6 +9,7 @@ import {
   type DocGenCheckItem,
   type DocgenResult,
   type MetadataHit,
+  type SignatureResult,
   type ToolGateway,
   type WriteResult,
 } from "./tools.js";
@@ -183,13 +184,14 @@ export class McpToolGateway implements ToolGateway {
     return { outputFileId: output ? stringAt(output, "id") : undefined, raw: JSON.stringify(result) };
   }
 
-  async prepareSignatureRequest(input: { loanId: string; fileId: string; signerEmail: string; signerName?: string }) {
-    return this.losWrite("prepareSignatureRequest", {
+  async prepareSignatureRequest(input: { loanId: string; fileId: string; signerEmail: string; signerName?: string }): Promise<SignatureResult> {
+    const values = await this.losAction("prepareSignatureRequest", {
       loanReference: input.loanId,
       itemId: input.fileId,
       signerEmail: input.signerEmail,
       ...(input.signerName && { signerName: input.signerName }),
     });
+    return parseSignatureResult(values);
   }
 
   /** LOS tools are Salesforce invocable actions: `{inputs: [...]}` in, `outputValues` out. */
@@ -328,4 +330,21 @@ function firstString(value: unknown, keys: string[]): string | undefined {
     if (found) return found;
   }
   return undefined;
+}
+
+/**
+ * LosSendForSignature's outputValues. Read by name, not by guessing: the
+ * generic write reader took `prepared: false` for success and could pick the
+ * embed URL as the message.
+ */
+export function parseSignatureResult(values: Record<string, unknown>): SignatureResult {
+  const text = (key: string) => (typeof values[key] === "string" && values[key] ? (values[key] as string) : undefined);
+  const prepared = values.prepared === true;
+  return {
+    prepared,
+    summary: text("summary") ?? (prepared ? "The signature request is prepared." : "The signature request was not prepared."),
+    ...(text("requestId") ? { requestId: text("requestId") } : {}),
+    ...(text("embedUrl") ? { embedUrl: text("embedUrl") } : {}),
+    ...(text("prepareUrl") ? { prepareUrl: text("prepareUrl") } : {}),
+  };
 }

@@ -212,6 +212,56 @@
   gap: 0.125rem;
 }
 
+/* The delete button sits over the row's right edge, shown on hover or focus. */
+.chat-row {
+  position: relative;
+}
+
+.chat-delete {
+  position: absolute;
+  top: 50%;
+  right: var(--space-1);
+  display: grid;
+  place-items: center;
+  width: var(--control-height-compact);
+  height: var(--control-height-compact);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface-hover);
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(-50%);
+  transition: opacity var(--duration-1) var(--ease-out);
+}
+
+.chat-row:hover .chat-delete,
+.chat-delete:focus-visible {
+  opacity: 1;
+}
+
+.chat-delete:hover {
+  color: var(--text);
+}
+
+.chat-delete:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+/* Touch screens have no hover: keep it visible. */
+@media (hover: none) {
+  .chat-delete {
+    opacity: 1;
+  }
+}
+
+.chat-row:hover .chat-item,
+.chat-row:focus-within .chat-item {
+  padding-right: calc(var(--control-height-compact) + var(--space-2));
+}
+
 .chat-item[aria-current="page"] {
   background: var(--selected-quiet);
 }
@@ -1341,6 +1391,39 @@ a.source:focus-visible {
 .approval-failed .approval-record-state,
 .approval-failed .approval-note {
   color: color-mix(in srgb, var(--danger) 85%, var(--text));
+}
+
+/* What a done action produced: quiet label/value pairs under the record line. */
+.approval-details {
+  display: grid;
+  gap: 0.125rem;
+  margin: 0;
+  padding-left: calc(1rem + var(--space-2));
+  font-size: 0.8125rem;
+}
+
+.approval-details > div {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.approval-details dt {
+  min-width: 6rem;
+  color: var(--muted);
+}
+
+.approval-details dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.approval-details a {
+  color: var(--brand);
+  text-decoration: none;
+}
+
+.approval-details a:hover {
+  text-decoration: underline;
 }
 
 .approval-record .approval-note {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { docGenProblem } from "../src/mcpTools.js";
+import { docGenProblem, parseSignatureResult } from "../src/mcpTools.js";
 
 describe("Doc Gen readiness problems", () => {
   it("reads a missing scope as a permission problem, with the fix", () => {
@@ -26,5 +26,31 @@ describe("Doc Gen readiness problems", () => {
     expect(docGenProblem("folder", "9", "Box get_folder_details: Internal Server Error").detail).toBe(
       "Box couldn't confirm the loan folder (Box: Internal Server Error)."
     );
+  });
+});
+
+describe("signature results", () => {
+  it("reads prepared as the only success signal, and the summary as the message", () => {
+    expect(
+      parseSignatureResult({
+        summary: "A Box Sign request is prepared for LN-2026-0042 and addressed to dana@example.com.",
+        prepared: true,
+        requestId: "123",
+        embedUrl: "https://app.box.com/sign/document/abc/embed",
+        prepareUrl: null,
+      })
+    ).toEqual({
+      prepared: true,
+      summary: "A Box Sign request is prepared for LN-2026-0042 and addressed to dana@example.com.",
+      requestId: "123",
+      embedUrl: "https://app.box.com/sign/document/abc/embed",
+    });
+    const refused = parseSignatureResult({
+      summary: "Loan LN-2026-0042 is Underwriting, not approved for signature.",
+      prepared: false,
+      embedUrl: "https://example.com/a-long-url-that-the-old-reader-could-mistake-for-the-message",
+    });
+    expect(refused.prepared).toBe(false);
+    expect(refused.summary).toBe("Loan LN-2026-0042 is Underwriting, not approved for signature.");
   });
 });

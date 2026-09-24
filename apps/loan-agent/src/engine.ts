@@ -22,7 +22,7 @@ import {
   type Terms,
 } from "./los.js";
 import { POLICIES, evaluateTerms, money, type PolicyFinding } from "./policy.js";
-import { ActionRequiredError, type CovenantFields, type MetadataHit, type ToolGateway } from "./tools.js";
+import { ActionRequiredError, SIGNABLE_STATUSES, type CovenantFields, type MetadataHit, type ToolGateway } from "./tools.js";
 import { TypeSafeError, runnerUp, type Decider } from "./typesafe.js";
 import {
   INTENTS,
@@ -68,12 +68,17 @@ interface Session {
   findings?: PolicyFinding[];
   precedent?: Array<{ loanId: string; file: LoanDocument; covenants: CovenantFields }>;
   letter?: { loanId: string; fileId: string; fileName: string };
+  /** The Box Sign request made for the letter, so a second one is never created for it. */
+  signature?: { fileId: string; requestId: string };
 }
+
+/** What an approved action reports: a note, and anything it produced worth linking. */
+type ActionResult = string | { note: string; details?: NonNullable<Proposal["details"]> };
 
 interface PendingAction {
   sessionId: string;
   proposal: Proposal;
-  run: () => Promise<string>;
+  run: () => Promise<ActionResult>;
 }
 
 const INTENT_LABELS: Record<Intent, string> = {
@@ -106,7 +111,7 @@ const PLANS: Record<Intent, string[]> = {
   apply_terms: ["Resolve the loan", "Collect the terms to apply", "Hold the write for your approval"],
   compare_history: ["Resolve the loan", "Find prior executed loans", "Extract covenants from each agreement", "Compare with this markup"],
   generate_letter: ["Resolve the loan", "Build the 15 Doc Gen fields", "Check Box Doc Gen access", "Hold generation for your approval"],
-  send_for_signature: ["Find the letter generated in this session", "Confirm the signer", "Hold the Box Sign request for your approval"],
+  send_for_signature: ["Find the letter generated in this session", "Confirm the signer", "Check the loan can be signed", "Hold the Box Sign request for your approval"],
   list_loans: ["Query LOS loans"],
   out_of_scope: [],
 };
@@ -295,14 +300,20 @@ export class LoanAgent {
   async resolve(sessionId: string, proposalId: string, decision: "approved" | "rejected", note?: string): Promise<Proposal> {
     const action = this.pending.get(proposalId);
     if (!action || action.sessionId !== sessionId) {
-      throw new UserFacingError(`No pending proposal ${proposalId} in this session.`);
+      // Also what a page restored after an agent restart sees: the agent's memory is gone.
+      throw new UserFacingError(
+        "This approval is no longer pending: it was already decided, or the loan agent restarted since it was proposed. Nothing was changed. Ask again to get a new one."
+      );
     }
     this.pending.delete(proposalId);
     if (decision === "rejected") {
       return { ...action.proposal, decision, note: note ?? "Not applied. Nothing was changed." };
     }
     try {
-      return { ...action.proposal, decision, outcome: "done", note: await action.run() };
+      const result = await action.run();
+      return typeof result === "string"
+        ? { ...action.proposal, decision, outcome: "done", note: result }
+        : { ...action.proposal, decision, outcome: "done", note: result.note, ...(result.details?.length ? { details: result.details } : {}) };
     } catch (error) {
       // Approved is the officer's decision; failed is what happened next. Keep both.
       return {
@@ -645,7 +656,11 @@ export class LoanAgent {
           return "Doc Gen accepted the batch but did not name the output file, so it can't be sent for signature from here. Check the job in Box.";
         }
         session.letter = { loanId, fileId: result.outputFileId, fileName: `${fileName}.pdf` };
-        return "Letter generated. Ask me to send it for signature when ready.";
+        session.signature = undefined;
+        return {
+          note: "Letter generated. Ask me to send it for signature when ready.",
+          details: [{ label: "File", value: `${fileName}.pdf`, href: `https://app.box.com/file/${result.outputFileId}` }],
+        };
       },
     });
     turn.note("Held for approval · create_docgen_batch", "Nothing happens until you approve it in the chat", "succeeded");
@@ -666,6 +681,31 @@ export class LoanAgent {
     }
     const name = emailAddress(message) ? undefined : this.options.defaultSigner?.name;
     turn.advance();
+
+    // Box Sign never gets a second request for the same letter: a retry after a
+    // timeout or a partial success would create a duplicate for the signer.
+    if (session.signature?.fileId === letter.fileId) {
+      throw new UserFacingError(
+        `A Box Sign request (${session.signature.requestId}) already exists for ${letter.fileName}, so I won't create another. Check it in Box Sign.`
+      );
+    }
+
+    // Salesforce refuses signature outside Approved or Commitment: read the
+    // current status, not the one from earlier in the conversation.
+    const current = await turn.step("LOS · getLoanPackage", `${letter.loanId} · current status`, () => this.tools.getLoanPackage(letter.loanId));
+    if (session.loan && session.loan.loanId === current.loanId) {
+      session.loan = { ...session.loan, status: current.status, risk: current.risk };
+    }
+    if (!current.status || !(SIGNABLE_STATUSES as readonly string[]).includes(current.status)) {
+      turn.note("Rule · signature status", `${current.status ?? "no status"} is not ${SIGNABLE_STATUSES.join(" or ")}`, "failed");
+      turn.say([
+        `${letter.loanId} is ${current.status ?? "without a status"}, so it can't go for signature yet. Salesforce allows signature once the loan is ${SIGNABLE_STATUSES.join(" or ")}, after Credit Committee approval is recorded. Nothing was sent.`,
+      ]);
+      turn.advance();
+      turn.stoppedWith = [];
+      return;
+    }
+    turn.advance();
     const proposal = this.propose(sessionId, {
       title: "Send commitment letter for signature",
       summary: "Creates a Box Sign request and stores the embed link on the loan record.",
@@ -676,7 +716,17 @@ export class LoanAgent {
       ],
       run: async () => {
         const result = await this.tools.prepareSignatureRequest({ loanId: letter.loanId, fileId: letter.fileId, signerEmail: email, signerName: name });
-        return result.ok ? result.message : `Not sent: ${result.message}`;
+        // A request that exists but isn't prepared still blocks a duplicate.
+        if (result.requestId) session.signature = { fileId: letter.fileId, requestId: result.requestId };
+        if (!result.prepared) throw new Error(result.summary);
+        return {
+          note: result.summary,
+          details: [
+            ...(result.requestId ? [{ label: "Request", value: result.requestId }] : []),
+            ...(result.embedUrl ? [{ label: "Signing page", value: "Open in Box Sign", href: result.embedUrl }] : []),
+            ...(result.prepareUrl ? [{ label: "Review", value: "Open to review and send", href: result.prepareUrl }] : []),
+          ],
+        };
       },
     });
     turn.note("Held for approval · prepareSignatureRequest", "Nothing happens until you approve it in the chat", "succeeded");
@@ -846,7 +896,7 @@ export class LoanAgent {
     return matches.find(doc => doc.fileId === decision.choice)!;
   }
 
-  private propose(sessionId: string, spec: Omit<Proposal, "id"> & { run: () => Promise<string> }): Proposal {
+  private propose(sessionId: string, spec: Omit<Proposal, "id"> & { run: () => Promise<ActionResult> }): Proposal {
     const { run, ...proposal } = spec;
     const full: Proposal = { id: `proposal-${++this.proposalCounter}`, ...proposal };
     this.pending.set(full.id, { sessionId, proposal: full, run });

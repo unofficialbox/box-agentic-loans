@@ -19,6 +19,19 @@ export interface Conversation {
 }
 
 /**
+ * The pattern's controller, able to start from saved messages. `setState` and
+ * `emit` are the controller's own protected API; restoring is just a state
+ * that didn't come from a send.
+ */
+class RestorableChatController extends AgentChatController {
+  restore(messages: AgentChatMessage[]) {
+    if (messages.length === 0) return;
+    this.setState({ ...this.getState(), messages });
+    this.emit("messagesChanged", { messages });
+  }
+}
+
+/**
  * One conversation on box-open-elements' headless AgentChatController: it owns
  * the messages (text, citations, proposals); this hook adds each turn's side
  * channels (plan, steps, result blocks, next options, timing), keyed by the
@@ -27,12 +40,16 @@ export interface Conversation {
 export function useConversation(
   transport: LoanAgentTransport,
   sessionId: string,
-  onContext: (loan: LoanContext) => void
+  onContext: (loan: LoanContext) => void,
+  /** Saved messages and turn details to resume from (already made safe by prepareRestore). */
+  restored?: { messages: AgentChatMessage[]; turns: Record<string, TurnDetails> }
 ): Conversation {
   const controller = useMemo(
-    () => new AgentChatController({ token: sessionId, transport, agentName: "Loan Copilot" }),
+    () => new RestorableChatController({ token: sessionId, transport, agentName: "Loan Copilot" }),
     [transport, sessionId]
   );
+  // Fixed at mount: later saves of this same chat must not re-seed it.
+  const restoredRef = useRef(restored);
   const [messages, setMessages] = useState<AgentChatMessage[]>([]);
   const [turns, setTurns] = useState<Record<string, TurnDetails>>({});
   const [streaming, setStreaming] = useState(false);
@@ -41,8 +58,11 @@ export function useConversation(
 
   useEffect(() => {
     controller.connect();
+    // Every connect starts from the saved state: disconnect() resets the
+    // controller, and StrictMode connects, disconnects and connects again.
+    const initial = restoredRef.current;
     setMessages([]);
-    setTurns({});
+    setTurns(initial?.turns ?? {});
     setStreaming(false);
 
     // The controller adds the agent message before it calls the transport, so
@@ -70,6 +90,7 @@ export function useConversation(
       controller.subscribe("messagesChanged", ({ messages: next }) => setMessages(next)),
       controller.subscribe("streamingChanged", ({ streaming: next }) => setStreaming(next)),
     ];
+    if (initial) controller.restore(initial.messages);
     return () => {
       for (const off of unsubscribe) off();
       transport.onTurnStart = undefined;

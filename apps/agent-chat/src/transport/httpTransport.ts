@@ -94,7 +94,12 @@ export class HttpLoanAgentTransport implements LoanAgentTransport {
       }),
     });
     if (!response.ok) {
-      throw new Error(`Agent backend returned ${response.status} ${response.statusText}`.trim());
+      // The backend says why (e.g. the approval is no longer pending); show that, not the status code.
+      const reason = await response
+        .json()
+        .then((body: { error?: unknown }) => (typeof body.error === "string" ? body.error : undefined))
+        .catch(() => undefined);
+      throw new Error(reason ?? `Agent backend returned ${response.status} ${response.statusText}`.trim());
     }
     return (await response.json()) as AgentActionProposal;
   }
