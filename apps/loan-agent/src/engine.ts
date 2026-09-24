@@ -1,8 +1,20 @@
-import type { AgentEventBody, Citation, Emit, PromptOption, Proposal, StepStatus, Todo, TurnStatus } from "./contract.js";
+import type {
+  AgentEventBody,
+  CheckStatus,
+  Citation,
+  Emit,
+  PromptOption,
+  Proposal,
+  ResultBlock,
+  StepStatus,
+  Todo,
+  TurnStatus,
+} from "./contract.js";
 import {
   TERM_FIELDS,
   newestFirst,
   type Extraction,
+  type FieldCheck,
   type LoanDocument,
   type LoanPackage,
   type LoanRow,
@@ -208,6 +220,11 @@ class Turn {
     }
   }
 
+  /** A structured result, after the sentence that introduces it. */
+  block(block: ResultBlock) {
+    this.emit({ kind: "block", block });
+  }
+
   cite(citation: Citation) {
     if (!this.cited.has(citation.id)) {
       this.cited.add(citation.id);
@@ -341,11 +358,9 @@ export class LoanAgent {
         return this.listLoans(turn, session, message);
       case "out_of_scope":
         turn.say([
-          "I can work a loan with you:",
-          "• Find a borrower's latest loan and its critical-risk documents",
-          "• Extract terms, check credit policy, compare with the record",
-          "• Compare covenants with prior loans",
-          "• Apply terms, generate the commitment letter, send it for signature (each needs your approval)",
+          "I work a loan with you: finding a borrower's latest loan and its critical-risk documents, extracting terms and checking them against credit policy and the record, and comparing covenants with prior loans.",
+          "",
+          "I can also apply terms, generate the commitment letter, and send it for signature. Each waits for your approval.",
         ]);
         return Promise.resolve();
     }
@@ -356,25 +371,27 @@ export class LoanAgent {
   private async findRiskDocuments(turn: Turn, session: Session, message: string, loanHint?: string) {
     const loan = await this.resolveLoan(turn, session, message, loanHint, { preferLatest: true });
     const risk = riskLevel(message);
-    const lines = [`Latest loan: ${loanLine(loan)}`];
     const found = await turn.step("Box · search_files_metadata", `losDocument · policyRisk = '${risk}'`, () =>
       this.tools.findByPolicyRisk(requireFolder(loan), risk)
     );
     const hits = await this.withDocumentTypes(turn, found);
     turn.advance();
     if (hits.length === 0) {
-      turn.say([...lines, "", `No documents in this loan are flagged ${risk} policy risk.`]);
+      turn.say([`In ${loanPhrase(loan)}, no documents are flagged ${risk} policy risk.`]);
       return;
     }
-    turn.say([
-      ...lines,
-      "",
-      `Flagged ${risk} policy risk:`,
-      ...hits.map(hit => `• ${hit.name}${hit.documentType ? ` (${hit.documentType})` : ""}`),
-    ]);
-    for (const hit of hits) {
-      turn.cite(documentCitation(loan, hit.fileId, hit.name));
-    }
+    turn.say([`In ${loanPhrase(loan)}, ${count(hits.length, "document")} ${hits.length === 1 ? "is" : "are"} flagged ${risk} policy risk.`]);
+    const citations = hits.map(hit => documentCitation(loan, hit.fileId, hit.name));
+    turn.block({
+      type: "documents",
+      items: hits.map((hit, i) => ({
+        id: hit.fileId,
+        name: hit.name,
+        detail: [hit.documentType, `${risk} risk`].filter(Boolean).join(" · "),
+        href: citations[i].href,
+      })),
+    });
+    for (const citation of citations) turn.cite(citation);
   }
 
   /**
@@ -411,13 +428,19 @@ export class LoanAgent {
     turn.note("Credit policy rules", `${findings.length} checks against the approved library`, "succeeded");
     turn.advance();
 
-    turn.say([
-      `Terms from ${extraction.file.name}:`,
-      ...termLines(extraction.result.terms),
-      "",
-      "Credit policy:",
-      ...findings.map(findingLine),
-    ]);
+    const terms = termPairs(extraction.result.terms);
+    turn.say([`Extracted ${count(terms.length, "term")} from ${extraction.file.name}. ${policySummary(findings)}`]);
+    turn.block({ type: "facts", title: "Terms", rows: terms });
+    turn.block({
+      type: "checks",
+      title: "Credit policy",
+      rows: findings.map(finding => ({
+        label: finding.topic,
+        value: VERDICT_LABEL[finding.verdict],
+        detail: finding.approver ? `${finding.detail}. Approver: ${finding.approver}` : finding.detail,
+        status: VERDICT_STATUS[finding.verdict],
+      })),
+    });
     turn.cite(documentCitation(loan, extraction.file.fileId, extraction.file.name));
     citePolicies(turn, findings);
   }
@@ -432,24 +455,20 @@ export class LoanAgent {
       return;
     }
     const mismatches = checks.filter(check => check.status === "mismatch").length;
+    const matches = checks.filter(check => check.status === "match").length;
     turn.say([
-      `${extraction.file.name} vs the ${loan.loanId} record:`,
-      ...checks.map(check => {
-        const label = FIELD_LABELS[check.field];
-        switch (check.status) {
-          case "match":
-            return `• ${label}: ${check.document} matches`;
-          case "mismatch":
-            return `• ${label}: document ${check.document}, record ${check.record} (mismatch)`;
-          case "new":
-            return `• ${label}: document ${check.document}, record empty`;
-          case "not_found":
-            return `• ${label}: not in the document`;
-        }
-      }),
-      "",
-      mismatches === 0 ? "No mismatches." : `${mismatches} mismatch${mismatches === 1 ? "" : "es"}. Nothing has been written.`,
+      `${extraction.file.name} against the ${loan.loanId} record: ${matches} of ${checks.length} fields match` +
+        (mismatches === 0 ? "." : `, ${count(mismatches, "mismatch", "mismatches")}. Nothing has been written.`),
     ]);
+    turn.block({
+      type: "table",
+      columns: ["Field", "Document", "Record"],
+      rows: checks.map(check => ({
+        cells: [FIELD_LABELS[check.field], check.document ?? "—", check.record ?? "—"],
+        status: CHECK_STATUS[check.status],
+        note: CHECK_NOTE[check.status],
+      })),
+    });
     turn.cite(documentCitation(loan, extraction.file.fileId, extraction.file.name));
   }
 
@@ -533,10 +552,12 @@ export class LoanAgent {
       const values = columns.map(column => pick(column.fields));
       const priorValues = new Set(values.slice(0, -1).filter(Boolean));
       const departs = values.at(-1) !== undefined && priorValues.size > 0 && !priorValues.has(values.at(-1));
-      return `• ${label}: ${columns.map((column, i) => `${values[i] ?? "n/a"} (${column.label})`).join(" · ")}${departs ? " ← departs from precedent" : ""}`;
+      return {
+        cells: [label, ...values.map(value => value ?? "—")],
+        ...(departs ? { status: "warn" as const, note: "Departs from precedent" } : {}),
+      };
     };
-    turn.say([
-      `Covenants: ${borrower} executed loans vs ${loanId}`,
+    const covenantRows = [
       row("LTV max", fields => (fields.ltvMax !== undefined ? `${fields.ltvMax}%` : undefined)),
       row("DSCR min", fields => (fields.dscrMin !== undefined ? `${fields.dscrMin}x` : undefined)),
       row("Testing", fields => fields.testFrequency),
@@ -545,8 +566,20 @@ export class LoanAgent {
           ? fields.guarantyType + (fields.guarantyCapPerPerson ? ` ${money(fields.guarantyCapPerPerson)} cap` : "")
           : undefined
       ),
-      ...(missing.length ? ["", `No executed agreement in the package for ${missing.join(", ")}.`] : []),
+    ];
+    const departures = covenantRows.filter(entry => entry.status).length;
+    turn.say([
+      `${borrower}'s executed loans against the ${loanId} markup: ` +
+        (departures === 0
+          ? "every covenant follows precedent."
+          : `${count(departures, "covenant")} ${departures === 1 ? "departs" : "depart"} from precedent.`),
     ]);
+    turn.block({
+      type: "table",
+      columns: ["Covenant", ...columns.map(column => (column === columns.at(-1) ? "This markup" : column.label))],
+      rows: covenantRows,
+      ...(missing.length ? { footnote: `No executed agreement in the package for ${missing.join(", ")}.` } : {}),
+    });
     turn.cite(documentCitation(loan, current.file.fileId, current.file.name));
   }
 
@@ -627,11 +660,13 @@ export class LoanAgent {
       return;
     }
     const shown = newestFirst(rows).slice(0, 10);
-    turn.say([
-      `${rows.length} loan${rows.length === 1 ? "" : "s"}${borrower ? ` for ${borrower}` : ""}${status ? ` in ${status}` : ""}:`,
-      ...shown.map(row => `• ${row.loanId} · ${row.name} · ${row.status}${row.amount ? ` · ${money(row.amount)}` : ""}`),
-      ...(rows.length > shown.length ? [`…and ${rows.length - shown.length} more.`] : []),
-    ]);
+    turn.say([`${count(rows.length, "loan")}${borrower ? ` for ${borrower}` : ""}${status ? `, ${status}` : ""}, newest first.`]);
+    turn.block({
+      type: "table",
+      columns: ["Loan", "Name", "Status", "Amount"],
+      rows: shown.map(row => ({ cells: [row.loanId, row.name, row.status, row.amount ? money(row.amount) : "—"] })),
+      ...(rows.length > shown.length ? { footnote: `${rows.length - shown.length} more not shown.` } : {}),
+    });
   }
 
   // ── Shared steps ──────────────────────────────────────────────────────
@@ -802,14 +837,14 @@ export class LoanAgent {
       },
       terms: {
         policyAtIssue: [...new Set(findings.flatMap(finding => finding.policyIds))].join(", "),
-        requestedPosition: termLines(terms).map(line => line.slice(2)).join("; "),
+        requestedPosition: termPairs(terms).map(({ label, value }) => `${label} ${value}`).join("; "),
         approvedPosition: findings.filter(f => f.verdict === "within").map(f => `${f.topic}: ${f.detail}`).join("; ") || "None within standard policy",
         exceptionPosition: open.length
           ? `${open.map(f => `${f.topic}: ${f.detail}`).join("; ")}. No exception approval is recorded.`
           : "No exceptions required",
         owner: approvers.length ? approvers.join(", ") : "Loan officer",
         risk: "Not recorded in the loan package",
-        proposedTerms: termLines(terms).map(line => line.slice(2)).join("; "),
+        proposedTerms: termPairs(terms).map(({ label, value }) => `${label} ${value}`).join("; "),
       },
       precedent: {
         summary: precedent?.length
@@ -835,8 +870,10 @@ export class LoanAgent {
 
 // ── Rendering helpers ───────────────────────────────────────────────────
 
-function loanLine(loan: LoanPackage): string {
-  return [loan.name ?? loan.loanId, loan.loanId, loan.status].filter(Boolean).join(" · ");
+/** "Harborview … 2026 (LN-2026-0003, Approved)", or just the ID and status. */
+function loanPhrase(loan: LoanPackage): string {
+  const aside = [loan.loanId, loan.status].filter(Boolean).join(", ");
+  return loan.name ? `${loan.name}${aside ? ` (${aside})` : ""}` : aside;
 }
 
 function latestLoan(rows: LoanRow[]): LoanRow | undefined {
@@ -877,23 +914,58 @@ export function formatTerm(field: TermField, value: number | string | undefined)
   }
 }
 
-function termLines(terms: Terms): string[] {
+function termPairs(terms: Terms): Array<{ label: string; value: string }> {
   return (Object.keys(FIELD_LABELS) as TermField[])
     .filter(field => terms[field] !== undefined)
-    .map(field => `• ${FIELD_LABELS[field]} ${formatTerm(field, terms[field])}`);
+    .map(field => ({ label: FIELD_LABELS[field], value: formatTerm(field, terms[field]) }));
 }
 
-const VERDICT_MARK: Record<PolicyFinding["verdict"], string> = {
-  within: "✓",
-  exception: "!",
-  outside: "✗",
-  unknown: "?",
+/** "1 term", "3 terms". */
+function count(n: number, singular: string, plural = `${singular}s`): string {
+  return `${n} ${n === 1 ? singular : plural}`;
+}
+
+const VERDICT_STATUS: Record<PolicyFinding["verdict"], CheckStatus> = {
+  within: "pass",
+  exception: "warn",
+  outside: "fail",
+  unknown: "info",
 };
 
-function findingLine(finding: PolicyFinding): string {
-  const approval = finding.approver ? ` (${finding.approver})` : "";
-  return `${VERDICT_MARK[finding.verdict]} ${finding.topic}: ${finding.detail}${approval}`;
+const VERDICT_LABEL: Record<PolicyFinding["verdict"], string> = {
+  within: "Within policy",
+  exception: "Needs exception",
+  outside: "Outside policy",
+  unknown: "Not found",
+};
+
+/** "2 within policy, 1 needs an exception and 1 is outside policy." */
+export function policySummary(findings: PolicyFinding[]): string {
+  const n = (verdict: PolicyFinding["verdict"]) => findings.filter(finding => finding.verdict === verdict).length;
+  const parts = [
+    n("within") && `${n("within")} within policy`,
+    n("exception") && `${n("exception")} ${n("exception") === 1 ? "needs an exception" : "need exceptions"}`,
+    n("outside") && `${n("outside")} ${n("outside") === 1 ? "is" : "are"} outside policy`,
+    n("unknown") && `${n("unknown")} couldn't be checked`,
+  ].filter((part): part is string => Boolean(part));
+  if (parts.length === 0) return "No policy checks applied.";
+  const joined = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
+  return `Of ${count(findings.length, "policy check")}, ${joined}.`;
 }
+
+const CHECK_STATUS: Record<FieldCheck["status"], CheckStatus> = {
+  match: "pass",
+  mismatch: "fail",
+  new: "info",
+  not_found: "info",
+};
+
+const CHECK_NOTE: Record<FieldCheck["status"], string | undefined> = {
+  match: undefined,
+  mismatch: "Mismatch",
+  new: "Not on the record yet",
+  not_found: "Not in the document",
+};
 
 function citePolicies(turn: Turn, findings: PolicyFinding[]) {
   for (const id of new Set(findings.flatMap(finding => finding.policyIds))) {

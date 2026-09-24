@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDuration, splitStepTitle, summarize, turnDuration } from "../src/activity";
+import { formatDuration, formatElapsed, incompleteNotice, newTurn, progress, splitStepTitle, upsertStep } from "../src/activity";
 import { toStatusKind } from "../src/components/StatusIcon";
 
 const at = (ms: number) => new Date(Date.UTC(2026, 8, 24, 0, 0, 0, ms)).toISOString();
@@ -27,13 +27,8 @@ describe("durations", () => {
     expect(formatDuration(at(0), undefined)).toBeUndefined();
   });
 
-  it("measures the turn from the first start to the last finish", () => {
-    expect(
-      turnDuration([
-        { id: "a", title: "a", startedAt: at(0), finishedAt: at(500) },
-        { id: "b", title: "b", startedAt: at(600), finishedAt: at(2100) },
-      ])
-    ).toBe("2.1 s");
+  it("reads minutes past a minute", () => {
+    expect(formatElapsed(65_000)).toBe("1 min 5 s");
   });
 });
 
@@ -44,17 +39,41 @@ describe("step titles", () => {
   });
 });
 
-describe("turn summary", () => {
-  const done = { id: "s", title: "LOS · listLoans", status: "succeeded" as const, startedAt: at(0), finishedAt: at(1200) };
+describe("progress line", () => {
+  const step = { id: "s", title: "LOS · listLoans", status: "succeeded" as const, startedAt: at(0), finishedAt: at(1200) };
 
-  it("is idle before anything happens, and working while a step runs", () => {
-    expect(summarize([], [], false).kind).toBe("idle");
-    expect(summarize([{ ...done, status: "running" }], [], false)).toEqual({ kind: "active", label: "Working" });
+  it("names the plan item in flight, then the running tool, then just thinking", () => {
+    const turn = newTurn(0);
+    expect(progress(turn, false)).toEqual({ kind: "active", label: "Thinking…" });
+    const running = { ...turn, steps: [{ ...step, status: "running" as const }] };
+    expect(progress(running, false)).toEqual({ kind: "active", label: "listLoans…" });
+    const planned = { ...running, todos: [{ id: "t", content: "Find prior executed loans", status: "in_progress" as const }] };
+    expect(progress(planned, false).label).toBe("Find prior executed loans…");
   });
 
-  it("puts a failure, then a waiting approval, ahead of done", () => {
-    expect(summarize([done, { ...done, id: "f", status: "failed" }], [], true).label).toBe("Stopped");
-    expect(summarize([done], [], true)).toEqual({ kind: "approval", label: "Waiting for your approval" });
-    expect(summarize([done], [], false)).toEqual({ kind: "done", label: "Done · 1.2 s" });
+  it("says how long the work took, and whether it failed or warned", () => {
+    const turn = { ...newTurn(1000), endedAt: 3400, steps: [step] };
+    expect(progress(turn, false)).toEqual({ kind: "done", label: "Worked for 2.4 s" });
+    expect(progress({ ...turn, steps: [step, { ...step, id: "w", status: "warning" as const }] }, false).label).toBe(
+      "Worked for 2.4 s · 1 warning"
+    );
+    expect(progress({ ...turn, steps: [{ ...step, status: "failed" as const }] }, false)).toEqual({
+      kind: "failed",
+      label: "Stopped after 2.4 s",
+    });
+    expect(progress(turn, true).kind).toBe("failed");
+    expect(progress({ ...turn, incomplete: "cut" }, false).label).toBe("Cut short after 2.4 s");
+  });
+
+  it("replaces steps by id", () => {
+    const steps = upsertStep([{ ...step, status: "running" }], step);
+    expect(steps).toEqual([step]);
+    expect(upsertStep(steps, { ...step, id: "b" })).toHaveLength(2);
+  });
+
+  it("flags a reply that arrived cut short", () => {
+    expect(incompleteNotice({ status: "complete", missing: [] })).toBeUndefined();
+    expect(incompleteNotice({ status: "incomplete", missing: [] })).toMatch(/stopped before/);
+    expect(incompleteNotice({ status: "complete", missing: [3, 4] })).toMatch(/^2 parts/);
   });
 });

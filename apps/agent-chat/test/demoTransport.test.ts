@@ -3,7 +3,7 @@ import type { AgentStreamEvent } from "@unofficialbox/box-open-elements/patterns
 import { DEMO_BEATS, routeIntent } from "../src/transport/demoScript";
 import { PROMPT_LIBRARY, promptById } from "../src/prompts";
 import { DemoLoanAgentTransport } from "../src/transport/demoTransport";
-import type { TraceEvent } from "../src/transport/types";
+import type { ResultBlock, TraceEvent } from "../src/transport/types";
 
 const instant = { chunkMs: 0, stepMs: 0 };
 
@@ -11,11 +11,13 @@ async function runTurn(prompt: string) {
   const transport = new DemoLoanAgentTransport(instant);
   const events: AgentStreamEvent[] = [];
   const trace: TraceEvent[] = [];
+  const blocks: ResultBlock[] = [];
   let turns = 0;
+  transport.onBlock = block => blocks.push(block);
   transport.onTurnStart = () => turns++;
   transport.onTrace = event => trace.push(event);
   await transport.sendMessage({ body: prompt, token: "t", onEvent: event => events.push(event) });
-  return { transport, events, trace, turns };
+  return { transport, events, trace, blocks, turns };
 }
 
 describe("routeIntent", () => {
@@ -56,6 +58,14 @@ describe("DemoLoanAgentTransport", () => {
       .join("");
     expect(body).toBe(DEMO_BEATS[0].reply);
     expect(turns).toBe(1);
+  });
+
+  it("sends results as blocks, not text bullets", async () => {
+    const { events, blocks } = await runTurn(promptById("extract-check").content);
+    expect(blocks.map(block => block.type)).toEqual(["facts", "checks"]);
+    const body = events.map(event => (event.kind === "delta" ? event.text : "")).join("");
+    expect(body).not.toMatch(/[•✓✗]/);
+    for (const beat of DEMO_BEATS) expect(beat.reply, beat.intent).not.toMatch(/•/);
   });
 
   it("traces routing then each tool, each running before it settles", async () => {

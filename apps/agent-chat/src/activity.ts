@@ -1,27 +1,54 @@
-import type { RunStep } from "@unofficialbox/box-open-elements";
-import type { Todo } from "./transport";
+import type { PromptOption, ResultBlock, RunStep, Todo, TurnSummary } from "./transport";
 import { toStatusKind, type StatusKind } from "./components/StatusIcon";
 
-/** What the turn is doing, in one phrase for the activity card's header. */
-export interface TurnSummary {
-  kind: StatusKind | "idle" | "approval";
-  label: string;
+/** Everything a reply carries besides its text: how it was worked out, and its structured results. */
+export interface TurnDetails {
+  steps: RunStep[];
+  todos: Todo[];
+  blocks: ResultBlock[];
+  options: PromptOption[];
+  /** Client clock (ms) when the turn started and ended. */
+  startedAt: number;
+  endedAt?: number;
+  /** Set when the reply arrived cut short. */
+  incomplete?: string;
 }
 
-/** "0.4 s", "12 s"; undefined until both ends are known. */
+export function newTurn(startedAt: number): TurnDetails {
+  return { steps: [], todos: [], blocks: [], options: [], startedAt };
+}
+
+/** Steps replace by id, so a step can move running → succeeded. */
+export function upsertStep(steps: RunStep[], step: RunStep): RunStep[] {
+  const index = steps.findIndex(entry => entry.id === step.id);
+  return index === -1 ? [...steps, step] : steps.map((entry, i) => (i === index ? step : entry));
+}
+
+export function incompleteNotice(summary: TurnSummary): string | undefined {
+  if (summary.status === "incomplete") {
+    return "The reply stopped before the agent finished, so it may be incomplete.";
+  }
+  if (summary.missing.length) {
+    const n = summary.missing.length;
+    return `${n} part${n === 1 ? "" : "s"} of this reply didn't arrive, so it may be incomplete. Ask again to be sure.`;
+  }
+  return undefined;
+}
+
+/** "<0.1 s", "0.4 s", "12 s", "1 min 5 s". */
+export function formatElapsed(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 0) return "";
+  if (ms < 100) return "<0.1 s";
+  if (ms < 10_000) return `${(ms / 1000).toFixed(1)} s`;
+  const seconds = Math.round(ms / 1000);
+  return seconds < 60 ? `${seconds} s` : `${Math.floor(seconds / 60)} min ${seconds % 60} s`;
+}
+
+/** A step's own duration from its timestamps; undefined until both ends are known. */
 export function formatDuration(startedAt?: string, finishedAt?: string): string | undefined {
   if (!startedAt || !finishedAt) return undefined;
   const ms = Date.parse(finishedAt) - Date.parse(startedAt);
-  if (!Number.isFinite(ms) || ms < 0) return undefined;
-  if (ms < 100) return "<0.1 s";
-  return ms < 10_000 ? `${(ms / 1000).toFixed(1)} s` : `${Math.round(ms / 1000)} s`;
-}
-
-/** Wall-clock span of the turn: first start to last finish. */
-export function turnDuration(steps: RunStep[]): string | undefined {
-  const starts = steps.map(step => step.startedAt).filter((v): v is string => Boolean(v)).sort();
-  const ends = steps.map(step => step.finishedAt).filter((v): v is string => Boolean(v)).sort();
-  return formatDuration(starts[0], ends[ends.length - 1]);
+  return Number.isFinite(ms) && ms >= 0 ? formatElapsed(ms) : undefined;
 }
 
 /** "TypeSafe · route intent" → source "TypeSafe", action "route intent". */
@@ -30,15 +57,25 @@ export function splitStepTitle(title: string): { source?: string; action: string
   return at === -1 ? { action: title } : { source: title.slice(0, at), action: title.slice(at + 3) };
 }
 
-export function summarize(steps: RunStep[], todos: Todo[], awaitingApproval: boolean): TurnSummary {
-  if (steps.length === 0 && todos.length === 0) return { kind: "idle", label: "Nothing yet" };
-  const kinds = steps.map(step => toStatusKind(step.status ?? "pending"));
-  if (kinds.includes("active") || todos.some(todo => todo.status === "in_progress")) {
-    return { kind: "active", label: "Working" };
+/** The one line above a reply: what it is doing now, or how the work went. */
+export interface Progress {
+  kind: StatusKind;
+  label: string;
+}
+
+export function progress(turn: TurnDetails, failed: boolean): Progress {
+  if (turn.endedAt === undefined) {
+    // Say what is happening in the plan's words; fall back to the tool in flight.
+    const planItem = turn.todos.find(todo => todo.status === "in_progress");
+    const running = [...turn.steps].reverse().find(step => toStatusKind(step.status ?? "pending") === "active");
+    const label = planItem?.content ?? (running ? splitStepTitle(running.title).action : "Thinking");
+    return { kind: "active", label: `${label}…` };
   }
-  if (kinds.includes("failed")) return { kind: "failed", label: "Stopped" };
-  if (awaitingApproval) return { kind: "approval", label: "Waiting for your approval" };
-  const took = turnDuration(steps);
-  if (kinds.includes("warning")) return { kind: "warning", label: took ? `Done with a warning · ${took}` : "Done with a warning" };
-  return { kind: "done", label: took ? `Done · ${took}` : "Done" };
+  const took = formatElapsed(turn.endedAt - turn.startedAt);
+  const kinds = turn.steps.map(step => toStatusKind(step.status ?? "pending"));
+  if (failed || kinds.includes("failed")) return { kind: "failed", label: `Stopped after ${took}` };
+  if (turn.incomplete) return { kind: "warning", label: `Cut short after ${took}` };
+  const warnings = kinds.filter(kind => kind === "warning").length;
+  if (warnings) return { kind: "warning", label: `Worked for ${took} · ${warnings} warning${warnings === 1 ? "" : "s"}` };
+  return { kind: "done", label: `Worked for ${took}` };
 }

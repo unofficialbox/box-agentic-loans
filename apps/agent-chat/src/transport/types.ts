@@ -52,6 +52,31 @@ export interface OptionsEvent {
   options: PromptOption[];
 }
 
+/** How a result row reads at a glance. */
+export type CheckStatus = "pass" | "warn" | "fail" | "info";
+
+/**
+ * A structured result, rendered as a real table or status list rather than
+ * text. A reply is a short sentence plus these.
+ */
+export type ResultBlock =
+  | { type: "facts"; title?: string; rows: Array<{ label: string; value: string }> }
+  | { type: "checks"; title?: string; rows: Array<{ label: string; value?: string; detail?: string; status: CheckStatus }> }
+  | {
+      type: "table";
+      title?: string;
+      columns: string[];
+      rows: Array<{ cells: string[]; status?: CheckStatus; note?: string }>;
+      footnote?: string;
+    }
+  /** Box files; `id` matches the file's citation, so the client can skip the duplicate chip. */
+  | { type: "documents"; title?: string; items: Array<{ id: string; name: string; detail?: string; href?: string }> };
+
+export interface BlockEvent {
+  kind: "block";
+  block: ResultBlock;
+}
+
 /** How the turn ended: answered, waiting on the officer (a question or approval), or failed. */
 export type TurnStatus = "complete" | "needs_input" | "error";
 
@@ -62,9 +87,9 @@ export interface DoneEvent {
 
 /**
  * The wire contract a loan-agent backend streams back from `POST /chat`, one
- * JSON object per line. The first three kinds are box-agent-chat's own
+ * JSON object per line. The first three kinds are the agent-chat controller's own
  * `AgentStreamEvent` (`delta.text` is incremental, not cumulative). The rest
- * feed the page: `trace` the decision trace, `todos` the plan, `options` the
+ * feed the page: `block` the structured results, `trace` the decision trace, `todos` the plan, `options` the
  * next-step chips, `context` the loan header, and `done` closes the turn.
  *
  * Every event may carry `seq`, numbered 1, 2, 3… per turn, so the client can
@@ -73,6 +98,7 @@ export interface DoneEvent {
 export type LoanAgentEvent = (
   | AgentStreamEvent
   | TraceEvent
+  | BlockEvent
   | ContextEvent
   | TodosEvent
   | OptionsEvent
@@ -89,13 +115,14 @@ export interface TurnSummary {
   missing: number[];
 }
 
-/** A box-agent-chat transport that also reports the side channels for each turn. */
+/** An agent-chat transport that also reports the side channels for each turn. */
 export interface LoanAgentTransport extends AgentChatTransport {
   /** "demo" replays scripted demo beats; "live" talks to a backend. */
   readonly mode: "demo" | "live";
   /** Called once at the start of every turn, before any other callback. */
   onTurnStart?: () => void;
   onTrace?: TraceListener;
+  onBlock?: (block: ResultBlock) => void;
   onContext?: (loan: LoanContext) => void;
   onTodos?: (todos: Todo[]) => void;
   onOptions?: (options: PromptOption[]) => void;

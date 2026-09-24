@@ -3,10 +3,13 @@ import { HttpLoanAgentTransport } from "./httpTransport";
 import type { LoanAgentTransport } from "./types";
 
 export type {
+  CheckStatus,
   LoanAgentEvent,
   LoanAgentTransport,
   LoanContext,
   PromptOption,
+  ResultBlock,
+  RunStep,
   Todo,
   TraceEvent,
   TurnSummary,

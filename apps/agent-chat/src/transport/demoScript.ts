@@ -2,6 +2,7 @@ import type {
   AgentActionProposal,
   AgentCitation,
 } from "@unofficialbox/box-open-elements/patterns/agent-chat";
+import type { ResultBlock } from "./types";
 
 /**
  * Scripted replies for the demo beats in DEMO-CLICKPATH.md, built from the
@@ -38,7 +39,9 @@ export interface DemoBeat {
   plan: string[];
   /** Prompt-library IDs to offer next. */
   next: string[];
+  /** A sentence or two; the detail goes in `blocks`. */
   reply: string;
+  blocks?: ResultBlock[];
   citations: AgentCitation[];
   proposal?: Omit<AgentActionProposal, "id">;
   /** Note on the proposal once approved / rejected. */
@@ -68,13 +71,16 @@ export const DEMO_BEATS: DemoBeat[] = [
       { connector: "LOS MCP", tool: "listLoans", detail: "borrower = Harborview Logistics, newest first" },
       { connector: "Box MCP", tool: "query_metadata", detail: "losDocument · policyRisk = 'Critical'" },
     ],
-    reply: [
-      "Latest loan: Harborview Distribution Facility Loan 2026 · $4.8M · Underwriting · risk High.",
-      "",
-      "Flagged critical policy risk:",
-      "• Term sheet (borrower markup): 4 borrower changes to rate, guaranty, reporting and collateral",
-      "• Appraisal: $5.65M as-is value puts LTV at 85%, over the 75% standard",
-    ].join("\n"),
+    reply: "In Harborview Distribution Facility Loan 2026 (LN-2026-0042, Underwriting), 2 documents are flagged Critical policy risk.",
+    blocks: [
+      {
+        type: "documents",
+        items: [
+          { id: TERM_SHEET.id, name: TERM_SHEET.label, detail: "Term Sheet · 4 borrower changes to rate, guaranty, reporting and collateral" },
+          { id: APPRAISAL.id, name: APPRAISAL.label, detail: "Appraisal · $5.65M as-is value puts LTV at 85%, over the 75% standard" },
+        ],
+      },
+    ],
     citations: [TERM_SHEET, APPRAISAL],
   },
   {
@@ -86,15 +92,36 @@ export const DEMO_BEATS: DemoBeat[] = [
       { connector: "LOS MCP", tool: "getLoanPackage", detail: "governed document set for this loan" },
       { connector: "LOS MCP", tool: "extractLoanTerms", detail: "Box AI extract + credit policy Hub check" },
     ],
-    reply: [
-      "Extracted terms vs credit policy:",
-      "• Amount $4.8M · term 120 mo · 25-yr amortization",
-      "• Rate 6.85% fixed; borrower asks 6.50%. Relationship pricing allowed only with confirmed deposits",
-      "• LTV 85%: outside policy. Standard max 75%, exception max 80%",
-      "• DSCR 1.10x, annual test: outside policy. Minimum 1.25x, quarterly",
-      "• Guaranty capped at $1M each, employee LP omitted: outside policy",
-      "• FF&E ($850K) added to collateral value: excluded by policy",
-    ].join("\n"),
+    reply: "Extracted 5 terms from the borrower markup. Of 5 policy checks, 1 needs an exception and 4 are outside policy.",
+    blocks: [
+      {
+        type: "facts",
+        title: "Terms",
+        rows: [
+          { label: "Amount", value: "$4.8M" },
+          { label: "Rate", value: "6.85% fixed" },
+          { label: "Term", value: "120 months" },
+          { label: "Amortization", value: "25 years" },
+          { label: "LTV", value: "85%" },
+        ],
+      },
+      {
+        type: "checks",
+        title: "Credit policy",
+        rows: [
+          {
+            label: "Pricing",
+            value: "Needs exception",
+            detail: "Borrower asks 6.50%; relationship pricing needs confirmed deposits",
+            status: "warn",
+          },
+          { label: "Loan-to-value", value: "Outside policy", detail: "85% over the 75% standard and 80% exception limit", status: "fail" },
+          { label: "Debt service coverage", value: "Outside policy", detail: "1.10x tested annually; minimum 1.25x, quarterly", status: "fail" },
+          { label: "Guaranty", value: "Outside policy", detail: "Capped at $1M each, employee LP omitted", status: "fail" },
+          { label: "Collateral", value: "Outside policy", detail: "FF&E ($850K) added to collateral value is excluded by policy", status: "fail" },
+        ],
+      },
+    ],
     citations: [TERM_SHEET, LTV_POLICY, DSCR_POLICY, GUAR_POLICY, RATE_POLICY],
   },
   {
@@ -105,13 +132,19 @@ export const DEMO_BEATS: DemoBeat[] = [
     tools: [
       { connector: "LOS MCP", tool: "getLoanPackage", detail: "current LOS_Loan__c values" },
     ],
-    reply: [
-      "Term sheet vs Salesforce record:",
-      "• Amount $4.8M: matches",
-      "• Term 120 mo: matches",
-      "• Rate: record 6.85%, borrower markup 6.50%. Record holds the Bank's position",
-      "• LTV: record 85% on the $5.65M appraisal. Borrower's $6.0M value is a broker opinion, not an appraisal",
-    ].join("\n"),
+    reply: "Term sheet against the LN-2026-0042 record: 2 of 4 fields match, 2 mismatches. Nothing has been written.",
+    blocks: [
+      {
+        type: "table",
+        columns: ["Field", "Document", "Record"],
+        rows: [
+          { cells: ["Amount", "$4.8M", "$4.8M"], status: "pass" },
+          { cells: ["Term", "120 months", "120 months"], status: "pass" },
+          { cells: ["Rate", "6.50%", "6.85%"], status: "fail", note: "Record holds the Bank's position" },
+          { cells: ["LTV", "80%", "85%"], status: "fail", note: "Borrower's $6.0M value is a broker opinion, not an appraisal" },
+        ],
+      },
+    ],
     citations: [LOAN_RECORD, TERM_SHEET, APPRAISAL],
   },
   {
@@ -145,13 +178,20 @@ export const DEMO_BEATS: DemoBeat[] = [
       { connector: "LOS MCP", tool: "listLoans", detail: "Harborview Logistics · status Closed" },
       { connector: "Box MCP", tool: "ai_qa_multi_file", detail: "2023 + 2025 agreements vs 2026 markup" },
     ],
-    reply: [
-      "Covenants: prior executed loans vs 2026 markup",
-      "• LTV max: 70% (2023) · 70% (2025) · 2026 at 85%",
-      "• DSCR: 1.30x quarterly (both) · 2026 asks 1.10x annual",
-      "• Guaranty: unlimited, Pike + Voss (both) · 2026 capped at $1M each",
-      "• Collateral: the 2026 FF&E claim cites the 2025 equipment loan, but that pool secures the 2025 loan, not this one",
-    ].join("\n"),
+    reply: "Harborview Logistics's executed loans against the LN-2026-0042 markup: 4 covenants depart from precedent.",
+    blocks: [
+      {
+        type: "table",
+        columns: ["Covenant", "LN-2023-0311", "LN-2025-0148", "This markup"],
+        rows: [
+          { cells: ["LTV max", "70%", "70%", "85%"], status: "warn", note: "Departs from precedent" },
+          { cells: ["DSCR min", "1.30x", "1.30x", "1.10x"], status: "warn", note: "Departs from precedent" },
+          { cells: ["Testing", "quarterly", "quarterly", "annual"], status: "warn", note: "Departs from precedent" },
+          { cells: ["Guaranty", "unlimited", "unlimited", "$1M cap each"], status: "warn", note: "Departs from precedent" },
+        ],
+        footnote: "The 2026 FF&E claim cites the 2025 equipment loan, but that pool secures the 2025 loan, not this one.",
+      },
+    ],
     citations: [LOAN_2023, LOAN_2025, TERM_SHEET],
   },
   {
@@ -204,11 +244,17 @@ export const DEMO_BEATS: DemoBeat[] = [
     next: ["compare-history"],
     keywords: ["closed loans", "loans does", "portfolio", "list loans"],
     tools: [{ connector: "LOS MCP", tool: "listLoans", detail: "borrower = Harborview Logistics, status = Closed" }],
-    reply: [
-      "2 closed loans for Harborview Logistics:",
-      "• LN-2025-0148 · Equipment Term Loan 2025 · $2.15M",
-      "• LN-2023-0311 · Revolving Line of Credit 2023 · $1.5M",
-    ].join("\n"),
+    reply: "2 loans for Harborview Logistics, Closed, newest first.",
+    blocks: [
+      {
+        type: "table",
+        columns: ["Loan", "Name", "Status", "Amount"],
+        rows: [
+          { cells: ["LN-2025-0148", "Equipment Term Loan 2025", "Closed", "$2.15M"] },
+          { cells: ["LN-2023-0311", "Revolving Line of Credit 2023", "Closed", "$1.5M"] },
+        ],
+      },
+    ],
     citations: [],
   },
 ];
@@ -220,11 +266,9 @@ export const HELP_BEAT: DemoBeat = {
   keywords: [],
   tools: [],
   reply: [
-    "I can work the Harborview loan with you:",
-    "• Find critical-risk documents",
-    "• Extract terms and check credit policy",
-    "• Compare with prior executed loans",
-    "• Update the loan record, or generate and send the commitment letter (both need your approval)",
+    "I can work the Harborview loan with you: find critical-risk documents, extract terms and check credit policy, and compare with prior executed loans.",
+    "",
+    "I can also update the loan record, or generate and send the commitment letter. Both wait for your approval.",
   ].join("\n"),
   citations: [],
 };
