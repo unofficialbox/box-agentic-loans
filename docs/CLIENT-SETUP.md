@@ -174,7 +174,6 @@ Gemini Enterprise has no skill upload and no per-tool consent card, so the prese
 | Amazon Quick | The redirect URL shown in Quick's **Create connector** dialog |
 | ChatGPT | The redirect URL shown in ChatGPT's **Create connector** dialog |
 | Gemini Enterprise | The redirect URL shown in the custom MCP server dialog; the app requires PKCE, see the plan if Gemini's client cannot |
-| Loan agent backend (`apps/loan-agent`) | `http://localhost:8787/oauth/salesforce/callback` (use your `LOAN_AGENT_PORT`) |
 
 Then give each presenter the LOS server URL and the consumer key, assign them the `LOS_MCP_Client` permission set, and add them to the app's pre-authorized users. Full org-side steps are in [SETUP.md §5a](SETUP.md#5a-connect-an-mcp-client-to-the-los-server).
 

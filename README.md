@@ -106,6 +106,9 @@ python3 scripts/cleanup_demo.py --status Application --yes
 - **[SECURITY.md](docs/SECURITY.md)** - Authorization and token scoping
 - **[CLAUDE.md](CLAUDE.md)** - AI connector strategy (metadata-first, Box MCP vs LOS tools)
 
+### Related
+- **[box-typesafe-loans](https://github.com/unofficialbox/box-typesafe-loans)** - The same loan flow with no LLM: TypeSafe picks the action, and Box and Salesforce run over MCP. The loan agent and Loan Copilot chat that used to live in `apps/` are there now.
+
 ## Repository Structure
 
 - `config/` - Box metadata templates and runtime configuration

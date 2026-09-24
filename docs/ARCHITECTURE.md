@@ -31,19 +31,9 @@ For performance and capability, these operations bypass Salesforce and call Box 
 - **Box AI QA** - `box_ai_ask` (direct API access)
 - **Doc Gen** - `create_document_from_template` (direct API, no Apex overhead)
 
-### Loan agent: TypeSafe decisions, no LLM (optional)
+### Loan agent: TypeSafe decisions, no LLM
 
-**Service**: [`apps/loan-agent`](../apps/loan-agent/README.md), the backend for the [Loan Copilot chat](../apps/agent-chat/README.md).
-
-No LLM plans, calls tools, or writes replies. Each turn:
-1. **Decide.** TypeSafe System One picks one intent from a fixed set. Below the confidence threshold, the agent asks instead of acting.
-2. **Resolve arguments by rule.** TypeSafe only breaks ties.
-3. **Run a fixed tool sequence.** The Box and LOS MCP tools for that intent are called in a set order.
-4. **Check policy and reply in code.** Credit policy (`sample-data/policies/approved`) is evaluated in code, and the reply comes from templates.
-
-Writes (`applyLoanTerms`, Doc Gen, Box Sign) run only from an approved proposal. The Box/Salesforce authority split and the human credit gates are unchanged. Reading documents stays with Box AI, which returns typed fields.
-
-See: [TypeSafe Integration Plan](../TYPESAFE-INTEGRATION-PLAN.md) | [Architecture Summary](TYPESAFE-ARCHITECTURE-SUMMARY.md)
+The TypeSafe loan agent and its Loan Copilot chat moved to their own repository, [box-typesafe-loans](https://github.com/unofficialbox/box-typesafe-loans). They use the same `LOSLoanTools` server and Box setup as this demo.
 
 ### Two Surfaces
 
