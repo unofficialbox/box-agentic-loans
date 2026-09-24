@@ -61,15 +61,25 @@ export function splitStepTitle(title: string): { source?: string; action: string
 export interface Progress {
   kind: StatusKind;
   label: string;
+  /** While working, seconds so far once a turn runs long enough to wonder ("4 s"). */
+  elapsed?: string;
 }
 
-export function progress(turn: TurnDetails, failed: boolean): Progress {
+/** A wait shorter than this needs no clock; past it, a counting clock says it hasn't stalled. */
+export const SHOW_ELAPSED_AFTER_MS = 2000;
+
+export function progress(turn: TurnDetails, failed: boolean, now: number = Date.now()): Progress {
   if (turn.endedAt === undefined) {
     // Say what is happening in the plan's words; fall back to the tool in flight.
     const planItem = turn.todos.find(todo => todo.status === "in_progress");
     const running = [...turn.steps].reverse().find(step => toStatusKind(step.status ?? "pending") === "active");
     const label = planItem?.content ?? (running ? splitStepTitle(running.title).action : "Thinking");
-    return { kind: "active", label: `${label}…` };
+    const waited = now - turn.startedAt;
+    return {
+      kind: "active",
+      label: `${label}…`,
+      ...(waited >= SHOW_ELAPSED_AFTER_MS ? { elapsed: `${Math.floor(waited / 1000)} s` } : {}),
+    };
   }
   const took = formatElapsed(turn.endedAt - turn.startedAt);
   const kinds = turn.steps.map(step => toStatusKind(step.status ?? "pending"));

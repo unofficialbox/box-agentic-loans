@@ -25,7 +25,12 @@ export function ResultBlocks({ blocks }: { blocks: ResultBlock[] }) {
   return (
     <div className="blocks">
       {blocks.map((block, index) => (
-        <section key={index} className={`block block-${block.type}`} aria-label={block.title}>
+        <section
+          key={index}
+          className={`block block-${block.type}`}
+          aria-label={block.title}
+          style={{ ["--i" as string]: index }}
+        >
           {block.title && <h3 className="block-title">{block.title}</h3>}
           <Block block={block} />
         </section>

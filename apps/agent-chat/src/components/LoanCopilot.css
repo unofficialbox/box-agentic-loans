@@ -79,6 +79,52 @@
   min-height: 0;
 }
 
+/* Holds the thread and, over its bottom edge, the "Jump to latest" button. */
+.thread-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.jump {
+  position: absolute;
+  bottom: var(--space-4);
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--control-height);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  box-shadow: var(--dropshadow-3);
+  color: var(--text);
+  font-size: var(--control-font-size);
+  font-weight: var(--control-font-weight);
+  cursor: pointer;
+  transform: translateX(-50%);
+  animation: jump-in var(--duration-2) var(--ease-out);
+}
+
+.jump:hover {
+  background: var(--surface-hover);
+}
+
+.jump:focus-visible {
+  outline: none;
+  box-shadow: var(--dropshadow-3), var(--focus);
+}
+
+@keyframes jump-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+}
+
 .thread {
   flex: 1 1 auto;
   min-height: 0;
@@ -114,6 +160,23 @@
 /* ── Welcome ─────────────────────────────────────────────
    A greeting in the bank's voice and a short list of ways in, set on the same
    left edge as the conversation that replaces it (not a centred card grid). */
+
+/* The welcome arrives in reading order: greeting, then what it does, then the ways in. */
+.welcome > * {
+  animation: rise var(--duration-3) var(--ease-out) both;
+}
+
+.welcome > :nth-child(2) {
+  animation-delay: calc(1 * var(--stagger));
+}
+
+.welcome > :nth-child(3) {
+  animation-delay: calc(2 * var(--stagger));
+}
+
+.welcome > :nth-child(4) {
+  animation-delay: calc(3 * var(--stagger));
+}
 
 .welcome {
   display: grid;
@@ -179,7 +242,7 @@
   font: inherit;
   text-align: start;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--duration-1) var(--ease-out);
 }
 
 .starter:hover {
@@ -203,7 +266,7 @@
 
 .starter-go {
   color: var(--muted);
-  transition: transform 0.15s ease, color 0.15s ease;
+  transition: transform var(--duration-1) var(--ease-out), color var(--duration-1) var(--ease-out);
 }
 
 .starter:hover .starter-go {
@@ -222,7 +285,7 @@
   background: var(--surface-hover);
   font-size: 0.9375rem;
   line-height: 1.5;
-  animation: message-in 0.18s ease-out;
+  animation: rise var(--duration-2) var(--ease-out);
 }
 
 .message-user p {
@@ -236,7 +299,7 @@
   display: grid;
   gap: var(--space-4);
   min-width: 0;
-  animation: message-in 0.18s ease-out;
+  animation: rise var(--duration-2) var(--ease-out);
 }
 
 .reply-text {
@@ -324,7 +387,7 @@ button.progress-toggle:hover {
   border-right: 1.5px solid currentColor;
   border-bottom: 1.5px solid currentColor;
   transform: rotate(-45deg);
-  transition: transform 0.15s ease;
+  transition: transform var(--duration-1) var(--ease-out);
 }
 
 .progress-toggle[aria-expanded="true"] .progress-chevron {
@@ -332,11 +395,43 @@ button.progress-toggle:hover {
 }
 
 /* The work, on request: the plan, then each step with its timing. */
+/* Opens and closes by animating a grid row from 0fr to 1fr: real height, no measuring. */
+.progress-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  width: 100%;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--duration-3) var(--ease-out),
+    opacity var(--duration-2) var(--ease-out);
+}
+
+.progress-panel[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+/* Closed, it takes no room: the gap above it would otherwise remain. */
+.progress:has(.progress-panel[data-open="false"]) {
+  gap: 0;
+}
+
+.progress-panel > .progress-detail {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.progress-elapsed {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .progress-detail {
   display: grid;
   gap: var(--space-4);
   width: 100%;
-  padding: var(--space-1) 0 var(--space-1) var(--space-4);
+  /* No vertical padding: a closed panel must collapse to nothing. */
+  padding: 0 0 0 var(--space-4);
   border-left: 2px solid var(--stroke);
 }
 
@@ -421,6 +516,12 @@ button.progress-toggle:hover {
   display: grid;
   gap: var(--space-5);
   min-width: 0;
+}
+
+/* Results arrive one after another, each rising into place. */
+.block {
+  animation: rise var(--duration-3) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * var(--stagger));
 }
 
 .block {
@@ -751,6 +852,13 @@ a.source:focus-visible {
 /* ── Approval: the one card in the thread ────────────────── */
 
 .approval {
+  animation: rise var(--duration-3) var(--ease-out) both;
+  transition:
+    border-color var(--duration-3) var(--ease-out),
+    box-shadow var(--duration-3) var(--ease-out);
+}
+
+.approval {
   display: grid;
   gap: var(--space-2);
   padding: var(--space-4) var(--space-5);
@@ -836,6 +944,11 @@ a.source:focus-visible {
 /* ── Next steps ──────────────────────────────────────────── */
 
 .next {
+  animation: rise var(--duration-3) var(--ease-out) both;
+  animation-delay: var(--duration-1);
+}
+
+.next {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
@@ -854,7 +967,7 @@ a.source:focus-visible {
   border-radius: var(--radius-4);
   background: var(--surface);
   box-shadow: var(--dropshadow-3);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color var(--duration-1) var(--ease-out), box-shadow var(--duration-1) var(--ease-out);
 }
 
 .composer:focus-within {
@@ -879,6 +992,14 @@ a.source:focus-visible {
 
 .composer-input::placeholder {
   color: var(--muted);
+}
+
+/* Send and Stop trade places with a small settle, so the change registers. */
+.composer-button {
+  animation: pop var(--duration-2) var(--ease-out);
+  transition:
+    background-color var(--duration-1) ease,
+    opacity var(--duration-1) ease;
 }
 
 .composer-button {
@@ -912,27 +1033,47 @@ a.source:focus-visible {
   box-shadow: var(--focus);
 }
 
-@keyframes message-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-}
-
 @keyframes shimmer {
   to {
     background-position: -200% 0;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .reply,
-  .message-user {
-    animation: none;
-  }
+/* A caret where streamed text is still arriving. */
+.caret {
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  margin-left: 0.125em;
+  border-radius: 2px;
+  background: var(--brand);
+  vertical-align: -0.125em;
+  animation: caret 1s var(--ease-in-out) infinite;
+}
 
+@keyframes caret {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.8);
+    opacity: 0.4;
+  }
+}
+
+/* Shared reduced-motion rules live in base.css; the shimmer also drops its gradient. */
+@media (prefers-reduced-motion: reduce) {
   .progress-active .progress-label {
-    animation: none;
     background: none;
     color: var(--text);
   }

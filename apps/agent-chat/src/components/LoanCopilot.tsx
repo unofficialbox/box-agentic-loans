@@ -107,6 +107,8 @@ function Thread({ conversation, onAsk }: { conversation: Conversation; onAsk: (p
   const threadRef = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
   const count = useRef(0);
+  // New content arrived below while the officer was reading further up.
+  const [behind, setBehind] = useState(false);
 
   // Follow new content to the bottom, but only while the officer hasn't
   // scrolled up to read. Intent comes from what they do (wheel, touch, keys,
@@ -123,8 +125,10 @@ function Thread({ conversation, onAsk }: { conversation: Conversation; onAsk: (p
     const onPointerDown = (event: PointerEvent) => (dragging = event.target === thread);
     const onPointerUp = () => (dragging = false);
     const onScroll = () => {
-      if (atBottom()) pinned.current = true;
-      else if (dragging) release();
+      if (atBottom()) {
+        pinned.current = true;
+        setBehind(false);
+      } else if (dragging) release();
     };
     const resize = new ResizeObserver(() => {
       if (pinned.current) thread.scrollTop = thread.scrollHeight;
@@ -155,7 +159,17 @@ function Thread({ conversation, onAsk }: { conversation: Conversation; onAsk: (p
     if (messages.length > count.current) pinned.current = true;
     count.current = messages.length;
     if (pinned.current) thread.scrollTop = thread.scrollHeight;
+    else if (thread.scrollHeight - thread.scrollTop - thread.clientHeight > 48) setBehind(true);
   }, [messages, turns]);
+
+  const jumpToLatest = () => {
+    const thread = threadRef.current;
+    if (!thread) return;
+    pinned.current = true;
+    setBehind(false);
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    thread.scrollTo({ top: thread.scrollHeight, behavior: reduce ? "auto" : "smooth" });
+  };
 
   const lastAgent = [...messages].reverse().find(message => message.role === "agent");
   const awaitingApproval = messages.some(message => message.proposals.some(proposal => !proposal.decision));
@@ -163,38 +177,48 @@ function Thread({ conversation, onAsk }: { conversation: Conversation; onAsk: (p
   const next = !streaming && !awaitingApproval && lastAgent ? (turns[lastAgent.id]?.options ?? []) : [];
 
   return (
-    <div className="thread" ref={threadRef} tabIndex={0} role="region" aria-label="Conversation">
-      <div className="thread-column">
-        {messages.length === 0 ? (
-          <Welcome onAsk={onAsk} />
-        ) : (
-          <>
-            {messages.map(message =>
-              message.role === "user" ? (
-                <div key={message.id} className="message-user">
-                  <p>{message.body}</p>
-                </div>
-              ) : (
-                <Reply
-                  key={message.id}
-                  message={message}
-                  turn={turns[message.id]}
-                  onResolve={(proposalId, decision) => resolve(proposalId, decision)}
-                />
-              )
-            )}
-            {next.length > 0 && (
-              <nav className="next" aria-label="Suggested next steps">
-                {next.map(({ label, prompt }) => (
-                  <button key={label} type="button" className="chip" title={prompt} onClick={() => onAsk(prompt)}>
-                    {label}
-                  </button>
-                ))}
-              </nav>
-            )}
-          </>
-        )}
+    <div className="thread-wrap">
+      <div className="thread" ref={threadRef} tabIndex={0} role="region" aria-label="Conversation">
+        <div className="thread-column">
+          {messages.length === 0 ? (
+            <Welcome onAsk={onAsk} />
+          ) : (
+            <>
+              {messages.map(message =>
+                message.role === "user" ? (
+                  <div key={message.id} className="message-user">
+                    <p>{message.body}</p>
+                  </div>
+                ) : (
+                  <Reply
+                    key={message.id}
+                    message={message}
+                    turn={turns[message.id]}
+                    onResolve={(proposalId, decision) => resolve(proposalId, decision)}
+                  />
+                )
+              )}
+              {next.length > 0 && (
+                <nav className="next" aria-label="Suggested next steps">
+                  {next.map(({ label, prompt }) => (
+                    <button key={label} type="button" className="chip" title={prompt} onClick={() => onAsk(prompt)}>
+                      {label}
+                    </button>
+                  ))}
+                </nav>
+              )}
+            </>
+          )}
+        </div>
       </div>
+      {behind && (
+        <button type="button" className="jump" onClick={jumpToLatest}>
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <path d="M8 3v10M3.75 8.75L8 13l4.25-4.25" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Jump to latest
+        </button>
+      )}
     </div>
   );
 }
@@ -274,6 +298,8 @@ function Reply({
   const sources = message.citations.filter(citation => !shownAsDocuments.has(citation.id));
   const paragraphs = message.body.split(/\n{2,}/).filter(part => part.trim());
   const failed = message.status === "error";
+  // A caret marks where text is still arriving; once results start, they carry the motion.
+  const typing = message.status === "streaming" && paragraphs.length > 0 && blocks.length === 0;
 
   return (
     <article className="reply" aria-busy={message.status === "streaming"}>
@@ -282,7 +308,10 @@ function Reply({
       {paragraphs.length > 0 && (
         <div className="reply-text">
           {paragraphs.map((paragraph, index) => (
-            <p key={index}>{paragraph}</p>
+            <p key={index}>
+              {paragraph}
+              {typing && index === paragraphs.length - 1 && <span className="caret" aria-hidden="true" />}
+            </p>
           ))}
         </div>
       )}

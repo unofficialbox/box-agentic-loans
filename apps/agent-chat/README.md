@@ -24,6 +24,14 @@ Design principles, from Apple's HIG (clarity, deference, consistency), Linear's 
 - nothing competes with an action awaiting approval
 - developer tooling is a separate page, never mixed into the officer's
 
+Motion and waiting, from one set of tokens in `styles/base.css` (`--duration-1..3`, `--ease-out`, `--stagger`): quick, eased out, never bouncy, and only where something arrives or changes state:
+- the welcome, each message, each result block (staggered) and the approval card rise into place; new calls slide into the API console
+- a status icon that just changed settles in, and a check strokes on
+- the progress line opens and closes smoothly (a `0fr → 1fr` grid row); while a turn runs past two seconds it shows a counting clock ("Thinking… 4 s") so a slow Box AI call never looks stalled
+- a caret marks where streamed text is still arriving; Approve and Reject show a spinner while the decision saves; the API console shows skeleton rows while it connects
+- scrolled up while a reply grows? **Jump to latest** appears over the composer
+- with `prefers-reduced-motion`, everything settles at once and spinners and shimmers hold still
+
 Identity: Acme Bank's own voice on Box's system, not a generic AI chat:
 - the mark is an arch on a plinth, a bank's doorway (`BrandMark.tsx`, `public/acme-mark.svg`), in place of an AI sparkle and gradient
 - the wordmark sets "Acme Bank" in Source Serif 4, with the product name in the sans beside it

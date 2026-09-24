@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { formatDuration, progress, splitStepTitle, type TurnDetails } from "../activity";
 import { StatusIcon, statusLabel, toStatusKind } from "./StatusIcon";
 
@@ -11,13 +11,16 @@ import { StatusIcon, statusLabel, toStatusKind } from "./StatusIcon";
 export function TurnProgress({ turn, failed }: { turn: TurnDetails; failed: boolean }) {
   const [open, setOpen] = useState(false);
   const detailId = useId();
-  const { kind, label } = progress(turn, failed);
+  const working = turn.endedAt === undefined;
+  const now = useClock(working);
+  const { kind, label, elapsed } = progress(turn, failed, now);
   const hasDetail = turn.todos.length > 0 || turn.steps.length > 0;
 
   const summary = (
     <>
       {kind !== "done" && <StatusIcon kind={kind} />}
       <span className="progress-label">{label}</span>
+      {elapsed && <span className="progress-elapsed">{elapsed}</span>}
     </>
   );
 
@@ -43,7 +46,8 @@ export function TurnProgress({ turn, failed }: { turn: TurnDetails; failed: bool
         </span>
       )}
 
-      {open && (
+      {/* Always rendered so it can open and close smoothly; inert while closed. */}
+      <div className="progress-panel" data-open={open} inert={!open}>
         <div className="progress-detail" id={detailId}>
           {turn.todos.length > 0 && (
             <ol className="activity-list" aria-label="Plan">
@@ -83,7 +87,19 @@ export function TurnProgress({ turn, failed }: { turn: TurnDetails; failed: bool
             </ol>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
+}
+
+/** Now, re-read every second while `running`, so a long wait shows a counting clock. */
+function useClock(running: boolean): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!running) return;
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [running]);
+  return now;
 }
