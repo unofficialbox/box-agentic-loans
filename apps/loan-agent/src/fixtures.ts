@@ -134,6 +134,12 @@ export class FixtureToolGateway implements ToolGateway {
     return RISK[`${folderId}|${risk}`] ?? [];
   }
 
+  async getDocumentType(fileId: string) {
+    return Object.values(RISK)
+      .flat()
+      .find(hit => hit.fileId === fileId)?.documentType;
+  }
+
   async extractCovenants(fileId: string) {
     return COVENANTS[fileId] ?? {};
   }

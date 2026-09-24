@@ -252,6 +252,46 @@ describe("tools that need a person first", () => {
   });
 });
 
+describe("document types for risk search hits", () => {
+  // Live Box search returns only id, type and name, so the type is looked up per file.
+  function withoutTypes() {
+    const { tools, agent } = setup();
+    const search = tools.findByPolicyRisk.bind(tools);
+    tools.findByPolicyRisk = async (folderId, risk) =>
+      (await search(folderId, risk)).map(({ documentType: _type, ...hit }) => hit);
+    return { tools, agent };
+  }
+
+  it("looks up each untyped hit and labels it", async () => {
+    const { tools, agent } = withoutTypes();
+    const looked: string[] = [];
+    const lookup = tools.getDocumentType.bind(tools);
+    tools.getDocumentType = async fileId => {
+      looked.push(fileId);
+      return lookup(fileId);
+    };
+    const turn = await send(agent, CLICKPATH[0][0]);
+    expect(looked).toHaveLength(1);
+    expect(turn.text).toContain("harborview-term-sheet-2026-borrower-markup.pdf (Term Sheet)");
+    expect(turn.trace).toContain("Box · get_file_details:succeeded");
+  });
+
+  it("still answers, without the label, when the lookup fails", async () => {
+    const { tools, agent } = withoutTypes();
+    tools.getDocumentType = () => Promise.reject(new Error("Box 403"));
+    const turn = await send(agent, CLICKPATH[0][0]);
+    expect(turn.text).toMatch(/• harborview-term-sheet-2026-borrower-markup\.pdf(?! \()/);
+    expect(turn.trace).toContain("Box · get_file_details:warning");
+    expect(turn.events.find(event => event.kind === "done")).toMatchObject({ status: "complete" });
+  });
+
+  it("skips the lookup when the search already has the type", async () => {
+    const { agent } = setup();
+    const turn = await send(agent, CLICKPATH[0][0]);
+    expect(turn.trace.some(step => step.startsWith("Box · get_file_details"))).toBe(false);
+  });
+});
+
 describe("determinism", () => {
   it("replays the clickpath to byte-identical output", async () => {
     const run = async () => {

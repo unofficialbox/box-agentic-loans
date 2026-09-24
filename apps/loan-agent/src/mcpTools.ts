@@ -112,6 +112,18 @@ export class McpToolGateway implements ToolGateway {
     });
   }
 
+  /**
+   * The Box MCP server's search_files_metadata returns only id, type and name,
+   * whatever `fields` asks for, so the type is read from the file itself.
+   */
+  async getDocumentType(fileId: string): Promise<string | undefined> {
+    const result = await this.box.call("get_file_details", {
+      file_id: fileId,
+      fields: ["id", "name", `metadata.enterprise_${this.boxEnterpriseId}.losDocument`],
+    });
+    return deepString(result, "documentType");
+  }
+
   async extractCovenants(fileId: string): Promise<CovenantFields> {
     const result = await this.box.call("ai_extract_structured_from_fields", {
       file_ids: [fileId],

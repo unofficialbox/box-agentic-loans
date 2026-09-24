@@ -49,7 +49,7 @@ Salesforce sign-in goes to the org's My Domain (`LOS_MCP_LOGIN_URL`), not `login
 
 ```bash
 npm install
-npm test                 # 72 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
+npm test                 # 75 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
 npm start                # http://LOAN_AGENT_HOST:LOAN_AGENT_PORT
 
 # Without MCP access, TypeSafe still decides but the tools are seeded fixtures:
