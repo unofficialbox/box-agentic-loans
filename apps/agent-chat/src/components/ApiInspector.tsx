@@ -35,7 +35,15 @@ function write(key: string, value: string) {
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const maxHeight = () => Math.round(window.innerHeight * 0.75);
 
-type Connection = "connecting" | "live" | "reconnecting";
+/** "outdated": the agent answers but has no call log, i.e. it runs older code and needs a restart. */
+type Connection = "connecting" | "live" | "reconnecting" | "outdated";
+
+const CONNECTION_LABELS: Record<Connection, string> = {
+  connecting: "connecting",
+  live: "live",
+  reconnecting: "reconnecting",
+  outdated: "restart the loan agent",
+};
 
 /**
  * Bottom "API inspector" shelf, after box-cmis-lab's HTTP inspector: every call
@@ -75,8 +83,19 @@ export function ApiInspector({ baseUrl }: { baseUrl: string }) {
     source.addEventListener("call", call);
     source.addEventListener("clear", clear);
     source.onopen = () => setConnection("live");
-    // EventSource reconnects by itself; the server sends a fresh snapshot.
-    source.onerror = () => setConnection("reconnecting");
+    // EventSource reconnects by itself and the server sends a fresh snapshot,
+    // unless the agent is up but has no /calls: then retrying can't help.
+    source.onerror = () => {
+      setConnection("reconnecting");
+      fetch(`${baseUrl}/calls`, { method: "GET" })
+        .then(response => {
+          if (response.status === 404) {
+            source.close();
+            setConnection("outdated");
+          }
+        })
+        .catch(() => undefined);
+    };
     return () => source.close();
   }, [baseUrl]);
 
@@ -152,9 +171,16 @@ export function ApiInspector({ baseUrl }: { baseUrl: string }) {
           <span className="inspector-badge">{entries.length}</span>
           {failures > 0 && <span className="inspector-badge inspector-badge-error">{failures} failed</span>}
         </button>
-        <span className={`inspector-conn inspector-conn-${connection}`} title={`Call log: ${connection}`}>
+        <span
+          className={`inspector-conn inspector-conn-${connection}`}
+          title={
+            connection === "outdated"
+              ? "The loan agent answers but has no call log: it is running older code. Pull main and restart it (npm start in apps/loan-agent)."
+              : `Call log: ${connection}`
+          }
+        >
           <span className="inspector-dot" aria-hidden="true" />
-          {connection === "live" ? "live" : connection}
+          {CONNECTION_LABELS[connection]}
         </span>
         {open && (
           <div className="inspector-actions">
@@ -168,7 +194,7 @@ export function ApiInspector({ baseUrl }: { baseUrl: string }) {
                 ))}
               </select>
             </label>
-            <button type="button" className="inspector-clear" onClick={clearLog}>
+            <button type="button" className="button" onClick={clearLog}>
               Clear
             </button>
           </div>
@@ -180,9 +206,11 @@ export function ApiInspector({ baseUrl }: { baseUrl: string }) {
           <div className="inspector-list">
             {shown.length === 0 ? (
               <p className="inspector-empty">
-                {entries.length === 0
-                  ? "No calls yet. Ask the copilot something: its TypeSafe, Salesforce and Box calls appear here."
-                  : "No calls match this filter."}
+                {connection === "outdated"
+                  ? `The loan agent at ${baseUrl} has no call log, so it is running code from before the inspector. Pull main, then stop it and run npm start in apps/loan-agent again.`
+                  : entries.length === 0
+                    ? "No calls yet. Ask the copilot something: its TypeSafe, Salesforce and Box calls appear here."
+                    : "No calls match this filter."}
               </p>
             ) : (
               <table className="inspector-table">
