@@ -1,5 +1,5 @@
 import { parseExtraction, parseLoanList, parseLoanPackage, type Terms } from "./los.js";
-import type { CovenantFields, DocgenResult, MetadataHit, ToolGateway, WriteResult } from "./tools.js";
+import type { CovenantFields, DocGenCheck, DocgenResult, MetadataHit, ToolGateway, WriteResult } from "./tools.js";
 
 /**
  * Seeded Harborview data in the LOS actions' own response formats (captured
@@ -147,6 +147,12 @@ export class FixtureToolGateway implements ToolGateway {
   async applyLoanTerms(loanId: string, terms: Terms): Promise<WriteResult> {
     this.writes.push({ tool: "applyLoanTerms", input: { loanId, terms } });
     return { ok: true, message: `Fixture: would write ${Object.keys(terms).join(", ")} to ${loanId}. Nothing was written.` };
+  }
+
+  async checkDocGen(folderId?: string): Promise<DocGenCheck> {
+    const items: DocGenCheck["items"] = [{ what: "template", ok: true, detail: "Commitment Letter Template (fixture)" }];
+    if (folderId) items.push({ what: "folder", ok: true, detail: "Loan workspace (fixture)" });
+    return { ready: true, items };
   }
 
   async generateCommitmentLetter(input: { folderId: string; fileName: string; userInput: Record<string, unknown> }): Promise<DocgenResult> {

@@ -18,6 +18,25 @@ export interface CovenantFields {
   guarantyCapPerPerson?: number;
 }
 
+/** One thing Doc Gen needs, checked as the signed-in Box user. */
+export interface DocGenCheckItem {
+  what: "template" | "folder";
+  ok: boolean;
+  /** Found: the item's name. Not ok: what is wrong. */
+  detail: string;
+  /** Not ok: what to do about it. */
+  fix?: string;
+}
+
+/**
+ * Whether Box Doc Gen can run: the template is a Doc Gen template this user
+ * can use, and (when given) the destination folder is visible to them.
+ */
+export interface DocGenCheck {
+  ready: boolean;
+  items: DocGenCheckItem[];
+}
+
 export interface DocgenResult {
   /** The output file this generation produced, when the response names it. */
   outputFileId?: string;
@@ -42,6 +61,9 @@ export interface ToolGateway {
   /** The file's losDocument documentType, for search hits that came back without it. */
   getDocumentType(fileId: string): Promise<string | undefined>;
   extractCovenants(fileId: string): Promise<CovenantFields>;
+
+  /** Read-only: can the signed-in Box user run Doc Gen with this template, into this folder? */
+  checkDocGen(folderId?: string): Promise<DocGenCheck>;
 
   applyLoanTerms(loanId: string, terms: Terms): Promise<WriteResult>;
   generateCommitmentLetter(input: {

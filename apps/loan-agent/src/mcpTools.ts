@@ -2,8 +2,11 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { parseExtraction, parseLoanList, parseLoanPackage, type Terms } from "./los.js";
 import {
+  ActionRequiredError,
   COVENANT_FIELDS,
   type CovenantFields,
+  type DocGenCheck,
+  type DocGenCheckItem,
   type DocgenResult,
   type MetadataHit,
   type ToolGateway,
@@ -149,6 +152,25 @@ export class McpToolGateway implements ToolGateway {
     return this.losWrite("applyLoanTerms", { loanReference: loanId, confirmed: true, ...terms });
   }
 
+  async checkDocGen(folderId?: string): Promise<DocGenCheck> {
+    const id = this.docgenTemplateFileId;
+    const check = async (what: DocGenCheckItem["what"], itemId: string, run: () => Promise<unknown>): Promise<DocGenCheckItem> => {
+      try {
+        const result = await run();
+        return { what, ok: true, detail: firstString(result, ["name", "file_name", "friendly_name"]) ?? itemId };
+      } catch (error) {
+        // Not signed in is not a Doc Gen problem: let the usual sign-in prompt through.
+        if (error instanceof ActionRequiredError) throw error;
+        return docGenProblem(what, itemId, error instanceof Error ? error.message : String(error));
+      }
+    };
+    const items = await Promise.all([
+      check("template", id, () => this.box.call("get_docgen_template_by_id", { template_id: id })),
+      ...(folderId ? [check("folder", folderId, () => this.box.call("get_folder_details", { folder_id: folderId }))] : []),
+    ]);
+    return { ready: items.every(item => item.ok), items };
+  }
+
   async generateCommitmentLetter(input: { folderId: string; fileName: string; userInput: Record<string, unknown> }): Promise<DocgenResult> {
     const result = await this.box.call("create_docgen_batch", {
       file_id: this.docgenTemplateFileId,
@@ -254,4 +276,56 @@ function unwrapAnswer(result: unknown): unknown {
     }
   }
   return result;
+}
+
+/**
+ * What a Box error on a Doc Gen prerequisite means, and what to do about it.
+ * Box answers "not found" for items the user can't see, so not found and no
+ * access get the same advice about sharing.
+ */
+export function docGenProblem(what: DocGenCheckItem["what"], itemId: string, message: string): DocGenCheckItem {
+  const reason = message.replace(/^Box [\w_]+:\s*/, "");
+  if (/scope|access denied|forbidden|insufficient|not authorized|unauthori[sz]ed|403/i.test(reason)) {
+    return {
+      what,
+      ok: false,
+      detail: `The Box sign-in isn't allowed to use Doc Gen (Box: ${reason}).`,
+      fix: "Give the Box MCP Server integration the Doc Gen scope (docgen.readwrite) in the Box Admin Console, then sign in to Box again so the new scope takes effect.",
+    };
+  }
+  if (/not found|404|not_found/i.test(reason)) {
+    return what === "template"
+      ? {
+          what,
+          ok: false,
+          detail: `Template ${itemId} isn't a Doc Gen template the signed-in Box user can open (Box: ${reason}).`,
+          fix: "Check LOS_DOCGEN_TEMPLATE_FILE_ID in the repo-root .env. In Box, make sure that file is marked as a Doc Gen template and is shared with the signed-in user.",
+        }
+      : {
+          what,
+          ok: false,
+          detail: `The loan folder ${itemId} isn't visible to the signed-in Box user (Box: ${reason}).`,
+          fix: "Invite the signed-in Box user to the loan's workspace folder as an Editor, or sign in to Box as a user who has access.",
+        };
+  }
+  return {
+    what,
+    ok: false,
+    detail: `Box couldn't confirm the ${what === "template" ? "Doc Gen template" : "loan folder"} (Box: ${reason}).`,
+    fix: "Try again. If it keeps failing, open the call in the API console for Box's full response.",
+  };
+}
+
+/** The first string value under any of these keys, at any depth. */
+function firstString(value: unknown, keys: string[]): string | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  for (const key of keys) {
+    const direct = (value as Record<string, unknown>)[key];
+    if (typeof direct === "string" && direct) return direct;
+  }
+  for (const child of Object.values(value as Record<string, unknown>)) {
+    const found = firstString(child, keys);
+    if (found) return found;
+  }
+  return undefined;
 }

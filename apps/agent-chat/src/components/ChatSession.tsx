@@ -16,6 +16,7 @@ const DEMO_LOAN: LoanContext = {
   loanId: "LN-2026-0042",
   name: "Harborview Distribution Facility Loan 2026",
   status: "Underwriting",
+  risk: "High",
 };
 
 /**

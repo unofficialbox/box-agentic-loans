@@ -198,6 +198,33 @@ describe("clickpath on fixtures", () => {
     expect(sign.proposals).toEqual([]);
   });
 
+  it("checks Doc Gen before asking for approval, and explains instead of proposing when it can't run", async () => {
+    const { agent, tools } = setup();
+    tools.checkDocGen = async folderId => ({
+      ready: false,
+      items: [
+        { what: "template", ok: false, detail: "Template 2482573818840 isn't a Doc Gen template the signed-in Box user can open (Box: Item not found).", fix: "Check LOS_DOCGEN_TEMPLATE_FILE_ID." },
+        { what: "folder", ok: true, detail: `folder ${folderId}` },
+      ],
+    });
+    await send(agent, CLICKPATH[0][0]);
+    const turn = await send(agent, CLICKPATH[5][0]);
+    expect(turn.proposals).toEqual([]);
+    expect(turn.text).toMatch(/^I can't generate the commitment letter for LN-2026-0003 yet/);
+    expect(turn.trace).toContain("Box · check Doc Gen access:failed");
+    const [checks] = turn.blocks;
+    expect(checks).toMatchObject({ type: "checks", title: "Box Doc Gen" });
+    expect(checks.type === "checks" && checks.rows.map(row => [row.label, row.status])).toEqual([
+      ["Template", "fail"],
+      ["Loan folder", "pass"],
+    ]);
+    expect(turn.events.find(event => event.kind === "options")).toMatchObject({ options: [{ label: "Check again" }] });
+    expect(turn.events.find(event => event.kind === "done")).toMatchObject({ status: "needs_input" });
+    const plan = turn.events.filter(event => event.kind === "todos").at(-1);
+    expect(plan?.kind === "todos" && plan.todos.map(todo => todo.status)).toEqual(["completed", "completed", "completed", "skipped"]);
+    expect(tools.writes).toEqual([]);
+  });
+
   it("marks an approved action that ran as done", async () => {
     const { agent } = setup();
     await send(agent, CLICKPATH[0][0]);

@@ -196,11 +196,12 @@ export const DEMO_BEATS: DemoBeat[] = [
   },
   {
     intent: "generate_letter",
-    plan: ["Load the loan package", "Build the 15 Doc Gen fields", "Hold generation for your approval"],
+    plan: ["Load the loan package", "Build the 15 Doc Gen fields", "Check Box Doc Gen access", "Hold generation for your approval"],
     next: ["send-signature"],
     keywords: ["commitment letter", "generate", "draft"],
     tools: [
       { connector: "LOS MCP", tool: "getLoanPackage", detail: "Doc Gen destination folder" },
+      { connector: "Box MCP", tool: "get_docgen_template_by_id", detail: "template and loan folder, as the signed-in Box user" },
       { connector: "Box MCP", tool: "create_docgen_batch", detail: "commitment letter template · held for approval", gated: true },
     ],
     reply: "Commitment letter is ready to generate with all 15 merge fields. Approve to create it in the loan folder.",

@@ -27,6 +27,17 @@ describe("LOS parsers", () => {
     expect(pkg.documents).toEqual([{ name: "a b.pdf", fileId: "42", href: "https://app.box.com/file/42" }]);
   });
 
+  it("keeps the risk rating out of the status", () => {
+    const pkg = parseLoanPackage({
+      outputFound: true,
+      outputSummary: "LN-2026-0042 -- Harborview Distribution Facility Loan 2026. Borrower: Harborview Logistics. Status: Underwriting. Risk: High.",
+    });
+    expect(pkg).toMatchObject({ status: "Underwriting", risk: "High", name: "Harborview Distribution Facility Loan 2026" });
+    const unrated = parseLoanPackage({ outputFound: true, outputSummary: "LN-2026-0003 -- X. Borrower: Y. Status: Approved." });
+    expect(unrated.status).toBe("Approved");
+    expect(unrated.risk).toBeUndefined();
+  });
+
   it("reports a missing loan as not found", () => {
     expect(parseLoanPackage({ outputFound: false, outputSummary: "I could not find a LOS loan" }).found).toBe(false);
   });
