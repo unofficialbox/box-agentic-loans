@@ -118,6 +118,24 @@ describe("loggedFetch", () => {
     expect(finished(log)[0]).toMatchObject({ summary: "open event stream", responseBody: "(event stream: not captured)" });
   });
 
+  it("marks the 405 an MCP server may answer to the event-stream GET as expected", async () => {
+    const log = new CallLog();
+    const doFetch = loggedFetch(log, "box", async () => new Response(null, { status: 405, statusText: "Method Not Allowed" }));
+    await doFetch("https://mcp.example", { method: "GET" });
+    const [entry] = finished(log);
+    expect(entry).toMatchObject({ summary: "open event stream", status: 405 });
+    expect(entry.expected).toMatch(/doesn't offer a server-to-client event stream/);
+    expect(formatCallLine(entry)).toMatch(/open event stream \(expected\)$/);
+  });
+
+  it("leaves other 405s as failures", async () => {
+    const log = new CallLog();
+    const doFetch = loggedFetch(log, "box", async () => new Response("{}", { status: 405 }));
+    await doFetch("https://mcp.example", { method: "POST", body: JSON.stringify({ method: "tools/call", params: { name: "x" } }) });
+    await settle();
+    expect(finished(log)[0].expected).toBeUndefined();
+  });
+
   it("records a network failure and still throws it", async () => {
     const log = new CallLog();
     const doFetch = loggedFetch(log, "typesafe", async () => {
