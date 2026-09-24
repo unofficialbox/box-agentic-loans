@@ -7,13 +7,18 @@ A loan officer's chat for the Harborview demo. The conversation runs on the head
   - **checks** with a verdict in words and a status icon (credit policy)
   - **tables** (record comparison, covenant precedent, loan lists), with rows that depart from the norm marked and explained
   - **documents** that open in Box
-- **Sources.** Quiet tags under the reply. The first three show; the rest sit behind "N more". A file already shown as a document isn't repeated.
-- **Approval card.** One card per governed action ("Needs your approval"), with Approve as the primary action. Nothing runs until then. Once decided, it settles into a quiet record.
+- **Sources.** Quiet tags under the reply when the details panel is closed. The first three show; the rest sit behind "N more". A file already shown as a document isn't repeated.
+- **Approval card.** One plain, hairline-bordered card per governed action ("Needs your approval"), with Approve as the only filled button. No coloured accent edge. Nothing runs until you approve. Once decided, it steps back to a single line of record ("✓ Approved · Apply 3 terms to …"), like a permission result.
 - **Next steps.** After the latest reply, chips offer what to do next. None show while an approval is waiting.
-- **Top bar.** Shows the loan in context, plus a "Demo script" tag in demo mode.
+- **Three panes, like Claude and ChatGPT.**
+  - **Chats (left):** the product, **New chat**, and this tab's conversations, newest first. Each conversation keeps running while you look at another, and its row says "Working…" or "Needs your approval". At the foot: the "Demo script" tag, or **API calls ↗** in live mode.
+  - **Conversation (centre):** a header with the loan in context and the two sidebar toggles, then the thread.
+  - **Details (right):** about the conversation, not the turn. It shows the **Loan** (name, ID, status, borrower), **Approvals** (each governed action and its state; select one to jump to its card) and **Sources** (every document and policy cited, documents linking to Box).
+  - On a wide window both sidebars sit beside the chat and remember whether you closed them. The details panel starts open at 1200px and wider. Under 900px both are drawers, closed until asked for, and close again with Escape or a tap outside.
+  - Conversations live in this browser tab only; the agent keeps its own session for each.
 - **Welcome state.** Before the first message: a greeting by the time of day ("Good evening. Which loan are we working on?"), what the copilot does, and four ways in as a list of rows (from `src/prompts.ts`), on the same left edge as the conversation that replaces them.
 - **One column.** A single centred column at a reading measure, with the composer docked under it. Enter sends and Shift+Enter adds a line. While a reply streams, the send button becomes Stop. The thread follows new content to the bottom, and stops following while you scroll up to read.
-- **No developer tooling on the page.** In live mode a quiet **API calls ↗** link in the top bar opens the API console (below) in its own tab.
+- **No developer tooling on the page.** In live mode a quiet **API calls ↗** link at the foot of the chats sidebar opens the API console (below) in its own tab.
 
 Every status uses one 16px icon family (`StatusIcon.tsx`), always with text beside it, so colour is never the only signal.
 
@@ -58,7 +63,7 @@ The loan comes from `?recordId=` or `?loan=` in the URL when the page is opened 
 
 ## API console (developer tools)
 
-The API console is a page of its own, `devtools.html`, so the officer's page carries no tooling. In live mode, open it from **API calls ↗** in the top bar (it opens in a separate tab you can keep beside the copilot), or go to `/devtools.html`. It shows every call the loan agent makes to TypeSafe, Salesforce and Box, plus each chat request, live from the backend's `GET /calls/stream`. The layout follows the HTTP inspector in [box-cmis-lab](https://github.com/unofficialbox/box-cmis-lab), with the same tokens, type and controls as the copilot (light or dark):
+The API console is a page of its own, `devtools.html`, so the officer's page carries no tooling. In live mode, open it from **API calls ↗** in the chats sidebar (it opens in a separate tab you can keep beside the copilot), or go to `/devtools.html`. It shows every call the loan agent makes to TypeSafe, Salesforce and Box, plus each chat request, live from the backend's `GET /calls/stream`. The layout follows the HTTP inspector in [box-cmis-lab](https://github.com/unofficialbox/box-cmis-lab), with the same tokens, type and controls as the copilot (light or dark):
 - the list shows status, service, the call (e.g. `tools/call getLoanPackage`) and time in ms, newest first
 - select a row to see its URL and its request and response headers and bodies
 - **Copy request**, **Copy response** or **Copy both** puts the call on the clipboard as HTTP-style text (request or status line, headers, blank line, body), already redacted
@@ -79,7 +84,7 @@ If the agent answers but has no call log (it is still running code from before t
 | `{"kind":"block","block":{"type",…}}` | A structured result, shown under the reply's text. `type` is `facts` (`rows: [{label, value}]`), `checks` (`rows: [{label, value?, detail?, status}]`), `table` (`columns`, `rows: [{cells, status?, note?}]`, `footnote?`) or `documents` (`items: [{id, name, detail?, href?}]`). `status` is `pass`, `warn`, `fail` or `info`. |
 | `{"kind":"proposal","proposal":{"id","title","summary?","params?":[{"label","value"}]}}` | A governed write held for approval. |
 | `{"kind":"trace","step":{"id","title","description?","status","startedAt?","finishedAt?"}}` | A trace step. Sending the same `id` again updates that step. `status` is `running`, `succeeded`, `warning`, `failed`, or `skipped`. |
-| `{"kind":"context","loan":{"loanId","name?","borrower?","status?"}}` | The loan this turn resolved to. The top bar shows it. |
+| `{"kind":"context","loan":{"loanId","name?","borrower?","status?"}}` | The loan this turn resolved to. The conversation header and the details panel show it. |
 | `{"kind":"todos","todos":[{"id","content","status"}]}` | The plan for this turn, sent as a full snapshot each time. `status` is `pending`, `in_progress`, `completed`, or `skipped`. The reply's progress line shows it. |
 | `{"kind":"options","options":[{"label","prompt"}]}` | Prompts to offer next, as chips after the reply. |
 | `{"kind":"done","status":"complete"\|"needs_input"\|"error"}` | Always the last event. `needs_input` means the agent asked a question or is waiting on an approval. |
@@ -107,7 +112,10 @@ The backend has to keep a `proposalId → session` mapping. It should also cache
 
 ## Files
 
-- `src/components/LoanCopilot.tsx`: the page: top bar, thread, replies, composer dock
+- `src/components/LoanCopilot.tsx`: the page: the three panes, their toggles and drawers, and the list of conversations
+- `src/components/ChatSession.tsx`: one conversation: its transport, thread, replies and composer
+- `src/components/ChatList.tsx`, `DetailsPanel.tsx`, `icons.tsx`: the left and right sidebars and their line icons
+- `src/conversations.ts`: what the sidebars know about a conversation (title, loan, approvals, sources)
 - `src/useConversation.ts`: the `AgentChatController` session plus each turn's plan, steps, blocks and timing
 - `src/activity.ts`: the progress line's wording and timings
 - `src/components/TurnProgress.tsx`, `ResultBlocks.tsx`, `ApprovalCard.tsx`, `Composer.tsx`: the parts of a reply, and the message box

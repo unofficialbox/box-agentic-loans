@@ -1,66 +1,267 @@
-/* The Loan Copilot page. Tokens, buttons and status glyphs come from
-   styles/base.css. */
+/* The Loan Copilot page: chats | conversation | details, like Claude and
+   ChatGPT. Tokens, buttons and status glyphs come from styles/base.css. */
 
 .copilot {
   /* One reading measure for the conversation: about 75 characters of reply text. */
   --measure: 44rem;
+  --pane-left: 16rem;
+  --pane-right: 20rem;
 
+  position: relative;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   height: 100%;
+  /* clip, not hidden: a hidden box can still be scrolled by scrollIntoView,
+     which would shift the whole layout when jumping to an approval. */
+  overflow: clip;
   background: var(--surface);
 }
 
-/* ── Top bar ─────────────────────────────────────────────── */
+/* ── Sidebars ───────────────────────────────────────────────
+   Beside the chat on a wide window: the pane animates its width, its content
+   keeps a fixed one, so nothing reflows while it slides. On a narrow window
+   they are drawers over the chat. */
 
-.topbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3) var(--space-6);
-  padding: var(--space-3) var(--space-6);
-  background: var(--surface);
-  border-bottom: 1px solid var(--stroke);
+.pane {
+  width: var(--pane-width);
+  min-height: 0;
+  overflow: clip;
+  background: var(--sidebar-surface);
+  transition:
+    width var(--duration-3) var(--ease-out),
+    visibility 0s linear 0s;
 }
 
-.topbar .wordmark {
-  margin: 0;
+.pane-left {
+  --pane-width: var(--pane-left);
+  border-right: 1px solid var(--stroke);
 }
 
-/* The loan in context: its name, then ID and status as quiet text, not boxed pills. */
-.loan-context {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0 var(--space-3);
-  min-width: 0;
-  padding-left: var(--space-6);
+.pane-right {
+  --pane-width: var(--pane-right);
+  grid-column: 3;
   border-left: 1px solid var(--stroke);
 }
 
-.loan-context:empty {
-  display: none;
+.copilot[data-left="closed"] .pane-left,
+.copilot[data-right="closed"] .pane-right {
+  width: 0;
+  border-width: 0;
+  visibility: hidden;
+  transition:
+    width var(--duration-3) var(--ease-out),
+    visibility 0s linear var(--duration-3);
 }
 
-.loan-title {
+.pane-inner {
+  display: flex;
+  flex-direction: column;
+  width: var(--pane-width);
+  height: 100%;
+  overflow-y: auto;
+  padding: var(--space-3);
+}
+
+.copilot[data-layout="drawers"] .pane {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 3;
+  width: min(var(--pane-width), 85vw);
+  box-shadow: var(--dropshadow-3);
+  transition:
+    transform var(--duration-3) var(--ease-out),
+    visibility 0s linear 0s;
+}
+
+.copilot[data-layout="drawers"] .pane-left {
+  left: 0;
+}
+
+.copilot[data-layout="drawers"] .pane-right {
+  right: 0;
+}
+
+.copilot[data-layout="drawers"][data-left="closed"] .pane-left,
+.copilot[data-layout="drawers"][data-right="closed"] .pane-right {
+  width: min(var(--pane-width), 85vw);
+  transition:
+    transform var(--duration-3) var(--ease-out),
+    visibility 0s linear var(--duration-3);
+}
+
+.copilot[data-layout="drawers"][data-left="closed"] .pane-left {
+  transform: translateX(-100%);
+}
+
+.copilot[data-layout="drawers"][data-right="closed"] .pane-right {
+  transform: translateX(100%);
+}
+
+.copilot[data-layout="drawers"] .pane-inner {
+  width: 100%;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: color-mix(in srgb, #000 35%, transparent);
+  animation: fade-in var(--duration-2) var(--ease-out);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.pane-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0 var(--space-2);
+  color: var(--muted);
+  font-size: 0.75rem;
   font-weight: 600;
 }
 
-.loan-meta {
+.pane-count {
   color: var(--muted);
-  font-size: 0.8125rem;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
 }
 
-.topbar-actions {
+.pane-count-waiting {
+  color: color-mix(in srgb, var(--warning) 50%, var(--text));
+  font-weight: 600;
+}
+
+/* Left: product, New chat, chats. */
+
+.sidebar {
+  gap: var(--space-1);
+}
+
+.wordmark-stacked {
+  gap: var(--space-3);
+  margin: var(--space-1) var(--space-2) var(--space-4);
+}
+
+.wordmark-stacked > span {
+  display: grid;
+  line-height: 1.2;
+}
+
+.wordmark-stacked .wordmark-product {
+  padding-left: 0;
+  border-left: 0;
+  font-size: 0.75rem;
+}
+
+.sidebar-action,
+.chat-item {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  margin-inline-start: auto;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-3);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.sidebar-action:hover,
+.chat-item:hover {
+  background: var(--surface-hover);
+}
+
+.sidebar-action:focus-visible,
+.chat-item:focus-visible,
+.details-row:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.sidebar-action .icon {
+  color: var(--muted);
+}
+
+.sidebar .pane-heading {
+  margin-top: var(--space-5);
+  margin-bottom: var(--space-1);
+}
+
+.chat-list {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chat-item {
+  display: grid;
+  gap: 0.125rem;
+}
+
+.chat-item[aria-current="page"] {
+  background: var(--selected-quiet);
+}
+
+.chat-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.chat-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.chat-meta.is-working .chat-dot {
+  background: var(--brand);
+  animation: caret 1s var(--ease-in-out) infinite;
+}
+
+.chat-meta.is-waiting {
+  color: color-mix(in srgb, var(--warning) 50%, var(--text));
+}
+
+.chat-meta.is-waiting .chat-dot {
+  background: var(--warning);
+}
+
+.sidebar-foot {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-4);
 }
 
 /* Shown only in demo mode, so nobody mistakes scripted replies for the live agent. */
 .mode-demo {
+  margin: 0 var(--space-2) var(--space-1);
   padding: 0.125rem var(--space-3);
   border-radius: var(--radius-pill);
   font-size: 0.75rem;
@@ -69,14 +270,193 @@
   color: color-mix(in srgb, var(--warning) 45%, var(--text));
 }
 
-/* ── Workspace: one centred column ─────────────────────────
-   The thread scrolls at the page's edge; its content keeps a reading measure.
-   The composer docks under it at the same width. */
+/* Right: the loan, approvals, sources. */
 
-.workspace {
+.details {
+  gap: var(--space-6);
+  padding-top: var(--space-4);
+}
+
+.details-section {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.details-loan-name {
+  margin: 0;
+  padding: 0 var(--space-2);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.details-facts {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0 var(--space-2);
+  font-size: 0.8125rem;
+}
+
+.details-facts > div {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr;
+  gap: var(--space-2);
+}
+
+.details-facts dt {
+  color: var(--muted);
+}
+
+.details-facts dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.details-empty {
+  margin: 0;
+  padding: 0 var(--space-2);
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.details-list {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.details-row {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-3);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.details-row:hover {
+  background: var(--surface-hover);
+}
+
+.details-row-static {
+  cursor: default;
+}
+
+.details-row-static:hover {
+  background: transparent;
+}
+
+.details-row .icon,
+.details-row .status-icon {
+  margin-top: 0.125rem;
+  color: var(--muted);
+}
+
+a.details-row .icon {
+  color: var(--brand);
+}
+
+.details-row-text {
+  display: grid;
+  min-width: 0;
+}
+
+.details-row-title {
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+
+.details-row-meta {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* ── Main column ─────────────────────────────────────────── */
+
+.main {
+  grid-column: 2;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+
+.main-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 3.25rem;
+  padding: var(--space-2) var(--space-3);
+}
+
+.pane-toggle {
+  display: grid;
+  place-items: center;
+  width: var(--control-height);
+  height: var(--control-height);
+  padding: 0;
+  margin: 0;
+  color: var(--muted);
+}
+
+.pane-toggle:hover {
+  color: var(--text);
+}
+
+.main-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--space-3);
+  min-width: 0;
+  margin-inline-end: auto;
+}
+
+.main-heading {
+  margin: 0;
+  overflow: hidden;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.main-meta {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* One conversation: the thread scrolls at the column's edge, its content keeps
+   a reading measure, and the composer docks under it at the same width. */
+.session {
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+
+.session[hidden] {
+  display: none;
+}
+
+.icon {
+  flex: none;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* Holds the thread and, over its bottom edge, the "Jump to latest" button. */
@@ -781,6 +1161,11 @@ a.document:focus-visible {
 
 /* ── Sources ─────────────────────────────────────────────── */
 
+/* With the details panel open beside the chat, its Sources list is the one place. */
+.copilot[data-layout="panes"][data-right="open"] .sources {
+  display: none;
+}
+
 .sources {
   display: flex;
   flex-wrap: wrap;
@@ -849,55 +1234,39 @@ a.source:focus-visible {
   box-shadow: var(--focus);
 }
 
-/* ── Approval: the one card in the thread ────────────────── */
-
-.approval {
-  animation: rise var(--duration-3) var(--ease-out) both;
-  transition:
-    border-color var(--duration-3) var(--ease-out),
-    box-shadow var(--duration-3) var(--ease-out);
-}
+/* ── Approval ──────────────────────────────────────────────
+   Waiting: the one card in the thread, a hairline frame and no accent edge.
+   Decided: a single line of record. */
 
 .approval {
   display: grid;
   gap: var(--space-2);
   padding: var(--space-4) var(--space-5);
   border: 1px solid var(--stroke);
-  border-left: 3px solid var(--warning);
   border-radius: var(--radius-4);
   background: var(--surface);
   box-shadow: var(--dropshadow-3);
+  animation: rise var(--duration-3) var(--ease-out) both;
+}
+
+.approval:focus,
+.approval-record:focus {
+  outline: none;
+}
+
+.approval:focus-visible,
+.approval-record:focus-visible {
+  box-shadow: var(--dropshadow-3), var(--focus);
 }
 
 .approval-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   margin: 0;
-  color: color-mix(in srgb, var(--warning) 55%, var(--text));
-  font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-/* Decided: back to a quiet record; the edge and eyebrow say how it went. */
-.approval-approved,
-.approval-rejected {
-  box-shadow: none;
-}
-
-.approval-approved {
-  border-left-color: var(--success);
-}
-
-.approval-approved .approval-eyebrow {
-  color: color-mix(in srgb, var(--success) 60%, var(--text));
-}
-
-.approval-rejected {
-  border-left-color: var(--stroke);
-}
-
-.approval-rejected .approval-eyebrow {
   color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 
 .approval-title {
@@ -939,6 +1308,34 @@ a.source:focus-visible {
   margin-inline-start: var(--space-2);
   color: var(--muted);
   font-size: 0.75rem;
+}
+
+.approval-record {
+  display: grid;
+  gap: var(--space-1);
+  border-radius: var(--radius-2);
+  animation: rise var(--duration-2) var(--ease-out) both;
+}
+
+.approval-record-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.approval-record-state {
+  font-weight: 600;
+}
+
+.approval-record-title {
+  color: var(--muted);
+}
+
+.approval-record .approval-note {
+  padding-left: calc(1rem + var(--space-2));
 }
 
 /* ── Next steps ──────────────────────────────────────────── */
@@ -1082,10 +1479,6 @@ a.source:focus-visible {
 /* ── Narrow screens ──────────────────────────────────────── */
 
 @media (max-width: 56rem) {
-  .copilot {
-    grid-template-rows: auto minmax(0, 1fr) auto;
-  }
-
   .thread-column {
     gap: var(--space-6);
     padding: var(--space-5) var(--space-4) var(--space-4);
@@ -1124,19 +1517,11 @@ a.source:focus-visible {
     margin: 0;
   }
 
-  .topbar {
-    padding: var(--space-3) var(--space-4);
+  .main-meta {
+    display: none;
   }
 
-  /* Brand and New chat share the first row; the loan gets its own line below. */
-  .topbar-actions {
-    order: 2;
-  }
-
-  .loan-context {
-    order: 3;
-    flex-basis: 100%;
-    padding-left: 0;
-    border-left: 0;
+  .main-head {
+    padding: var(--space-2);
   }
 }

@@ -37,6 +37,10 @@ body,
   --surface: var(--boe-token-surface-surface, #ffffff);
   --surface-hover: var(--boe-token-surface-surface-hover, #f4f4f4);
   --selected: var(--boe-token-surface-item-surface-selected, #f2f7fd);
+  /* The current chat in the sidebar: a neutral fill, not a brand tint. */
+  --selected-quiet: color-mix(in srgb, var(--text) 8%, transparent);
+  /* Sidebars sit a step back from the conversation. */
+  --sidebar-surface: var(--boe-token-surface-surface-secondary, #fbfbfb);
   --stroke: var(--boe-token-stroke-stroke, #e8e8e8);
   --text: var(--boe-token-text-text, #222222);
   --muted: var(--boe-token-text-text-secondary, #6f6f6f);

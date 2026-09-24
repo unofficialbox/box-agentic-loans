@@ -181,7 +181,6 @@
 
 .console-table tbody tr[aria-selected="true"] {
   background: var(--selected);
-  box-shadow: inset 3px 0 0 var(--brand);
 }
 
 .console-table .console-status {

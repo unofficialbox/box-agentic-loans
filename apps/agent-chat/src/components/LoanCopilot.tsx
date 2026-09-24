@@ -1,331 +1,179 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { AgentChatMessage } from "@unofficialbox/box-open-elements/patterns/agent-chat";
-import type { TurnDetails } from "../activity";
-import { STARTER_PROMPTS } from "../prompts";
-import { agentBaseUrl, createTransport, type LoanContext } from "../transport";
-import { useConversation, type Conversation } from "../useConversation";
-import { greeting } from "../greeting";
-import { ApprovalCard } from "./ApprovalCard";
-import { BrandMark } from "./BrandMark";
-import { Composer } from "./Composer";
-import { ResultBlocks, documentIds } from "./ResultBlocks";
-import { TurnProgress } from "./TurnProgress";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { EMPTY_SUMMARY, type ChatSummary } from "../conversations";
+import { createTransport } from "../transport";
+import { ChatList } from "./ChatList";
+import { ChatSession } from "./ChatSession";
+import { DetailsPanel } from "./DetailsPanel";
+import { PanelIcon } from "./icons";
 import "./LoanCopilot.css";
 
-const newSessionId = () => `session-${Date.now().toString(36)}`;
+const newSessionId = () => `session-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 
-/** What the offline demo script is about; live mode shows what the backend reports. */
-const DEMO_LOAN: LoanContext = {
-  loanId: "LN-2026-0042",
-  name: "Harborview Distribution Facility Loan 2026",
-  status: "Underwriting",
-};
+type Side = "left" | "right";
 
-export function LoanCopilot({ loan }: { loan?: string }) {
-  const transport = useMemo(() => createTransport(loan), [loan]);
-  const [sessionId, setSessionId] = useState(newSessionId);
-  const [loanContext, setLoanContext] = useState<LoanContext | null>(null);
-  const conversation = useConversation(transport, sessionId, setLoanContext);
-  const { streaming } = conversation;
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+/** Below this width both sidebars are drawers over the chat; at or above WIDE the details stay open too. */
+const NARROW = "(max-width: 899px)";
+const WIDE = "(min-width: 1200px)";
 
-  const ask = useCallback(
-    (prompt: string) => {
-      conversation.send(prompt);
-      inputRef.current?.focus();
-    },
-    [conversation]
-  );
+const storageKey = (side: Side) => `loan-copilot.${side}-pane`;
 
-  const newChat = () => {
-    setSessionId(newSessionId());
-    setLoanContext(null);
-    inputRef.current?.focus();
-  };
-
-  const isDemo = transport.mode === "demo";
-  const baseUrl = agentBaseUrl();
-  const shownLoan = isDemo ? DEMO_LOAN : (loanContext ?? (loan ? { loanId: loan } : null));
-
-  return (
-    <div className="copilot">
-      <header className="topbar">
-        <p className="wordmark">
-          <BrandMark />
-          <span className="wordmark-bank">Acme Bank</span>
-          <span className="wordmark-product">Loan Copilot</span>
-        </p>
-        <div className="loan-context" aria-label="Current loan">
-          {shownLoan ? (
-            <>
-              {shownLoan.name && <span className="loan-title">{shownLoan.name}</span>}
-              <span className="loan-meta">
-                {shownLoan.loanId}
-                {shownLoan.status && (
-                  <>
-                    <span aria-hidden="true"> · </span>
-                    {shownLoan.status}
-                  </>
-                )}
-              </span>
-            </>
-          ) : null}
-        </div>
-        <div className="topbar-actions">
-          {isDemo && (
-            <span className="mode-demo" title="Scripted replies; no Box or Salesforce calls. Set VITE_AGENT_API_URL for a live agent.">
-              Demo script
-            </span>
-          )}
-          {!isDemo && baseUrl && (
-            // Developer tooling lives on its own page, opened beside the copilot.
-            <a className="button button-quiet" href="devtools.html" target="loan-copilot-devtools" title="Open the API console in a new tab">
-              API calls
-              <span aria-hidden="true">↗</span>
-              <span className="visually-hidden"> (opens in a new tab)</span>
-            </a>
-          )}
-          <button type="button" className="button" onClick={newChat}>
-            New chat
-          </button>
-        </div>
-      </header>
-
-      <main className="workspace">
-        <Thread conversation={conversation} onAsk={ask} />
-        <div className="composer-dock">
-          <Composer streaming={streaming} onSend={conversation.send} onStop={conversation.stop} inputRef={inputRef} />
-        </div>
-      </main>
-
-    </div>
-  );
+function readPane(side: Side): boolean | null {
+  try {
+    const value = localStorage.getItem(storageKey(side));
+    return value === null ? null : value === "open";
+  } catch {
+    return null;
+  }
 }
 
-function Thread({ conversation, onAsk }: { conversation: Conversation; onAsk: (prompt: string) => void }) {
-  const { messages, turns, streaming, resolve } = conversation;
-  const threadRef = useRef<HTMLDivElement>(null);
-  const pinned = useRef(true);
-  const count = useRef(0);
-  // New content arrived below while the officer was reading further up.
-  const [behind, setBehind] = useState(false);
+function writePane(side: Side, open: boolean) {
+  try {
+    localStorage.setItem(storageKey(side), open ? "open" : "closed");
+  } catch {
+    // Not remembered; the toggle still works.
+  }
+}
 
-  // Follow new content to the bottom, but only while the officer hasn't
-  // scrolled up to read. Intent comes from what they do (wheel, touch, keys,
-  // dragging the scrollbar), not from scroll events alone, which also fire
-  // when the thread is resized.
+const matches = (query: string) => window.matchMedia(query).matches;
+
+/**
+ * Sidebars, the way Claude and ChatGPT lay them out: on a wide window both sit
+ * beside the chat and remember whether you closed them; on a narrow one they
+ * are drawers, closed until asked for, and close again with Escape or a tap
+ * outside.
+ */
+function usePanes() {
+  const [narrow, setNarrow] = useState(() => matches(NARROW));
+  const [open, setOpen] = useState<Record<Side, boolean>>(() => ({
+    left: !matches(NARROW) && (readPane("left") ?? true),
+    right: !matches(NARROW) && (readPane("right") ?? matches(WIDE)),
+  }));
+
   useEffect(() => {
-    const thread = threadRef.current;
-    if (!thread) return;
-    let dragging = false;
-    const atBottom = () => thread.scrollHeight - thread.scrollTop - thread.clientHeight < 48;
-    const release = () => (pinned.current = false);
-    const onWheel = (event: WheelEvent) => event.deltaY < 0 && release();
-    const onKey = (event: KeyboardEvent) => ["ArrowUp", "PageUp", "Home"].includes(event.key) && release();
-    const onPointerDown = (event: PointerEvent) => (dragging = event.target === thread);
-    const onPointerUp = () => (dragging = false);
-    const onScroll = () => {
-      if (atBottom()) {
-        pinned.current = true;
-        setBehind(false);
-      } else if (dragging) release();
+    const query = window.matchMedia(NARROW);
+    const onChange = () => {
+      setNarrow(query.matches);
+      setOpen(
+        query.matches
+          ? { left: false, right: false }
+          : { left: readPane("left") ?? true, right: readPane("right") ?? matches(WIDE) }
+      );
     };
-    const resize = new ResizeObserver(() => {
-      if (pinned.current) thread.scrollTop = thread.scrollHeight;
-    });
-    resize.observe(thread);
-    thread.addEventListener("wheel", onWheel, { passive: true });
-    thread.addEventListener("touchmove", release, { passive: true });
-    thread.addEventListener("keydown", onKey);
-    thread.addEventListener("pointerdown", onPointerDown);
-    thread.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("pointerup", onPointerUp);
-    return () => {
-      resize.disconnect();
-      thread.removeEventListener("wheel", onWheel);
-      thread.removeEventListener("touchmove", release);
-      thread.removeEventListener("keydown", onKey);
-      thread.removeEventListener("pointerdown", onPointerDown);
-      thread.removeEventListener("scroll", onScroll);
-      window.removeEventListener("pointerup", onPointerUp);
-    };
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
   }, []);
 
-  // A new message (the officer's, or a reply starting) always re-pins;
-  // streamed content within a reply follows only while pinned.
-  useLayoutEffect(() => {
-    const thread = threadRef.current;
-    if (!thread) return;
-    if (messages.length > count.current) pinned.current = true;
-    count.current = messages.length;
-    if (pinned.current) thread.scrollTop = thread.scrollHeight;
-    else if (thread.scrollHeight - thread.scrollTop - thread.clientHeight > 48) setBehind(true);
-  }, [messages, turns]);
+  const toggle = useCallback(
+    (side: Side) =>
+      setOpen(current => {
+        const next = !current[side];
+        if (!narrow) writePane(side, next);
+        // A drawer opens alone.
+        return narrow ? { left: false, right: false, [side]: next } : { ...current, [side]: next };
+      }),
+    [narrow]
+  );
+  const closeDrawers = useCallback(() => {
+    if (narrow) setOpen({ left: false, right: false });
+  }, [narrow]);
 
-  const jumpToLatest = () => {
-    const thread = threadRef.current;
-    if (!thread) return;
-    pinned.current = true;
-    setBehind(false);
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    thread.scrollTo({ top: thread.scrollHeight, behavior: reduce ? "auto" : "smooth" });
+  useEffect(() => {
+    if (!narrow || (!open.left && !open.right)) return;
+    const onKey = (event: KeyboardEvent) => event.key === "Escape" && closeDrawers();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [narrow, open, closeDrawers]);
+
+  return { narrow, open, toggle, closeDrawers };
+}
+
+export function LoanCopilot({ loan }: { loan?: string }) {
+  const isDemo = useMemo(() => createTransport(loan).mode === "demo", [loan]);
+  const [sessions, setSessions] = useState<string[]>(() => [newSessionId()]);
+  const [activeId, setActiveId] = useState(sessions[0]);
+  const [summaries, setSummaries] = useState<Record<string, ChatSummary>>({});
+  const { narrow, open, toggle, closeDrawers } = usePanes();
+
+  const onSummary = useCallback(
+    (id: string, summary: ChatSummary) => setSummaries(current => ({ ...current, [id]: summary })),
+    []
+  );
+
+  const active = summaries[activeId] ?? EMPTY_SUMMARY;
+
+  const newChat = () => {
+    // An untouched chat is already a new chat: go to it rather than stacking empties.
+    const empty = sessions.find(id => !(summaries[id]?.started ?? false));
+    if (empty) {
+      setActiveId(empty);
+    } else {
+      const id = newSessionId();
+      setSessions(current => [id, ...current]);
+      setActiveId(id);
+    }
+    closeDrawers();
   };
 
-  const lastAgent = [...messages].reverse().find(message => message.role === "agent");
-  const awaitingApproval = messages.some(message => message.proposals.some(proposal => !proposal.decision));
-  // Nothing competes with a waiting approval: next steps appear once it is decided.
-  const next = !streaming && !awaitingApproval && lastAgent ? (turns[lastAgent.id]?.options ?? []) : [];
+  const select = (id: string) => {
+    setActiveId(id);
+    closeDrawers();
+  };
+
+  const chats = sessions.map(id => ({ id, summary: summaries[id] ?? EMPTY_SUMMARY }));
+  const heading = active.loan?.name ?? (active.started ? active.title : "Loan Copilot");
+  const meta = active.loan ? [active.loan.loanId, active.loan.status].filter(Boolean).join(" · ") : undefined;
 
   return (
-    <div className="thread-wrap">
-      <div className="thread" ref={threadRef} tabIndex={0} role="region" aria-label="Conversation">
-        <div className="thread-column">
-          {messages.length === 0 ? (
-            <Welcome onAsk={onAsk} />
-          ) : (
-            <>
-              {messages.map(message =>
-                message.role === "user" ? (
-                  <div key={message.id} className="message-user">
-                    <p>{message.body}</p>
-                  </div>
-                ) : (
-                  <Reply
-                    key={message.id}
-                    message={message}
-                    turn={turns[message.id]}
-                    onResolve={(proposalId, decision) => resolve(proposalId, decision)}
-                  />
-                )
-              )}
-              {next.length > 0 && (
-                <nav className="next" aria-label="Suggested next steps">
-                  {next.map(({ label, prompt }) => (
-                    <button key={label} type="button" className="chip" title={prompt} onClick={() => onAsk(prompt)}>
-                      {label}
-                    </button>
-                  ))}
-                </nav>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-      {behind && (
-        <button type="button" className="jump" onClick={jumpToLatest}>
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-            <path d="M8 3v10M3.75 8.75L8 13l4.25-4.25" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Jump to latest
-        </button>
-      )}
-    </div>
-  );
-}
+    <div
+      className="copilot"
+      data-left={open.left ? "open" : "closed"}
+      data-right={open.right ? "open" : "closed"}
+      data-layout={narrow ? "drawers" : "panes"}
+    >
+      <nav className="pane pane-left" id="pane-left" aria-label="Chats" inert={!open.left}>
+        <ChatList chats={chats} activeId={activeId} isDemo={isDemo} onSelect={select} onNew={newChat} />
+      </nav>
 
-function Welcome({ onAsk }: { onAsk: (prompt: string) => void }) {
-  return (
-    <div className="welcome">
-      <h1 className="welcome-title">
-        {greeting()}.<span className="welcome-question"> Which loan are we working on?</span>
-      </h1>
-      <p className="welcome-lede">
-        Name a borrower or a loan ID. The copilot reads the loan's documents in Box and its record in Salesforce, checks
-        them against credit policy, and asks before it changes anything.
-      </p>
-      <h2 className="starters-title">Start with</h2>
-      <ul className="starters">
-        {STARTER_PROMPTS.map(prompt => (
-          <li key={prompt.id}>
-            <button type="button" className="starter" onClick={() => onAsk(prompt.content)}>
-              <span className="starter-title">{prompt.title}</span>
-              <span className="starter-description">{prompt.description}</span>
-              <span className="starter-go" aria-hidden="true">
-                →
-              </span>
-            </button>
-          </li>
+      <main className="main">
+        <header className="main-head">
+          <button
+            type="button"
+            className="icon-button pane-toggle"
+            aria-controls="pane-left"
+            aria-expanded={open.left}
+            onClick={() => toggle("left")}
+            title={open.left ? "Close chats" : "Open chats"}
+          >
+            <PanelIcon side="left" />
+            <span className="visually-hidden">{open.left ? "Close chats" : "Open chats"}</span>
+          </button>
+          <div className="main-title">
+            <h1 className="main-heading">{heading}</h1>
+            {meta && <span className="main-meta">{meta}</span>}
+          </div>
+          <button
+            type="button"
+            className="icon-button pane-toggle"
+            aria-controls="pane-right"
+            aria-expanded={open.right}
+            onClick={() => toggle("right")}
+            title={open.right ? "Close details" : "Open details"}
+          >
+            <PanelIcon side="right" />
+            <span className="visually-hidden">{open.right ? "Close details" : "Open details"}</span>
+          </button>
+        </header>
+
+        {sessions.map(id => (
+          <ChatSession key={id} sessionId={id} loanHint={loan} active={id === activeId} onSummary={onSummary} />
         ))}
-      </ul>
+      </main>
+
+      <aside className="pane pane-right" id="pane-right" aria-label="Details" inert={!open.right}>
+        <DetailsPanel sessionId={activeId} summary={active} />
+      </aside>
+
+      {narrow && (open.left || open.right) && <div className="scrim" aria-hidden="true" onClick={closeDrawers} />}
     </div>
-  );
-}
-
-const SOURCES_SHOWN = 3;
-
-/** The reply's references, a few at a time: the answer comes first. */
-function Sources({ citations }: { citations: AgentChatMessage["citations"] }) {
-  const [all, setAll] = useState(false);
-  if (citations.length === 0) return null;
-  const hidden = citations.length - SOURCES_SHOWN;
-  const shown = all || hidden <= 1 ? citations : citations.slice(0, SOURCES_SHOWN);
-  return (
-    <div className="sources">
-      <span className="sources-label">Sources</span>
-      <ul>
-        {shown.map(citation => (
-          <li key={citation.id}>
-            {citation.href ? (
-              <a className="source" href={citation.href} target="_blank" rel="noreferrer">
-                {citation.label}
-              </a>
-            ) : (
-              <span className="source">{citation.label}</span>
-            )}
-          </li>
-        ))}
-      </ul>
-      {shown.length < citations.length && (
-        <button type="button" className="sources-more" onClick={() => setAll(true)}>
-          {hidden} more
-        </button>
-      )}
-    </div>
-  );
-}
-
-function Reply({
-  message,
-  turn,
-  onResolve,
-}: {
-  message: AgentChatMessage;
-  turn?: TurnDetails;
-  onResolve: Conversation["resolve"];
-}) {
-  const blocks = turn?.blocks ?? [];
-  const shownAsDocuments = documentIds(blocks);
-  const sources = message.citations.filter(citation => !shownAsDocuments.has(citation.id));
-  const paragraphs = message.body.split(/\n{2,}/).filter(part => part.trim());
-  const failed = message.status === "error";
-  // A caret marks where text is still arriving; once results start, they carry the motion.
-  const typing = message.status === "streaming" && paragraphs.length > 0 && blocks.length === 0;
-
-  return (
-    <article className="reply" aria-busy={message.status === "streaming"}>
-      <h2 className="visually-hidden">Loan Copilot</h2>
-      {turn && <TurnProgress turn={turn} failed={failed} />}
-      {paragraphs.length > 0 && (
-        <div className="reply-text">
-          {paragraphs.map((paragraph, index) => (
-            <p key={index}>
-              {paragraph}
-              {typing && index === paragraphs.length - 1 && <span className="caret" aria-hidden="true" />}
-            </p>
-          ))}
-        </div>
-      )}
-      <ResultBlocks blocks={blocks} />
-      <Sources citations={sources} />
-      {message.proposals.map(proposal => (
-        <ApprovalCard key={proposal.id} proposal={proposal} onResolve={decision => onResolve(proposal.id, decision)} />
-      ))}
-      {failed && (
-        <p className="reply-error" role="alert">
-          {message.errorMessage ?? "The reply failed."}
-        </p>
-      )}
-      {turn?.incomplete && <p className="reply-warning">{turn.incomplete}</p>}
-    </article>
   );
 }
