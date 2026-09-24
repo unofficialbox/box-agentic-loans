@@ -1,7 +1,7 @@
 import type { ChatSummary } from "../conversations";
 import { agentBaseUrl } from "../transport";
 import { BrandMark } from "./BrandMark";
-import { ExternalIcon, NewChatIcon } from "./icons";
+import { CloseIcon, ExternalIcon, NewChatIcon } from "./icons";
 
 export interface ChatEntry {
   id: string;
@@ -11,7 +11,8 @@ export interface ChatEntry {
 /**
  * The left sidebar: the product, New chat, and this tab's conversations,
  * newest first. A row says when its chat is working or waiting on the officer,
- * so a turn left running in another chat is never lost.
+ * so a turn left running in another chat is never lost. Chats are kept in
+ * this browser; each can be deleted from its row.
  */
 export function ChatList({
   chats,
@@ -19,12 +20,14 @@ export function ChatList({
   isDemo,
   onSelect,
   onNew,
+  onDelete,
 }: {
   chats: ChatEntry[];
   activeId: string;
   isDemo: boolean;
   onSelect: (id: string) => void;
   onNew: () => void;
+  onDelete: (id: string) => void;
 }) {
   const baseUrl = agentBaseUrl();
   return (
@@ -48,7 +51,7 @@ export function ChatList({
           const waiting = summary.approvals.filter(approval => !approval.decision).length;
           const status = summary.streaming ? "Working…" : waiting ? "Needs your approval" : undefined;
           return (
-            <li key={id}>
+            <li key={id} className="chat-row">
               <button
                 type="button"
                 className="chat-item"
@@ -63,6 +66,17 @@ export function ChatList({
                   </span>
                 )}
               </button>
+              {summary.started && (
+                <button
+                  type="button"
+                  className="chat-delete"
+                  onClick={() => onDelete(id)}
+                  aria-label={`Delete chat: ${summary.title}`}
+                  title="Delete chat"
+                >
+                  <CloseIcon />
+                </button>
+              )}
             </li>
           );
         })}

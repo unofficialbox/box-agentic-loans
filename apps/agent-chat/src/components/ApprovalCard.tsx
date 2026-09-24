@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { AgentActionDecision, AgentActionProposal } from "@unofficialbox/box-open-elements/patterns/agent-chat";
 import { approvalState, proposalAnchor } from "../conversations";
-import { proposalOutcome } from "../transport";
+import { proposalDetails, proposalOutcome } from "../transport";
 import { StatusIcon } from "./StatusIcon";
 
 /** A decided proposal's one line: the officer's decision, and whether the action then ran. */
@@ -40,6 +40,7 @@ export function ApprovalCard({
   if (proposal.decision) {
     const state = approvalState({ decision: proposal.decision, outcome: proposalOutcome(proposal) });
     const record = RECORD[state as Exclude<typeof state, "waiting">];
+    const details = proposalDetails(proposal);
     return (
       <section
         id={anchor}
@@ -54,6 +55,25 @@ export function ApprovalCard({
           <span className="approval-record-title">{proposal.title}</span>
         </p>
         {proposal.note && <p className="approval-note">{proposal.note}</p>}
+        {details.length > 0 && (
+          <dl className="approval-details">
+            {details.map(item => (
+              <div key={item.label}>
+                <dt>{item.label}</dt>
+                <dd>
+                  {item.href ? (
+                    <a href={item.href} target="_blank" rel="noreferrer">
+                      {item.value}
+                      <span className="visually-hidden"> (opens in a new tab)</span>
+                    </a>
+                  ) : (
+                    item.value
+                  )}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
       </section>
     );
   }

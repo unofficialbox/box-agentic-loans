@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import type { AgentChatMessage } from "@unofficialbox/box-open-elements/patterns/agent-chat";
 import type { TurnDetails } from "../activity";
 import { summarize, type ChatSummary } from "../conversations";
+import { prepareRestore, type StoredChat } from "../persistence";
 import { greeting } from "../greeting";
 import { STARTER_PROMPTS } from "../prompts";
 import { createTransport, proposalOutcome, type LoanContext } from "../transport";
@@ -29,17 +30,30 @@ export function ChatSession({
   sessionId,
   loanHint,
   active,
+  restored,
   onSummary,
+  onSnapshot,
 }: {
   sessionId: string;
   loanHint?: string;
   active: boolean;
+  /** A chat saved in this browser, to resume. */
+  restored?: StoredChat;
   onSummary: (sessionId: string, summary: ChatSummary) => void;
+  /** Everything needed to resume this chat later, whenever it changes. */
+  onSnapshot: (chat: StoredChat) => void;
 }) {
   const transport = useMemo(() => createTransport(loanHint), [loanHint]);
-  const [loanContext, setLoanContext] = useState<LoanContext | null>(null);
-  const conversation = useConversation(transport, sessionId, setLoanContext);
-  const { messages, streaming } = conversation;
+  const [loanContext, setLoanContext] = useState<LoanContext | null>(restored?.loan ?? null);
+  // Made once per mount: restored ids get a prefix so they never collide with new ones.
+  const [resume] = useState(() => (restored ? prepareRestore(restored, `r${Date.now().toString(36)}-`) : undefined));
+  const conversation = useConversation(transport, sessionId, setLoanContext, resume);
+  const { messages, turns, streaming } = conversation;
+  useEffect(() => {
+    // A restored chat renders empty for a moment before its messages load; don't save that.
+    if (messages.length === 0 && resume?.messages.length) return;
+    onSnapshot({ id: sessionId, messages, turns, loan: loanContext });
+  }, [onSnapshot, sessionId, messages, turns, loanContext, resume]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const isDemo = transport.mode === "demo";

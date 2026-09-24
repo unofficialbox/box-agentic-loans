@@ -2,7 +2,7 @@ import { DemoLoanAgentTransport } from "./demoTransport";
 import { HttpLoanAgentTransport } from "./httpTransport";
 import type { LoanAgentTransport } from "./types";
 
-export { proposalOutcome } from "./types";
+export { proposalDetails, proposalOutcome } from "./types";
 export type {
   ActionOutcome,
   CheckStatus,

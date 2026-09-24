@@ -46,6 +46,8 @@ export interface DemoBeat {
   proposal?: Omit<AgentActionProposal, "id">;
   /** Note on the proposal once approved / rejected. */
   approvedNote?: string;
+  /** What the approved action "produced", shown under its record. */
+  approvedDetails?: Array<{ label: string; value: string; href?: string }>;
   rejectedNote?: string;
 }
 
@@ -216,6 +218,7 @@ export const DEMO_BEATS: DemoBeat[] = [
       ],
     },
     approvedNote: "Letter generated (demo mode: no file was created).",
+    approvedDetails: [{ label: "File", value: "LN-2026-0042-Commitment-Letter.pdf" }],
     rejectedNote: "Not generated.",
   },
   {
@@ -237,6 +240,7 @@ export const DEMO_BEATS: DemoBeat[] = [
       ],
     },
     approvedNote: "Signature request prepared (demo mode: nothing was sent).",
+    approvedDetails: [{ label: "Request", value: "demo-sign-request" }],
     rejectedNote: "Not sent. The letter stays in the loan workspace.",
   },
   {

@@ -63,7 +63,17 @@ export type ActionOutcome = "done" | "failed";
  * pattern's proposal plus `outcome`, because approving an action and the
  * action succeeding are two different facts.
  */
-export type LoanProposal = AgentActionProposal & { outcome?: ActionOutcome };
+export type LoanProposal = AgentActionProposal & {
+  outcome?: ActionOutcome;
+  /** What the action produced: a request ID, a link to the file or the signing page. */
+  details?: Array<{ label: string; value: string; href?: string }>;
+};
+
+/** A resolved proposal's details, if the backend reported any. */
+export function proposalDetails(proposal: AgentActionProposal): NonNullable<LoanProposal["details"]> {
+  const details = (proposal as LoanProposal).details;
+  return Array.isArray(details) ? details.filter(item => item && typeof item.label === "string" && typeof item.value === "string") : [];
+}
 
 /** The outcome a resolved proposal carries, if the backend reported one. */
 export function proposalOutcome(proposal: AgentActionProposal): ActionOutcome | undefined {

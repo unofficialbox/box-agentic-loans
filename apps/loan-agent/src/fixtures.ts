@@ -1,5 +1,5 @@
 import { parseExtraction, parseLoanList, parseLoanPackage, type Terms } from "./los.js";
-import type { CovenantFields, DocGenCheck, DocgenResult, MetadataHit, ToolGateway, WriteResult } from "./tools.js";
+import type { CovenantFields, DocGenCheck, DocgenResult, MetadataHit, SignatureResult, ToolGateway, WriteResult } from "./tools.js";
 
 /**
  * Seeded Harborview data in the LOS actions' own response formats (captured
@@ -160,8 +160,12 @@ export class FixtureToolGateway implements ToolGateway {
     return { outputFileId: "900099", raw: "{}" };
   }
 
-  async prepareSignatureRequest(input: { loanId: string; fileId: string; signerEmail: string }): Promise<WriteResult> {
+  async prepareSignatureRequest(input: { loanId: string; fileId: string; signerEmail: string }): Promise<SignatureResult> {
     this.writes.push({ tool: "prepareSignatureRequest", input });
-    return { ok: true, message: `Fixture: would send to ${input.signerEmail}. Nothing was sent.` };
+    return {
+      prepared: true,
+      summary: `Fixture: would prepare a Box Sign request for ${input.loanId} addressed to ${input.signerEmail}. Nothing was sent.`,
+      requestId: "fixture-sign-request",
+    };
   }
 }

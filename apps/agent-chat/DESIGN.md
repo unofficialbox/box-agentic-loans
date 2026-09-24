@@ -112,7 +112,7 @@ Motion tokens are in `base.css`: `--duration-1` 120ms, `--duration-2` 200ms, `--
 ## 4. Layout
 
 - **Three panes, like Claude and ChatGPT** (`LoanCopilot.tsx`):
-  - **Chats (left):** this tab's conversations. Each row says "Working…" or "Needs your approval".
+  - **Chats (left):** your conversations, kept in this browser across reloads (the 20 most recent; demo and each live agent apart). Each row says "Working…" or "Needs your approval", and can be deleted.
   - **Conversation (centre).**
   - **Details (right):** about the conversation, not the turn. It shows the loan, the approvals (click one to jump to its card) and every source cited.
 - **Wide windows:** panes sit beside the chat, animate their width (their content keeps a fixed width, so nothing reflows) and remember whether you closed them. The details panel starts open at 1200px and wider.

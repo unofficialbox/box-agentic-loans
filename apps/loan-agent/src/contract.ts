@@ -18,6 +18,8 @@ export interface Proposal {
   /** Once approved: whether the action then ran ("done") or failed ("failed"). */
   outcome?: "done" | "failed";
   note?: string;
+  /** What the action produced, once done: a request ID, a link to the file or the signing page. */
+  details?: Array<{ label: string; value: string; href?: string }>;
 }
 
 export type StepStatus = "pending" | "running" | "succeeded" | "warning" | "failed" | "skipped";

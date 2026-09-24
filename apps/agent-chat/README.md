@@ -11,11 +11,14 @@ A loan officer's chat for the Harborview demo. The conversation runs on the head
 - **Approval card.** One plain, hairline-bordered card per governed action ("Needs your approval"), with Approve as the only filled button. No coloured accent edge. Nothing runs until you approve. Once decided, it steps back to a single line of record ("✓ Approved · Apply 3 terms to …"), like a permission result.
 - **Next steps.** After the latest reply, chips offer what to do next. None show while an approval is waiting.
 - **Three panes, like Claude and ChatGPT.**
-  - **Chats (left):** the product, **New chat**, and this tab's conversations, newest first. Each conversation keeps running while you look at another, and its row says "Working…" or "Needs your approval". At the foot: the "Demo script" tag, or **API calls ↗** in live mode.
+  - **Chats (left):** the product, **New chat**, and your conversations, newest first. Each row has a delete button (on hover or focus). Each conversation keeps running while you look at another, and its row says "Working…" or "Needs your approval". At the foot: the "Demo script" tag, or **API calls ↗** in live mode.
   - **Conversation (centre):** a header with the loan in context and the two sidebar toggles, then the thread.
   - **Details (right):** about the conversation, not the turn. It shows the **Loan** (name, ID, status, borrower), **Approvals** (each governed action and its state; select one to jump to its card) and **Sources** (every document and policy cited, documents linking to Box).
   - On a wide window both sidebars sit beside the chat and remember whether you closed them. The details panel starts open at 1200px and wider. Under 900px both are drawers, closed until asked for, and close again with Escape or a tap outside.
-  - Conversations live in this browser tab only; the agent keeps its own session for each.
+  - **Kept across reloads.** Conversations are saved in this browser (`localStorage`): messages, each reply's steps and results, and the loan in context, for the 20 most recent. They come back after a reload, and the chat that was open reopens.
+    - Demo mode and each live agent URL keep separate lists.
+    - A reply cut off by a reload is closed and marked "The page reloaded before this reply finished".
+    - The agent keeps its own memory per chat (the loan, the extraction, a pending approval) until it restarts. After a restart, a restored approval says it is no longer pending instead of acting, and you ask again.
 - **Welcome state.** Before the first message: a greeting by the time of day ("Good evening. Which loan are we working on?"), what the copilot does, and four ways in as a list of rows (from `src/prompts.ts`), on the same left edge as the conversation that replaces them.
 - **One column.** A single centred column at a reading measure, with the composer docked under it. Enter sends and Shift+Enter adds a line. While a reply streams, the send button becomes Stop. The thread follows new content to the bottom, and stops following while you scroll up to read.
 - **No developer tooling on the page.** In live mode a quiet **API calls ↗** link at the foot of the chats sidebar opens the API console (below) in its own tab.

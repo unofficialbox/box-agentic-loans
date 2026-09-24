@@ -125,7 +125,7 @@ export class DemoLoanAgentTransport implements LoanAgentTransport {
       id: request.proposalId,
       ...beat.proposal,
       decision: request.decision,
-      ...(approved ? { outcome: "done" as const } : {}),
+      ...(approved ? { outcome: "done" as const, ...(beat.approvedDetails ? { details: beat.approvedDetails } : {}) } : {}),
       note: request.note ?? (approved ? beat.approvedNote : beat.rejectedNote),
     };
   }

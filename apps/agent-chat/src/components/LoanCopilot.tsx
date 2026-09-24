@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EMPTY_SUMMARY, type ChatSummary } from "../conversations";
-import { createTransport } from "../transport";
+import { loadChats, saveChats, storageKey as chatsKey, type StoredChat } from "../persistence";
+import { agentBaseUrl, createTransport } from "../transport";
 import { ChatList } from "./ChatList";
 import { ChatSession } from "./ChatSession";
 import { DetailsPanel } from "./DetailsPanel";
@@ -87,10 +88,58 @@ function usePanes() {
   return { narrow, open, toggle, closeDrawers };
 }
 
+/**
+ * This browser's chats: loaded once, then saved (debounced, and on leaving the
+ * page) whenever a chat, the order or the open chat changes. Demo and live
+ * agents keep separate lists.
+ */
+function useSavedChats(isDemo: boolean) {
+  const key = chatsKey(isDemo ? "demo" : "live", agentBaseUrl());
+  const [stored] = useState(() => loadChats(key));
+  const [sessions, setSessions] = useState<string[]>(() => stored?.chats.map(chat => chat.id) ?? [newSessionId()]);
+  const [activeId, setActiveId] = useState(() => stored?.activeId ?? sessions[0]);
+  const restored = useMemo(() => new Map(stored?.chats.map(chat => [chat.id, chat])), [stored]);
+
+  const snapshots = useRef(new Map<string, StoredChat>(restored));
+  const latest = useRef({ sessions, activeId });
+  latest.current = { sessions, activeId };
+  const timer = useRef<number | undefined>(undefined);
+
+  const flush = useCallback(() => {
+    window.clearTimeout(timer.current);
+    const { sessions: order, activeId: current } = latest.current;
+    const chats = order.map(id => snapshots.current.get(id)).filter((chat): chat is StoredChat => Boolean(chat));
+    saveChats(key, { version: 1, activeId: current, chats });
+  }, [key]);
+  const schedule = useCallback(() => {
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(flush, 400);
+  }, [flush]);
+
+  const onSnapshot = useCallback(
+    (chat: StoredChat) => {
+      snapshots.current.set(chat.id, chat);
+      schedule();
+    },
+    [schedule]
+  );
+  const forget = useCallback((id: string) => snapshots.current.delete(id), []);
+
+  useEffect(schedule, [sessions, activeId, schedule]);
+  useEffect(() => {
+    window.addEventListener("pagehide", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
+  }, [flush]);
+
+  return { sessions, setSessions, activeId, setActiveId, restored, onSnapshot, forget };
+}
+
 export function LoanCopilot({ loan }: { loan?: string }) {
   const isDemo = useMemo(() => createTransport(loan).mode === "demo", [loan]);
-  const [sessions, setSessions] = useState<string[]>(() => [newSessionId()]);
-  const [activeId, setActiveId] = useState(sessions[0]);
+  const { sessions, setSessions, activeId, setActiveId, restored, onSnapshot, forget } = useSavedChats(isDemo);
   const [summaries, setSummaries] = useState<Record<string, ChatSummary>>({});
   const { narrow, open, toggle, closeDrawers } = usePanes();
 
@@ -119,6 +168,20 @@ export function LoanCopilot({ loan }: { loan?: string }) {
     closeDrawers();
   };
 
+  const remove = (id: string) => {
+    const rest = sessions.filter(session => session !== id);
+    forget(id);
+    setSummaries(({ [id]: _removed, ...others }) => others);
+    if (rest.length === 0) {
+      const fresh = newSessionId();
+      setSessions([fresh]);
+      setActiveId(fresh);
+      return;
+    }
+    setSessions(rest);
+    if (id === activeId) setActiveId(rest[Math.max(0, sessions.indexOf(id) - 1)] ?? rest[0]);
+  };
+
   const chats = sessions.map(id => ({ id, summary: summaries[id] ?? EMPTY_SUMMARY }));
   const heading = active.loan?.name ?? (active.started ? active.title : "Loan Copilot");
   const meta = active.loan
@@ -133,7 +196,7 @@ export function LoanCopilot({ loan }: { loan?: string }) {
       data-layout={narrow ? "drawers" : "panes"}
     >
       <nav className="pane pane-left" id="pane-left" aria-label="Chats" inert={!open.left}>
-        <ChatList chats={chats} activeId={activeId} isDemo={isDemo} onSelect={select} onNew={newChat} />
+        <ChatList chats={chats} activeId={activeId} isDemo={isDemo} onSelect={select} onNew={newChat} onDelete={remove} />
       </nav>
 
       <main className="main">
@@ -167,7 +230,15 @@ export function LoanCopilot({ loan }: { loan?: string }) {
         </header>
 
         {sessions.map(id => (
-          <ChatSession key={id} sessionId={id} loanHint={loan} active={id === activeId} onSummary={onSummary} />
+          <ChatSession
+            key={id}
+            sessionId={id}
+            loanHint={loan}
+            active={id === activeId}
+            restored={restored.get(id)}
+            onSummary={onSummary}
+            onSnapshot={onSnapshot}
+          />
         ))}
       </main>
 

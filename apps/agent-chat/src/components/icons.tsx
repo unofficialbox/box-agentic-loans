@@ -42,3 +42,9 @@ export const ExternalIcon = () => (
     <path d="M9.5 2.75h3.75v3.75M13.25 2.75l-6 6" />
   </Svg>
 );
+
+export const CloseIcon = () => (
+  <Svg>
+    <path d="M4.5 4.5l7 7M11.5 4.5l-7 7" />
+  </Svg>
+);
