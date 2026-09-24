@@ -15,26 +15,26 @@ SAMPLE = """# header
 LOS_ORG_ALIAS=<alias>
 BOX_ALLOWED_FOLDER_IDS=<workspace folder id>
 VITE_BOX_FOLDER_ID=<workspace folder id>
-TYPESAFE_API_KEY=
-TYPESAFE_MODEL=jev-latest
+EXAMPLE_API_KEY=
+EXAMPLE_MODEL=v-latest
 """
 
 
 class SyncEnvTests(unittest.TestCase):
     def test_keeps_every_existing_value_verbatim(self):
-        current = 'LOS_ORG_ALIAS=demo\nBOX_ALLOWED_FOLDER_IDS=111,222\nTYPESAFE_API_KEY=\nVITE_BOX_FOLDER_ID="333"\n'
+        current = 'LOS_ORG_ALIAS=demo\nBOX_ALLOWED_FOLDER_IDS=111,222\nEXAMPLE_API_KEY=\nVITE_BOX_FOLDER_ID="333"\n'
         result, report = sync_env.sync(SAMPLE, current)
         self.assertIn("LOS_ORG_ALIAS=demo\n", result)
         self.assertIn("BOX_ALLOWED_FOLDER_IDS=111,222\n", result)
         self.assertIn('VITE_BOX_FOLDER_ID="333"\n', result)
         # An empty value the user left empty stays theirs, not the sample's.
-        self.assertIn("TYPESAFE_API_KEY=\n", result)
-        self.assertEqual(report["added"], ["TYPESAFE_MODEL"])
+        self.assertIn("EXAMPLE_API_KEY=\n", result)
+        self.assertEqual(report["added"], ["EXAMPLE_MODEL"])
 
     def test_adds_missing_keys_with_the_sample_placeholder(self):
         result, report = sync_env.sync(SAMPLE, "LOS_ORG_ALIAS=demo\n")
         self.assertIn("BOX_ALLOWED_FOLDER_IDS=<workspace folder id>", result)
-        self.assertEqual(report["added"], ["BOX_ALLOWED_FOLDER_IDS", "VITE_BOX_FOLDER_ID", "TYPESAFE_API_KEY", "TYPESAFE_MODEL"])
+        self.assertEqual(report["added"], ["BOX_ALLOWED_FOLDER_IDS", "VITE_BOX_FOLDER_ID", "EXAMPLE_API_KEY", "EXAMPLE_MODEL"])
 
     def test_drops_keys_no_code_reads(self):
         current = "LOS_ORG_ALIAS=demo\nVITE_BOX_CLOSING_FOLDER_ID=444\nVITE_BOX_APP_URL=\n"
@@ -50,22 +50,22 @@ class SyncEnvTests(unittest.TestCase):
 
     def test_adds_a_new_setting_with_the_sample_value(self):
         result, _ = sync_env.sync(SAMPLE, "")
-        self.assertIn("TYPESAFE_MODEL=jev-latest\n", result)
-        result, _ = sync_env.sync(SAMPLE, "TYPESAFE_MODEL=jev-2\n")
-        self.assertIn("TYPESAFE_MODEL=jev-2\n", result)
+        self.assertIn("EXAMPLE_MODEL=v-latest\n", result)
+        result, _ = sync_env.sync(SAMPLE, "EXAMPLE_MODEL=v-2\n")
+        self.assertIn("EXAMPLE_MODEL=v-2\n", result)
 
     def test_write_backs_up_and_never_prints_values(self):
         with tempfile.TemporaryDirectory() as tmp:
             env, sample = Path(tmp, ".env"), Path(tmp, ".env.sample")
             sample.write_text(SAMPLE)
-            env.write_text("TYPESAFE_API_KEY=super-secret-value\nVITE_BOX_DOCGEN_FOLDER_ID=777\n")
+            env.write_text("EXAMPLE_API_KEY=super-secret-value\nVITE_BOX_DOCGEN_FOLDER_ID=777\n")
             out = io.StringIO()
             with contextlib.redirect_stdout(out):
                 sync_env.main(["--env", str(env), "--sample", str(sample)])
             self.assertIn("VITE_BOX_DOCGEN_FOLDER_ID=777", env.read_text(), "dry run must not write")
             with contextlib.redirect_stdout(out):
                 sync_env.main(["--env", str(env), "--sample", str(sample), "--write"])
-            self.assertIn("TYPESAFE_API_KEY=super-secret-value", env.read_text())
+            self.assertIn("EXAMPLE_API_KEY=super-secret-value", env.read_text())
             self.assertIn("VITE_BOX_DOCGEN_FOLDER_ID=777", Path(tmp, ".env.bak").read_text())
             self.assertNotIn("super-secret-value", out.getvalue())
             self.assertNotIn("777", out.getvalue())

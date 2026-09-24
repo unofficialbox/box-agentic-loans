@@ -31,10 +31,6 @@ For performance and capability, these operations bypass Salesforce and call Box 
 - **Box AI QA** - `box_ai_ask` (direct API access)
 - **Doc Gen** - `create_document_from_template` (direct API, no Apex overhead)
 
-### Loan agent: TypeSafe decisions, no LLM
-
-The TypeSafe loan agent and its Loan Copilot chat moved to their own repository, [box-typesafe-loans](https://github.com/unofficialbox/box-typesafe-loans). They use the same `LOSLoanTools` server and Box setup as this demo.
-
 ### Two Surfaces
 
 **Internal Surface (AI Harnesses):**
