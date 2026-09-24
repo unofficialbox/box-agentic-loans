@@ -140,16 +140,16 @@ locals {
           "enterpriseId" = ""
           "provider" = "generic"
           "providerObjectId" = "operator/operator-workflow"
-          "scenario" = "box-claudeforce-loans"
+          "scenario" = "box-agentic-loans"
         }
         "name" = "config_operator_operator-workflow"
         "provider" = "generic"
-        "scenario" = "box-claudeforce-loans"
+        "scenario" = "box-agentic-loans"
         "terraformType" = "null_resource"
         "type" = "config_file"
       }
     ]
-    "scenario" = "box-claudeforce-loans"
+    "scenario" = "box-agentic-loans"
     "version" = "1.0"
   }
 }

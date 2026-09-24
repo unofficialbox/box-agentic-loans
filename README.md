@@ -60,7 +60,7 @@ python3 scripts/demo_operator.py bootstrap --scenario box-salesforce-los --yes
 
 ### For Presenters
 
-**📖 [Public Demo Guide](https://unofficialbox.github.io/box-claudeforce-loans/)** - Interactive HTML storyboard with screenshots and step-by-step instructions
+**📖 [Public Demo Guide](https://unofficialbox.github.io/box-agentic-loans/)** - Interactive HTML storyboard with screenshots and step-by-step instructions
 
 **🔗 [Borrower Portal](https://agentforce-box.my.site.com/loansvforcesite/login)** - Acme Bank demo portal (sign in as Dana Whitfield)
 
@@ -76,6 +76,14 @@ Works with any AI harness - choose your platform:
 
 - **[Presenter Guide](docs/PRESENTING.md)** - Tips for delivering the demo
 - **[Demo Clickpath](DEMO-CLICKPATH.md)** - Beat-by-beat prompts and walkthrough
+
+### Presenter Skills
+
+One self-contained `SKILL.md` per harness, under `skills/`:
+- **[loan-origination-claude](skills/loan-origination-claude/SKILL.md)** - Claude Desktop (also ChatGPT)
+- **[loan-origination-quick](skills/loan-origination-quick/SKILL.md)** - Amazon Quick
+- **[loan-origination-slack](skills/loan-origination-slack/SKILL.md)** - Slackbot (render bindings first)
+- **[loan-origination-gemini](skills/loan-origination-gemini/SKILL.md)** - Gemini Enterprise chat agent (planned; render bindings first, plan in the same folder)
 
 ### Cleanup Between Demos
 

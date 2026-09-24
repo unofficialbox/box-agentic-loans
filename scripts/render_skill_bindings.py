@@ -23,8 +23,8 @@ PLACEHOLDERS = {
     "<DOCGEN_TEMPLATE_ID>": "docgenCommitmentLetterTemplateId",
     "<SIGNER_EMAIL>": "signerEmail",
 }
-SKILLS = ("loan-origination-slack", "loan-origination-quick", "loan-origination")
-SECTIONS = {"primer": "## Primer", "docgen": "## Doc Gen contract"}
+SKILLS = ("loan-origination-slack", "loan-origination-quick", "loan-origination-claude", "loan-origination-gemini")
+SECTIONS = {"primer": "## Primer", "instructions": "## Agent instructions", "docgen": "## Doc Gen contract"}
 DEFAULT_BINDINGS = ROOT / "config" / "runtime" / "quick-demo-defaults.json"
 GENERATED = ROOT / "config" / "runtime" / "generated"
 

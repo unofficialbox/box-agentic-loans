@@ -10,7 +10,7 @@ from urllib.parse import quote, unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 GUIDE = ROOT / 'docs/demo-storyboard'
-REPO_URL = 'https://github.com/unofficialbox/box-claudeforce-loans/blob/main/'
+REPO_URL = 'https://github.com/unofficialbox/box-agentic-loans/blob/main/'
 
 
 def build(source=GUIDE / 'index.html', destination=GUIDE / 'standalone.html'):

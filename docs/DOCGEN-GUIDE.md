@@ -1,6 +1,6 @@
 # Box Doc Gen: commitment letters
 
-The complete payload, template resolution, generation/signing flow, and troubleshooting instructions are maintained in the self-contained [loan-origination SKILL.md](../skills/loan-origination/SKILL.md#doc-gen-and-signature-handoff). No supporting files are required by the skill.
+The complete payload, template resolution, generation/signing flow, and troubleshooting instructions are maintained in the self-contained [loan-origination-claude SKILL.md](../skills/loan-origination-claude/SKILL.md#doc-gen-and-signature-handoff). No supporting files are required by the skill.
 
 ## Two commitment letter templates
 
@@ -50,13 +50,13 @@ The Word add-in (Box Doc Gen Template Creator, **Start with your data**, upload 
 
 ## Distributing the Claude skill
 
-Upload `skills/loan-origination/SKILL.md` directly to clients that accept Markdown skills. For archive import, a ZIP containing only `loan-origination/SKILL.md` is sufficient. There is no script dependency at runtime. Repository maintainers may optionally build that archive with:
+Upload `skills/loan-origination-claude/SKILL.md` directly to clients that accept Markdown skills. For archive import, a ZIP containing only `loan-origination-claude/SKILL.md` is sufficient. There is no script dependency at runtime. Repository maintainers may optionally build that archive with:
 
 ```bash
-python3 scripts/package_loan_skill.py --output /tmp/loan-origination.skill
+python3 scripts/package_loan_skill.py --output /tmp/loan-origination-claude.skill
 ```
 
-The archive contains only `loan-origination/SKILL.md`. Reload the updated skill in the intended conversation; repository edits do not update an already loaded client skill.
+The archive contains only `loan-origination-claude/SKILL.md`. Reload the updated skill in the intended conversation; repository edits do not update an already loaded client skill.
 
 ## Distributing the Amazon Quick skill
 
