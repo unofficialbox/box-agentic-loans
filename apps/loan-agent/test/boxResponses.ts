@@ -108,6 +108,30 @@ export const folderDetails = {
   type: "folder",
 };
 
+/** create_docgen_batch, from a real generation: the batch alone, with no output file. */
+export const docgenBatch = { id: "00000000-0000-0000-0000-000000000003", type: "docgen_batch" };
+
+/**
+ * GET /2.0/docgen_batch_jobs/{batch} (Box REST, not the MCP server), in the
+ * shape Box documents; not captured yet, since that needs the agent's own sign-in.
+ */
+export const docgenJobs = (status: string, outputFileId?: string) => ({
+  entries: [
+    {
+      id: "7001",
+      type: "docgen_job",
+      status,
+      output_type: "pdf",
+      batch: { id: docgenBatch.id, type: "docgen_batch" },
+      template_file: { id: "2001", type: "file" },
+      destination_folder: { id: "3001", type: "folder" },
+      ...(outputFileId ? { output_file: { id: outputFileId, type: "file" } } : {}),
+    },
+  ],
+  limit: 100,
+  next_marker: null,
+});
+
 /** Tool errors (isError: true), as the text Box returns. */
 export const errors = {
   /** get_docgen_template_by_id for an ID that doesn't exist or can't be opened. */

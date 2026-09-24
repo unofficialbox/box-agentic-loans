@@ -985,7 +985,7 @@ export class LoanAgent {
         case "generateLetter": {
           const result = await this.tools.generateCommitmentLetter({ folderId: action.folderId, fileName: action.fileName, userInput: action.userInput });
           if (!result.outputFileId) {
-            return "Doc Gen accepted the batch but did not name the output file, so it can't be sent for signature from here. Check the job in Box.";
+            return `Doc Gen accepted the batch${result.batchId ? ` (${result.batchId})` : ""} but the letter wasn't ready after 30 seconds, so it can't be sent for signature from here. Check the job in Box before generating again: a second batch makes a second letter.`;
           }
           session.letter = { loanId: action.loanId, fileId: result.outputFileId, fileName: `${action.fileName}.pdf` };
           session.signature = undefined;

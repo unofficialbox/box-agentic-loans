@@ -4,6 +4,8 @@ import {
   itemName,
   parseCovenants,
   parseDocgenBatch,
+  parseDocgenJobs,
+  waitForDocgenOutput,
   parseDocumentType,
   parseMetadataHits,
   parseSignatureResult,
@@ -47,6 +49,53 @@ describe("Box responses as the Box MCP server returns them", () => {
   it("names the Doc Gen template by fileName and the folder by name", () => {
     expect(itemName(box.docgenTemplate)).toBe("los-commitment-letter-template.docx");
     expect(itemName(box.folderDetails)).toBe("Harborview Logistics Commercial Real Estate 2026_22");
+  });
+
+  it("reads the batch Box accepted, which names no output file", () => {
+    expect(parseDocgenBatch(box.docgenBatch)).toMatchObject({ outputFileId: undefined, batchId: box.docgenBatch.id });
+  });
+
+  it("reads a batch's job: done only with an output file, failed on any error", () => {
+    expect(parseDocgenJobs(box.docgenJobs("completed", "6001"))).toEqual({ state: "completed", status: "completed", outputFileId: "6001" });
+    expect(parseDocgenJobs(box.docgenJobs("completed")).state).toBe("running");
+    expect(parseDocgenJobs(box.docgenJobs("submitted")).state).toBe("running");
+    expect(parseDocgenJobs(box.docgenJobs("failed")).state).toBe("failed");
+    expect(parseDocgenJobs(box.docgenJobs("completed_with_error", "6001")).state).toBe("failed");
+    expect(parseDocgenJobs({ entries: [] }).state).toBe("running");
+  });
+
+  describe("waiting for the letter", () => {
+    const poll = { attempts: 3, intervalMs: 1 };
+    const replies = (...bodies: Array<{ status?: number; body: unknown }>) => {
+      const urls: string[] = [];
+      const fetch = async (input: string | URL | Request) => {
+        urls.push(String(input));
+        const next = bodies.shift()!;
+        return new Response(JSON.stringify(next.body), { status: next.status ?? 200 });
+      };
+      return { fetch, urls };
+    };
+
+    it("asks for this batch's jobs until the letter is there", async () => {
+      const { fetch, urls } = replies({ body: box.docgenJobs("submitted") }, { body: box.docgenJobs("completed", "6001") });
+      expect(await waitForDocgenOutput(fetch, box.docgenBatch.id, poll)).toBe("6001");
+      expect(urls).toEqual(Array(2).fill(`https://api.box.com/2.0/docgen_batch_jobs/${box.docgenBatch.id}`));
+    });
+
+    it("gives up without a file when the job is still running", async () => {
+      const { fetch, urls } = replies(...Array(3).fill({ body: box.docgenJobs("submitted") }));
+      expect(await waitForDocgenOutput(fetch, "b", poll)).toBeUndefined();
+      expect(urls).toHaveLength(3);
+    });
+
+    it("fails when the job fails or Box refuses the lookup", async () => {
+      await expect(waitForDocgenOutput(replies({ body: box.docgenJobs("failed") }).fetch, "b", poll)).rejects.toThrow(
+        "Box Doc Gen couldn't generate the letter (batch b, job failed). Nothing was created to sign."
+      );
+      await expect(waitForDocgenOutput(replies({ status: 403, body: { code: "insufficient_scope" } }).fetch, "b", poll)).rejects.toThrow(
+        /^Box docgen_batch_jobs b: HTTP 403 .*insufficient_scope/
+      );
+    });
   });
 
   it("never takes the batch or template ID for the generated file", () => {
