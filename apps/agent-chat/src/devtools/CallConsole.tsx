@@ -174,7 +174,9 @@ export function CallConsole({ baseUrl }: { baseUrl: string }) {
 
       <div className="console-body" ref={splitRef} style={{ gridTemplateColumns: `${ratio}fr auto ${1 - ratio}fr` }}>
         <div className="console-list">
-          {shown.length === 0 ? (
+          {shown.length === 0 && connection === "connecting" ? (
+            <Skeleton />
+          ) : shown.length === 0 ? (
             <p className="console-empty">
               {connection === "outdated"
                 ? `The loan agent at ${baseUrl} has no call log, so it is running code from before the console. Pull main, then stop it and run npm start in apps/loan-agent again.`
@@ -231,10 +233,30 @@ export function CallConsole({ baseUrl }: { baseUrl: string }) {
           onKeyDown={onDividerKey}
         />
         <div className="console-detail">
-          {selected ? <CallDetail entry={selected} /> : <p className="console-empty">Select a call.</p>}
+          {selected ? (
+            <CallDetail entry={selected} />
+          ) : (
+            connection !== "connecting" && <p className="console-empty">Select a call.</p>
+          )}
         </div>
       </div>
     </section>
+  );
+}
+
+/** Placeholder rows while the call log connects, shaped like the rows that will replace them. */
+function Skeleton() {
+  return (
+    <div className="console-skeleton" role="status">
+      <span className="visually-hidden">Connecting to the call log…</span>
+      {[62, 48, 70, 55].map((width, index) => (
+        <div key={index} className="console-skeleton-row" aria-hidden="true">
+          <span className="skeleton" style={{ width: "2rem" }} />
+          <span className="skeleton" style={{ width: "4rem" }} />
+          <span className="skeleton" style={{ width: `${width}%` }} />
+        </div>
+      ))}
+    </div>
   );
 }
 

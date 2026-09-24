@@ -330,7 +330,7 @@
   color: var(--muted);
   cursor: pointer;
   opacity: 0.85;
-  transition: opacity 0.15s ease, color 0.15s ease;
+  transition: opacity var(--duration-1) var(--ease-out), color var(--duration-1) var(--ease-out);
 }
 
 .console-code-wrap:hover .console-code-copy,
@@ -383,5 +383,31 @@
 
   .console-list {
     border-bottom: 1px solid var(--stroke);
+  }
+}
+
+/* While the call log connects: rows shaped like calls. */
+.console-skeleton {
+  display: grid;
+}
+
+.console-skeleton-row {
+  display: grid;
+  grid-template-columns: 2.5rem 5rem 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--stroke);
+}
+
+/* New calls slide in at the top of the list. */
+.console-table tbody tr {
+  animation: console-row-in var(--duration-2) var(--ease-out);
+}
+
+@keyframes console-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
   }
 }

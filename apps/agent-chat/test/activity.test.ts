@@ -44,11 +44,19 @@ describe("progress line", () => {
 
   it("names the plan item in flight, then the running tool, then just thinking", () => {
     const turn = newTurn(0);
-    expect(progress(turn, false)).toEqual({ kind: "active", label: "Thinking…" });
+    expect(progress(turn, false, 500)).toEqual({ kind: "active", label: "Thinking…" });
     const running = { ...turn, steps: [{ ...step, status: "running" as const }] };
-    expect(progress(running, false)).toEqual({ kind: "active", label: "listLoans…" });
+    expect(progress(running, false, 500)).toEqual({ kind: "active", label: "listLoans…" });
     const planned = { ...running, todos: [{ id: "t", content: "Find prior executed loans", status: "in_progress" as const }] };
-    expect(progress(planned, false).label).toBe("Find prior executed loans…");
+    expect(progress(planned, false, 500).label).toBe("Find prior executed loans…");
+  });
+
+  it("starts a counting clock only once a wait runs long", () => {
+    const turn = newTurn(10_000);
+    expect(progress(turn, false, 11_900).elapsed).toBeUndefined();
+    expect(progress(turn, false, 12_000).elapsed).toBe("2 s");
+    expect(progress(turn, false, 17_400).elapsed).toBe("7 s");
+    expect(progress({ ...turn, endedAt: 17_400 }, false, 30_000).elapsed).toBeUndefined();
   });
 
   it("says how long the work took, and whether it failed or warned", () => {

@@ -51,6 +51,16 @@ body,
   --control-font-size: 0.8125rem;
   --control-font-weight: 600;
 
+  /* Motion: quick, eased out, never bouncy. Things arrive (rise and fade in),
+     states change (colour, a check drawing in), and nothing moves just to move.
+     Under prefers-reduced-motion everything settles instantly (below). */
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-1: 120ms;
+  --duration-2: 200ms;
+  --duration-3: 320ms;
+  --stagger: 50ms;
+
   /* Type: Lato (Box Blueprint) for everything you read and use; Source Serif
      for the few words that carry the bank's voice (the wordmark, greetings);
      monospace only for wire data. */
@@ -116,6 +126,20 @@ button {
 .button:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+/* The button that was pressed stays solid while its work runs. */
+.button:disabled[aria-busy="true"] {
+  opacity: 1;
+}
+
+.button-spinner {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: status-spin 0.7s linear infinite;
 }
 
 /* Quiet: a secondary route out of the page, no frame until hovered. */
@@ -204,15 +228,64 @@ button {
   stroke-linejoin: round;
 }
 
+/* A state that just changed draws in: the disc settles, the mark strokes on. */
+.status-fill {
+  transform-origin: 8px 8px;
+  animation: status-pop var(--duration-2) var(--ease-out);
+}
+
+.status-icon-done .status-mark {
+  stroke-dasharray: 12;
+  animation: status-draw var(--duration-3) var(--ease-out) both;
+}
+
+@keyframes status-pop {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+
+@keyframes status-draw {
+  from {
+    stroke-dashoffset: 12;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Loading placeholders, shaped like what will replace them. */
+.skeleton {
+  display: inline-block;
+  height: 0.75rem;
+  border-radius: var(--radius-1);
+  background: linear-gradient(90deg, var(--surface-hover) 0%, var(--stroke) 50%, var(--surface-hover) 100%) 0 0 / 200% 100%;
+  animation: skeleton 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton {
+  to {
+    background-position: -200% 0;
+  }
+}
+
 @keyframes status-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
+/* Reduced motion: everything settles at once; spinners and shimmers hold still. */
 @media (prefers-reduced-motion: reduce) {
-  .status-arc {
-    animation: none;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

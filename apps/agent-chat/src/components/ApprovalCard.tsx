@@ -52,10 +52,12 @@ export function ApprovalCard({
       )}
       {state === "pending" && (
         <div className="approval-actions">
-          <button type="button" className="button button-primary" disabled={busy !== null} onClick={() => decide("approved")}>
+          <button type="button" className="button button-primary" disabled={busy !== null} aria-busy={busy === "approved"} onClick={() => decide("approved")}>
+            {busy === "approved" && <span className="button-spinner" aria-hidden="true" />}
             {busy === "approved" ? "Approving…" : "Approve"}
           </button>
-          <button type="button" className="button" disabled={busy !== null} onClick={() => decide("rejected")}>
+          <button type="button" className="button" disabled={busy !== null} aria-busy={busy === "rejected"} onClick={() => decide("rejected")}>
+            {busy === "rejected" && <span className="button-spinner" aria-hidden="true" />}
             {busy === "rejected" ? "Rejecting…" : "Reject"}
           </button>
           <span className="approval-hint">To change it, reply with the new values.</span>
