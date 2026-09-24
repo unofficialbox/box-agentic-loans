@@ -70,6 +70,19 @@ class RenderSkillBindingsTests(unittest.TestCase):
         self.assertNotIn('<POLICY_HUB_ID>', rendered)
         self.assertIn('| Credit Policy Hub ID | `987654321` |', rendered)
 
+    def test_gemini_skill_renders_its_instructions_block(self):
+        text = (ROOT / 'skills' / 'loan-origination-gemini' / 'SKILL.md').read_text()
+        for placeholder in PLACEHOLDERS:
+            self.assertIn(f'| `{placeholder}` |', text, placeholder)
+        instructions = render_skill('loan-origination-gemini', BINDINGS, section='instructions')
+        self.assertTrue(instructions.startswith('You are presenting'))
+        self.assertNotIn('```', instructions)
+        self.assertIn('Credit Policy Hub ID 987654321', instructions)
+        self.assertIn('enterprise_123456.losDocument', instructions)
+        rendered = render_skill('loan-origination-gemini', BINDINGS)
+        self.assertNotIn('<POLICY_HUB_ID>', rendered)
+        self.assertIn('signer dana.whitfield@example.com', render_skill('loan-origination-gemini', BINDINGS, section='docgen'))
+
     def test_cli_writes_under_generated_and_never_into_skills(self):
         with tempfile.TemporaryDirectory() as directory:
             bindings = Path(directory) / 'defaults.json'

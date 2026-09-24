@@ -83,6 +83,7 @@ One self-contained `SKILL.md` per harness, under `skills/`:
 - **[loan-origination-claude](skills/loan-origination-claude/SKILL.md)** - Claude Desktop (also ChatGPT)
 - **[loan-origination-quick](skills/loan-origination-quick/SKILL.md)** - Amazon Quick
 - **[loan-origination-slack](skills/loan-origination-slack/SKILL.md)** - Slackbot (render bindings first)
+- **[loan-origination-gemini](skills/loan-origination-gemini/SKILL.md)** - Gemini Enterprise chat agent (planned; render bindings first, plan in the same folder)
 
 ### Cleanup Between Demos
 
