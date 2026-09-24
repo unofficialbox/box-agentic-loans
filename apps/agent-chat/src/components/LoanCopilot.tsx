@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "@unofficialbox/box-open-elements/agent-chat";
-import "@unofficialbox/box-open-elements/run-trace";
-import type {
-  AgentChat,
-  AgentChatMessage,
-  AgentCitation,
-} from "@unofficialbox/box-open-elements/patterns/agent-chat";
-import type { RunStep, RunTrace } from "@unofficialbox/box-open-elements";
+import type { AgentChat, AgentChatMessage } from "@unofficialbox/box-open-elements/patterns/agent-chat";
+import type { RunStep } from "@unofficialbox/box-open-elements";
 import { STARTER_PROMPTS } from "../prompts";
 import {
   agentBaseUrl,
@@ -18,7 +13,8 @@ import {
   type TurnSummary,
 } from "../transport";
 import { ApiInspector } from "./ApiInspector";
-import { PromptLibrary } from "./PromptLibrary";
+import { applyChatTheme } from "./chatTheme";
+import { TurnActivity } from "./TurnActivity";
 import "./LoanCopilot.css";
 
 const newSessionId = () => `session-${Date.now().toString(36)}`;
@@ -30,7 +26,6 @@ const DEMO_LOAN: LoanContext = {
   status: "Underwriting",
 };
 
-const STARTERS: PromptOption[] = STARTER_PROMPTS.map(prompt => ({ label: prompt.title, prompt: prompt.content }));
 
 function incompleteNotice(summary: TurnSummary): string | null {
   if (summary.status === "incomplete") {
@@ -50,13 +45,10 @@ export function LoanCopilot({ loan }: { loan?: string }) {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [nextOptions, setNextOptions] = useState<PromptOption[] | null>(null);
   const [messages, setMessages] = useState<AgentChatMessage[]>([]);
-  const [selectedSource, setSelectedSource] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [loanContext, setLoanContext] = useState<LoanContext | null>(null);
-  const [libraryOpen, setLibraryOpen] = useState(false);
 
   const chatRef = useRef<AgentChat>(null);
-  const traceRef = useRef<RunTrace>(null);
 
   useEffect(() => {
     transport.onTurnStart = () => {
@@ -94,45 +86,91 @@ export function LoanCopilot({ loan }: { loan?: string }) {
       return;
     }
     chat.transport = transport;
+    applyChatTheme(chat);
 
-    const onMessages = (event: Event) =>
-      setMessages((event as CustomEvent<{ messages: AgentChatMessage[] }>).detail.messages);
-    const onCitation = (event: Event) =>
-      setSelectedSource((event as CustomEvent<{ citation: AgentCitation }>).detail.citation.id);
+    // Follow new content (streamed text, an approval card) to the bottom, but only
+    // while the officer hasn't scrolled up to read history. Intent comes from what
+    // they do (wheel, touch, keys, dragging the scrollbar), not from scroll events
+    // alone: those also fire, a frame late, when the thread is resized.
+    const thread = () => chat.shadowRoot?.querySelector<HTMLElement>('[part="thread"]') ?? null;
+    const atBottom = (el: HTMLElement) => el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+    let pinned = true;
+    let dragging = false;
+    const inThread = (event: Event) => event.composedPath().includes(thread() as EventTarget);
+    const onWheel = (event: WheelEvent) => {
+      if (inThread(event) && event.deltaY < 0) pinned = false;
+    };
+    const onTouch = (event: TouchEvent) => {
+      if (inThread(event)) pinned = false;
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (inThread(event) && ["ArrowUp", "PageUp", "Home"].includes(event.key)) pinned = false;
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      dragging = event.composedPath()[0] === thread();
+    };
+    const onPointerUp = () => {
+      dragging = false;
+    };
+    const onScroll = () => {
+      const el = thread();
+      if (!el) return;
+      if (atBottom(el)) pinned = true;
+      else if (dragging) pinned = false;
+    };
+    // Opening the inspector or resizing the window shrinks the thread: stay pinned.
+    const resize = new ResizeObserver(() => follow());
+    let watched: HTMLElement | null = null;
+    const follow = () =>
+      requestAnimationFrame(() => {
+        const el = thread();
+        if (el && el !== watched) {
+          if (watched) resize.unobserve(watched);
+          resize.observe(el);
+          watched = el;
+        }
+        if (el && pinned) el.scrollTop = el.scrollHeight;
+      });
+    const root = chat.shadowRoot;
+    root?.addEventListener("scroll", onScroll, true);
+    root?.addEventListener("wheel", onWheel as EventListener, { passive: true });
+    root?.addEventListener("touchmove", onTouch as EventListener, { passive: true });
+    root?.addEventListener("keydown", onKey as EventListener);
+    root?.addEventListener("pointerdown", onPointerDown as EventListener);
+    window.addEventListener("pointerup", onPointerUp);
+
+    // A new message (the officer's, or the agent's reply starting) always re-pins;
+    // streamed text within a message follows only if already pinned.
+    let count = 0;
+    const onMessages = (event: Event) => {
+      const next = (event as CustomEvent<{ messages: AgentChatMessage[] }>).detail.messages;
+      if (next.length > count) pinned = true;
+      count = next.length;
+      setMessages(next);
+      follow();
+    };
     const onModify = () =>
       setNotice("To change a proposal, reply with the new values, e.g. “apply the rate at 6.75% instead”.");
     const onResolved = () => setNotice(null);
 
     chat.addEventListener("messages-changed", onMessages);
-    chat.addEventListener("citation-selected", onCitation);
     chat.addEventListener("proposal-modify-requested", onModify);
     chat.addEventListener("action-resolved", onResolved);
     return () => {
+      resize.disconnect();
+      root?.removeEventListener("scroll", onScroll, true);
+      root?.removeEventListener("wheel", onWheel as EventListener);
+      root?.removeEventListener("touchmove", onTouch as EventListener);
+      root?.removeEventListener("keydown", onKey as EventListener);
+      root?.removeEventListener("pointerdown", onPointerDown as EventListener);
+      window.removeEventListener("pointerup", onPointerUp);
       chat.removeEventListener("messages-changed", onMessages);
-      chat.removeEventListener("citation-selected", onCitation);
       chat.removeEventListener("proposal-modify-requested", onModify);
       chat.removeEventListener("action-resolved", onResolved);
     };
   }, [transport]);
 
-  useEffect(() => {
-    if (traceRef.current) {
-      traceRef.current.steps = steps;
-    }
-  }, [steps]);
-
-  const sources = useMemo(() => {
-    const seen = new Map<string, AgentCitation>();
-    for (const message of messages) {
-      for (const citation of message.citations) {
-        seen.set(citation.id, citation);
-      }
-    }
-    return [...seen.values()];
-  }, [messages]);
-
   const ask = useCallback((prompt: string) => {
-    setLibraryOpen(false);
     void chatRef.current?.send(prompt);
   }, []);
 
@@ -142,7 +180,6 @@ export function LoanCopilot({ loan }: { loan?: string }) {
     setTodos([]);
     setNextOptions(null);
     setMessages([]);
-    setSelectedSource(null);
     setNotice(null);
     setLoanContext(null);
   };
@@ -151,8 +188,9 @@ export function LoanCopilot({ loan }: { loan?: string }) {
   const baseUrl = agentBaseUrl();
   const started = messages.length > 0;
   const shownLoan = isDemo ? DEMO_LOAN : (loanContext ?? (loan ? { loanId: loan } : null));
-  const chips = nextOptions ?? STARTERS;
-  const doneCount = todos.filter(todo => todo.status === "completed").length;
+  const awaitingApproval = messages.some(message => message.proposals.some(proposal => !proposal.decision));
+  // Nothing competes with a waiting approval: next steps appear once it is decided.
+  const chips = started && !awaitingApproval ? (nextOptions ?? []) : [];
 
   return (
     <div className="copilot">
@@ -172,25 +210,24 @@ export function LoanCopilot({ loan }: { loan?: string }) {
           {shownLoan ? (
             <>
               {shownLoan.name && <span className="loan-title">{shownLoan.name}</span>}
-              <span className="pill">{shownLoan.loanId}</span>
-              {shownLoan.status && <span className="pill">{shownLoan.status}</span>}
-              {isDemo && <span className="pill pill-risk">Risk: High</span>}
+              <span className="loan-meta">
+                {shownLoan.loanId}
+                {shownLoan.status && (
+                  <>
+                    <span aria-hidden="true"> · </span>
+                    {shownLoan.status}
+                  </>
+                )}
+              </span>
             </>
-          ) : (
-            <span className="loan-title loan-title-empty">No loan selected. Name a borrower or loan ID.</span>
-          )}
+          ) : null}
         </div>
         <div className="topbar-actions">
-          <span
-            className={`mode ${isDemo ? "mode-demo" : "mode-live"}`}
-            title={
-              isDemo
-                ? "Scripted replies; no Box or Salesforce calls. Set VITE_AGENT_API_URL for a live agent."
-                : "Connected to the loan agent backend"
-            }
-          >
-            {isDemo ? "Demo script" : "Live agent"}
-          </span>
+          {isDemo && (
+            <span className="mode-demo" title="Scripted replies; no Box or Salesforce calls. Set VITE_AGENT_API_URL for a live agent.">
+              Demo script
+            </span>
+          )}
           <button type="button" className="button" onClick={newChat}>
             New chat
           </button>
@@ -198,10 +235,29 @@ export function LoanCopilot({ loan }: { loan?: string }) {
       </header>
 
       <main className="workspace">
-        <section className="conversation" aria-label="Conversation">
+        <section className={`conversation ${started ? "" : "is-empty"}`} aria-label="Conversation">
+          {!started && (
+            <div className="welcome">
+              <h1 className="welcome-title">Ask about a loan</h1>
+              <p className="welcome-lede">
+                Name a borrower or a loan ID. The copilot reads Box and Salesforce, checks credit policy, and asks before it
+                changes anything.
+              </p>
+              <ul className="starters" aria-label="Suggested prompts">
+                {STARTER_PROMPTS.map(prompt => (
+                  <li key={prompt.id}>
+                    <button type="button" className="starter" onClick={() => ask(prompt.content)}>
+                      <span className="starter-title">{prompt.title}</span>
+                      <span className="starter-description">{prompt.description}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <box-agent-chat
             ref={chatRef}
-            heading="Ask about this loan"
+            heading="Conversation"
             agent-name="Loan Copilot"
             placeholder="Ask about documents, terms, policy, or history…"
             token={sessionId}
@@ -214,82 +270,25 @@ export function LoanCopilot({ loan }: { loan?: string }) {
               </button>
             </p>
           )}
-          <nav className="suggestions" aria-label={started ? "Next steps" : "Suggested prompts"}>
-            <span className="suggestions-label">{started && nextOptions ? "Next" : "Try"}</span>
-            {chips.map(({ label, prompt }) => (
-              <button key={label} type="button" className="chip" title={prompt} onClick={() => ask(prompt)}>
-                {label}
-              </button>
-            ))}
-            <button type="button" className="chip chip-library" onClick={() => setLibraryOpen(true)}>
-              Prompt library
-            </button>
-          </nav>
+          {chips.length > 0 && (
+            <nav className="suggestions" aria-label="Next steps">
+              <span className="suggestions-label">Next</span>
+              {chips.map(({ label, prompt }) => (
+                <button key={label} type="button" className="chip" title={prompt} onClick={() => ask(prompt)}>
+                  {label}
+                </button>
+              ))}
+            </nav>
+          )}
         </section>
 
         <aside className="rail" aria-label="Turn details">
-          {todos.length > 0 && (
-            <section className="card" aria-labelledby="plan-title">
-              <div className="card-heading">
-                <h2 className="card-title" id="plan-title">
-                  Plan
-                </h2>
-                <span className="card-count">
-                  {doneCount} of {todos.length}
-                </span>
-              </div>
-              <ol className="todos">
-                {todos.map(todo => (
-                  <li key={todo.id} className={`todo todo-${todo.status}`}>
-                    <span className="todo-mark" aria-hidden="true" />
-                    <span className="todo-text">{todo.content}</span>
-                    <span className="visually-hidden">, {todo.status.replace("_", " ")}</span>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          )}
-
-          <section className="card">
-            <h2 className="card-title">Decision trace</h2>
-            <p className="card-hint">
-              {isDemo ? "Routing is simulated in demo mode." : "TypeSafe routing, tool calls, and approval gates."}
-            </p>
-            {steps.length > 0 ? (
-              <box-run-trace ref={traceRef} heading="This turn" />
-            ) : (
-              <p className="empty">Each reply shows how it was routed and which tools ran.</p>
-            )}
-          </section>
-
-          <section className="card">
-            <h2 className="card-title">Sources</h2>
-            {sources.length > 0 ? (
-              <ul className="sources">
-                {sources.map(source => (
-                  <li key={source.id}>
-                    <button
-                      type="button"
-                      className={`source ${selectedSource === source.id ? "is-selected" : ""}`}
-                      aria-pressed={selectedSource === source.id}
-                      onClick={() => setSelectedSource(source.id)}
-                    >
-                      <span className="source-icon" aria-hidden="true" />
-                      {source.label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="empty">Documents and policies the copilot cites appear here.</p>
-            )}
-          </section>
+          <TurnActivity todos={todos} steps={steps} awaitingApproval={awaitingApproval} isDemo={isDemo} />
         </aside>
       </main>
 
       {!isDemo && baseUrl && <ApiInspector baseUrl={baseUrl} />}
 
-      <PromptLibrary open={libraryOpen} onClose={() => setLibraryOpen(false)} onPick={ask} />
     </div>
   );
 }

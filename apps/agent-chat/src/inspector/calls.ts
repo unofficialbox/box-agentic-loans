@@ -75,3 +75,45 @@ export function matchesFilter(entry: CallEntry, filter: CallFilter): boolean {
   return entry.service === filter;
 }
 
+
+// ── Copying a call ──────────────────────────────────────────────────────
+
+function headerLines(headers: Record<string, string>): string[] {
+  return Object.entries(headers).map(([name, value]) => `${name}: ${value}`);
+}
+
+function withBody(lines: string[], body: string | undefined): string {
+  return body ? `${lines.join("\n")}\n\n${body}` : lines.join("\n");
+}
+
+/** The request as HTTP-style text: request line, headers, blank line, body. */
+export function formatRequest(entry: CallEntry): string {
+  return withBody([`${entry.method} ${entry.url}`, ...headerLines(entry.requestHeaders)], entry.requestBody);
+}
+
+/** The response as HTTP-style text: status line, headers, blank line, body. */
+export function formatResponse(entry: CallEntry): string {
+  const status = entry.pending
+    ? "(waiting for the response)"
+    : entry.status
+      ? `HTTP ${entry.status}${entry.statusText ? ` ${entry.statusText}` : ""}`
+      : "(no response)";
+  const lines = [status, ...headerLines(entry.responseHeaders)];
+  if (entry.error) lines.push(`error: ${entry.error}`);
+  return withBody(lines, entry.pending ? undefined : entry.responseBody);
+}
+
+/** Request and response together, under a line naming the call. */
+export function formatCall(entry: CallEntry): string {
+  const when = new Date(entry.startedAt).toISOString();
+  const took = entry.pending ? "in progress" : `${entry.durationMs} ms`;
+  return [
+    `${entry.summary} · ${SERVICE_LABELS[entry.service]} · ${took} · ${when}`,
+    "",
+    "── Request ──",
+    formatRequest(entry),
+    "",
+    "── Response ──",
+    formatResponse(entry),
+  ].join("\n");
+}

@@ -1,10 +1,21 @@
 # Loan Copilot chat
 
-A loan officer's chat for the Harborview demo. It is built on the [box-open-elements agent-chat pattern](https://unofficialbox.github.io/box-open-elements/patterns/agent-chat/). `<box-agent-chat>` handles the whole conversation: the streaming thread, citation chips, approval cards, and the composer. This app adds three things around it:
+A loan officer's chat for the Harborview demo. It is built on the [box-open-elements agent-chat pattern](https://unofficialbox.github.io/box-open-elements/patterns/agent-chat/). `<box-agent-chat>` handles the whole conversation: the streaming thread, citation chips, approval cards, and the composer. This app adds a few things around it:
 
-- a top bar with the loan in context and whether the app is in demo or live mode
-- next-step chips, and a **prompt library** (`src/prompts.ts`) that follows Box AI's prompt structure: Research / Analyze / Create / Act tabs, scoped to the Finance department and the Financial services industry
-- a side rail with the turn's **plan** (like Box AI's to-do list), its **decision trace** (`<box-run-trace>`: routing, tool calls, approval gates), and the **sources** it cited
+- a top bar with the loan in context, and a "Demo script" tag in demo mode only
+- a welcome state before the first message: what the copilot does, and four starter cards (from `src/prompts.ts`, which follows Box AI's prompt structure)
+- after each reply, the agent's next steps as "Next" chips inside the chat card, under the composer; none while an approval is waiting
+- the thread follows new messages and approval cards to the bottom, and stops following while you scroll up to read
+- a side rail card, **This turn**: the plan (always visible) and the steps (routing, tool calls, approval holds; collapsed by default, with the step in flight shown while it runs), under one summary ("Working", "Waiting for your approval", "Done · 1.2 s"). Every state uses one 16px status icon family (`StatusIcon.tsx`).
+- in live mode, the **API inspector** (below)
+
+`<box-agent-chat>` gets the page's treatment through a stylesheet adopted into its shadow root (`src/components/chatTheme.ts`): agent replies as plain text, the officer's messages as soft bubbles, one framed composer, and approval cards labelled "Needs your approval" with Approve as the primary action. Parts alone can't tell a user message from an agent one, or Approve from Reject, so those rules key on the element's own `data-role`, `data-action` and `data-decision` attributes.
+
+Design principles, from Apple's HIG (clarity, deference, consistency), Linear's calmer 2025 interface (little colour, colour for meaning), and agentic-UX practice (plans visible, steps collapsed until wanted, approval before any write):
+- the conversation is the content; chrome defers to it
+- colour means something: blue for the primary action, amber for "waiting on you", green for done, red for failed
+- one button system (pill, 13px semibold, 32px or 28px) and one status icon family
+- nothing competes with an action awaiting approval
 
 Styling follows Box's Blueprint design system:
 - Lato at 14px on a 20px line
@@ -27,9 +38,11 @@ The loan comes from `?recordId=` or `?loan=` in the URL when the page is opened 
 
 ## API inspector
 
-In live mode an **API inspector** shelf sits at the bottom of the page, in the page's own Box theme colours (light or dark), laid out like the HTTP inspector in [box-cmis-lab](https://github.com/unofficialbox/box-cmis-lab). It shows every call the loan agent makes to TypeSafe, Salesforce and Box, plus each chat request, live from the backend's `GET /calls/stream`:
+In live mode an **API inspector** card sits under the chat, in the same column, colours and type as the rest of the page (light or dark), laid out like the HTTP inspector in [box-cmis-lab](https://github.com/unofficialbox/box-cmis-lab). It shows every call the loan agent makes to TypeSafe, Salesforce and Box, plus each chat request, live from the backend's `GET /calls/stream`:
 - the list shows status, service, the call (e.g. `tools/call getLoanPackage`) and time in ms, newest first
 - select a row to see its URL and its request and response headers and bodies
+- **Copy request**, **Copy response** or **Copy both** puts the call on the clipboard as HTTP-style text (request or status line, headers, blank line, body), already redacted
+- each code block (request or response headers or body) has a copy icon in its corner that copies exactly what the block shows
 - filter by service or errors, or **Clear** the log (`DELETE /calls`)
 - drag the title bar to resize the shelf, and the divider to resize the list; both sizes and the open/closed state are remembered in this browser
 

@@ -44,3 +44,40 @@ describe("filters", () => {
     expect(matchesFilter(entry("ok"), "all")).toBe(true);
   });
 });
+
+describe("copy formats", () => {
+  const call = entry("c", {
+    summary: "tools/call getLoanPackage",
+    service: "salesforce",
+    url: "https://api.example/mcp",
+    requestHeaders: { authorization: "Bearer [redacted]", "content-type": "application/json" },
+    requestBody: '{\n  "method": "tools/call"\n}',
+    responseHeaders: { "content-type": "application/json" },
+    responseBody: '{\n  "result": {}\n}',
+    durationMs: 42,
+  });
+
+  it("formats the request and the response like HTTP messages", async () => {
+    const { formatRequest, formatResponse } = await import("../src/inspector/calls");
+    expect(formatRequest(call)).toBe(
+      'POST https://api.example/mcp\nauthorization: Bearer [redacted]\ncontent-type: application/json\n\n{\n  "method": "tools/call"\n}'
+    );
+    expect(formatResponse(call)).toBe('HTTP 200 OK\ncontent-type: application/json\n\n{\n  "result": {}\n}');
+  });
+
+  it("copies both under a line naming the call", async () => {
+    const { formatCall, formatRequest, formatResponse } = await import("../src/inspector/calls");
+    const both = formatCall(call);
+    expect(both.split("\n")[0]).toBe("tools/call getLoanPackage · Salesforce · 42 ms · 1970-01-01T00:00:00.000Z");
+    expect(both).toContain(`── Request ──\n${formatRequest(call)}`);
+    expect(both).toContain(`── Response ──\n${formatResponse(call)}`);
+  });
+
+  it("says when there is no response yet, or none at all", async () => {
+    const { formatResponse } = await import("../src/inspector/calls");
+    expect(formatResponse(entry("p", { pending: true, status: 0, responseBody: "x" }))).toBe("(waiting for the response)");
+    expect(formatResponse(entry("e", { status: 0, statusText: "", error: "connect ECONNREFUSED" }))).toBe(
+      "(no response)\nerror: connect ECONNREFUSED"
+    );
+  });
+});

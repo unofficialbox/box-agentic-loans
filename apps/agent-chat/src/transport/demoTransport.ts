@@ -63,8 +63,12 @@ export class DemoLoanAgentTransport implements LoanAgentTransport {
         return end("incomplete");
       }
       await this.step(
-        { id: `tool-${index}`, title: `${call.connector} · ${call.tool}`, description: call.detail },
-        call.gated ? "warning" : "succeeded"
+        {
+          id: `tool-${index}`,
+          title: call.gated ? `Held for approval · ${call.tool}` : `${call.connector} · ${call.tool}`,
+          description: call.detail,
+        },
+        "succeeded"
       );
       if (beat.plan.length) advance(Math.min(index + 1, beat.plan.length - 1));
     }

@@ -35,8 +35,17 @@
   --danger: var(--boe-token-surface-status-surface-error, #ed3757);
   --focus: 0 0 0 3px color-mix(in srgb, #2486fc 35%, transparent);
 
+  /* One button system, matching box-agent-chat's own Send and approval buttons:
+     pill-shaped, 13px semibold, in two heights. */
+  --control-height: 2rem;
+  --control-height-compact: 1.75rem;
+  --control-font-size: 0.8125rem;
+  --control-font-weight: 600;
+
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  /* The workspace keeps a usable height: with the inspector open the page
+     scrolls rather than squeezing the conversation. */
+  grid-template-rows: auto minmax(30rem, 1fr) auto;
   height: 100%;
 }
 
@@ -84,35 +93,29 @@
   font-weight: 700;
 }
 
+/* The loan in context: its name, then ID and status as quiet text, not boxed pills. */
 .loan-context {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
+  align-items: baseline;
+  gap: 0 var(--space-3);
   min-width: 0;
+  padding-left: var(--space-6);
+  border-left: 1px solid var(--stroke);
+}
+
+.loan-context:empty {
+  display: none;
 }
 
 .loan-title {
-  font-weight: 700;
+  font-weight: 600;
 }
 
-.loan-title-empty {
-  font-weight: 400;
+.loan-meta {
   color: var(--muted);
-}
-
-.pill {
-  padding: 0.125rem var(--space-3);
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--stroke);
-  font-size: 0.75rem;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-.pill-risk {
-  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
-  color: color-mix(in srgb, var(--danger) 80%, var(--text));
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .topbar-actions {
@@ -122,58 +125,57 @@
   margin-inline-start: auto;
 }
 
-.mode {
+/* Shown only in demo mode, so nobody mistakes scripted replies for the live agent. */
+.mode-demo {
   padding: 0.125rem var(--space-3);
   border-radius: var(--radius-pill);
   font-size: 0.75rem;
   font-weight: 700;
-}
-
-.mode-demo {
   background: color-mix(in srgb, var(--warning) 18%, transparent);
   color: color-mix(in srgb, var(--warning) 45%, var(--text));
 }
 
-/* Live AI: gradient outline, Blueprint's treatment for an active AI control. */
-.mode-live {
-  border: 1px solid transparent;
-  background:
-    linear-gradient(var(--surface), var(--surface)) padding-box,
-    var(--box-ai) border-box;
-  color: var(--text);
-}
-
 .button,
 .chip,
-.source,
 .notice-dismiss,
-.icon-button,
-.library-tab,
-.library-card {
+.icon-button {
   appearance: none;
   cursor: pointer;
   color: inherit;
   font: inherit;
 }
 
-.button {
-  padding: var(--space-1) var(--space-4);
-  min-height: 2rem;
-  border-radius: var(--radius-3);
+.button,
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  height: var(--control-height);
+  padding: 0 var(--space-4);
   border: 1px solid var(--stroke);
+  border-radius: var(--radius-pill);
   background: var(--surface);
-  font-weight: 700;
+  font-size: var(--control-font-size);
+  font-weight: var(--control-font-weight);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Compact: controls inside dense content (suggestions, the inspector). */
+.chip,
+.button-compact {
+  height: var(--control-height-compact);
+  padding: 0 var(--space-3);
 }
 
 .button:hover,
 .chip:hover,
-.source:hover,
-.icon-button:hover,
-.library-card:hover {
+.icon-button:hover {
   background: var(--surface-hover);
 }
 
-:is(.button, .chip, .source, .notice-dismiss, .icon-button, .library-tab, .library-card):focus-visible {
+:is(.button, .chip, .notice-dismiss, .icon-button):focus-visible {
   outline: none;
   box-shadow: var(--focus);
 }
@@ -191,25 +193,33 @@
   min-height: 0;
 }
 
+/* One card: the chat, any notice, and the suggested prompts under the composer. */
 .conversation {
-  display: grid;
-  grid-template-rows: 1fr auto auto;
-  gap: var(--space-3);
+  display: flex;
+  flex-direction: column;
   min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-4);
+  background: var(--surface);
+  box-shadow: var(--dropshadow-1);
 }
 
 /* Let the pattern fill the column: the thread grows, the composer stays put. */
 box-agent-chat {
+  flex: 1 1 auto;
   min-height: 0;
 }
 
+/* Frame, thread and composer come from chatTheme.ts; these only size the parts. */
 box-agent-chat::part(panel) {
   box-sizing: border-box;
   height: 100%;
   grid-template-rows: auto 1fr auto;
-  background: var(--surface);
-  border-radius: var(--radius-4);
-  box-shadow: var(--dropshadow-1);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 box-agent-chat::part(thread) {
@@ -218,16 +228,103 @@ box-agent-chat::part(thread) {
   align-content: start;
 }
 
-box-agent-chat::part(empty) {
-  border-style: solid;
-  background: var(--boe-token-surface-surface-secondary, #fbfbfb);
+/* The top bar names the loan, so the chat's own title is for screen readers only. */
+box-agent-chat::part(title) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Before the first message the welcome takes the thread's place; only the composer shows. */
+.conversation.is-empty box-agent-chat {
+  flex: 0 0 auto;
+}
+
+.conversation.is-empty box-agent-chat::part(header),
+.conversation.is-empty box-agent-chat::part(thread) {
+  display: none;
+}
+
+.welcome {
+  flex: 1 1 auto;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-6) var(--space-4);
+  text-align: center;
+}
+
+.welcome-title {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 700;
+}
+
+.welcome-lede {
+  max-width: 34rem;
+  margin: 0;
+  color: var(--muted);
+}
+
+.starters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 40rem;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.starter {
+  display: grid;
+  gap: var(--space-1);
+  width: 100%;
+  height: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-4);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.starter:hover {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    var(--box-ai) border-box;
+  box-shadow: var(--dropshadow-3);
+}
+
+.starter:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.starter-title {
+  font-weight: 700;
+}
+
+.starter-description {
+  font-size: 0.8125rem;
+  color: var(--muted);
 }
 
 .notice {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin: 0;
+  margin: 0 var(--space-4) var(--space-3);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-3);
   background: var(--selected);
@@ -250,29 +347,14 @@ box-agent-chat::part(empty) {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--stroke);
 }
 
 .suggestions-label {
   font-size: 0.75rem;
   font-weight: 700;
   color: var(--muted);
-}
-
-.chip {
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--stroke);
-  background: var(--surface);
-  font-size: 0.8125rem;
-}
-
-.chip-library {
-  margin-inline-start: auto;
-  border-color: transparent;
-  background:
-    linear-gradient(var(--surface), var(--surface)) padding-box,
-    var(--box-ai) border-box;
-  font-weight: 700;
 }
 
 /* ── Right rail ──────────────────────────────────────────── */
@@ -315,105 +397,208 @@ box-agent-chat::part(empty) {
   color: var(--muted);
 }
 
-/* Plan: Box AI's to-do list for the turn. */
-.todos {
-  display: grid;
+/* ── The turn at a glance ─────────────────────────────────── */
+
+.activity {
+  gap: var(--space-3);
+}
+
+.activity-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
   gap: var(--space-2);
+}
+
+.activity-summary {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.activity-summary-active {
+  color: var(--brand);
+}
+
+.activity-summary-approval {
+  color: color-mix(in srgb, var(--warning) 55%, var(--text));
+  font-weight: 600;
+}
+
+.activity-summary-failed {
+  color: color-mix(in srgb, var(--danger) 80%, var(--text));
+  font-weight: 600;
+}
+
+.activity-list {
+  display: grid;
+  gap: var(--space-3);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.todo {
+.activity-item {
   display: grid;
-  grid-template-columns: 1rem 1fr;
+  grid-template-columns: 1rem minmax(0, 1fr) auto;
   align-items: start;
-  gap: var(--space-2);
+  gap: var(--space-3);
   font-size: 0.8125rem;
+  line-height: 1.25rem;
 }
 
-.todo-mark {
-  width: 1rem;
-  height: 1rem;
+.activity-item .status-icon {
   margin-top: 0.125rem;
-  border-radius: 50%;
-  border: 1.5px solid var(--stroke);
-  box-sizing: border-box;
 }
 
-.todo-in_progress .todo-mark {
-  border: 2px solid transparent;
-  background:
-    linear-gradient(var(--surface), var(--surface)) padding-box,
-    var(--box-ai) border-box;
-  animation: todo-spin 1.2s linear infinite;
-}
-
-.todo-in_progress .todo-text {
-  font-weight: 700;
-}
-
-.todo-completed .todo-mark {
-  border: 0;
-  background: var(--success)
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-    center / 100% no-repeat;
-}
-
-.todo-completed .todo-text,
-.todo-skipped .todo-text {
+.activity-item-done .activity-text,
+.activity-item-skipped .activity-text {
   color: var(--muted);
 }
 
-.todo-skipped .todo-text {
+.activity-item-skipped .activity-text {
   text-decoration: line-through;
 }
 
-@keyframes todo-spin {
+.activity-item-active .activity-text {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.activity-steps {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--stroke);
+}
+
+.activity-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: var(--space-2);
+  height: var(--control-height-compact);
+  margin-left: calc(-1 * var(--space-2));
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--control-font-size);
+  font-weight: var(--control-font-weight);
+  cursor: pointer;
+}
+
+.activity-toggle:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.activity-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.activity-chevron {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+
+.activity-toggle[aria-expanded="true"] .activity-chevron {
+  transform: rotate(45deg);
+}
+
+.activity-list-steps .activity-text {
+  display: grid;
+}
+
+.activity-source {
+  color: var(--muted);
+}
+
+.activity-action {
+  overflow-wrap: anywhere;
+}
+
+.activity-detail {
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.activity-time {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* One status glyph family (StatusIcon.tsx), same 16px circle everywhere. */
+.status-icon {
+  flex: none;
+  display: block;
+}
+
+.status-ring {
+  fill: none;
+  stroke: var(--stroke);
+  stroke-width: 1.5;
+}
+
+.status-ring-dashed {
+  stroke-dasharray: 2.5 2.5;
+}
+
+.status-arc {
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  transform-origin: 8px 8px;
+  animation: status-spin 0.9s linear infinite;
+}
+
+.status-fill {
+  fill: var(--muted);
+}
+
+.status-icon-done .status-fill {
+  fill: var(--success);
+}
+
+.status-icon-warning .status-fill {
+  fill: var(--warning);
+}
+
+.status-icon-failed .status-fill {
+  fill: var(--danger);
+}
+
+.status-mark {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@keyframes status-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .todo-in_progress .todo-mark {
+  .status-arc {
     animation: none;
   }
-}
-
-.sources {
-  display: grid;
-  gap: var(--space-1);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.source {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  width: 100%;
-  padding: var(--space-2);
-  border: 0;
-  border-radius: var(--radius-2);
-  background: transparent;
-  text-align: start;
-  font-size: 0.8125rem;
-}
-
-.source.is-selected {
-  background: var(--selected);
-  color: var(--brand);
-  font-weight: 700;
-}
-
-.source-icon {
-  flex: none;
-  width: 0.625rem;
-  height: 0.75rem;
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--brand) 70%, transparent);
 }
 
 .visually-hidden {
@@ -425,117 +610,14 @@ box-agent-chat::part(empty) {
   white-space: nowrap;
 }
 
-/* ── Prompt library dialog ───────────────────────────────── */
-
-.library {
-  width: min(40rem, calc(100vw - 2rem));
-  max-height: min(36rem, calc(100vh - 2rem));
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-4);
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: var(--dropshadow-3);
-}
-
-.library::backdrop {
-  background: #0000004d;
-}
-
-.library-panel {
-  display: grid;
-  gap: var(--space-4);
-  padding: var(--space-6);
-}
-
-.library-header {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-4);
-}
-
-.library-title {
-  margin: 0 0 var(--space-2);
-  font-size: 1.125rem;
-  font-weight: 700;
-}
-
-.library-scope {
-  display: flex;
-  gap: var(--space-2);
-  margin: 0;
-}
-
-.library-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  border-bottom: 1px solid var(--stroke);
-}
-
-.library-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: var(--muted);
-  font-weight: 700;
-  font-size: 0.875rem;
-}
-
-.library-tab[aria-selected="true"] {
-  color: var(--text);
-  border-bottom-color: var(--brand);
-}
-
-.library-tab-count {
-  min-width: 1.25rem;
-  padding: 0 var(--space-1);
-  border-radius: var(--radius-pill);
-  background: var(--surface-hover);
-  font-size: 0.75rem;
-  text-align: center;
-}
-
-.library-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-  gap: var(--space-3);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.library-card {
-  display: grid;
-  gap: var(--space-1);
-  width: 100%;
-  height: 100%;
-  padding: var(--space-4);
-  border: 1px solid var(--stroke);
-  border-radius: var(--radius-4);
-  background: var(--surface);
-  text-align: start;
-}
-
-.library-card-title {
-  font-weight: 700;
-}
-
-.library-card-description {
-  font-size: 0.8125rem;
-  color: var(--muted);
-}
-
 /* ── Narrow screens: rail drops below the conversation ───── */
 
 @media (max-width: 56rem) {
   .copilot {
     height: auto;
     min-height: 100%;
+    grid-template-rows: auto auto auto;
+    align-content: start;
   }
 
   .workspace {
@@ -543,8 +625,16 @@ box-agent-chat::part(empty) {
     padding: var(--space-4);
   }
 
-  .conversation {
-    grid-template-rows: auto auto auto;
+  .workspace {
+    align-content: start;
+  }
+
+  .welcome {
+    padding: var(--space-6) var(--space-4) var(--space-2);
+  }
+
+  .starters {
+    grid-template-columns: 1fr;
   }
 
   box-agent-chat::part(thread) {
@@ -555,7 +645,15 @@ box-agent-chat::part(empty) {
     padding: var(--space-3) var(--space-4);
   }
 
-  .chip-library {
-    margin-inline-start: 0;
+  /* Brand and New chat share the first row; the loan gets its own line below. */
+  .topbar-actions {
+    order: 2;
+  }
+
+  .loan-context {
+    order: 3;
+    flex-basis: 100%;
+    padding-left: 0;
+    border-left: 0;
   }
 }

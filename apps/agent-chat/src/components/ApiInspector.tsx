@@ -3,6 +3,9 @@ import {
   CALL_FILTERS,
   SERVICE_LABELS,
   applyCallEvent,
+  formatCall,
+  formatRequest,
+  formatResponse,
   isFailure,
   matchesFilter,
   type CallEntry,
@@ -236,7 +239,7 @@ export function ApiInspector({ baseUrl }: { baseUrl: string }) {
                     >
                       <td className="inspector-status">{statusText(entry)}</td>
                       <td>
-                        <span className={`inspector-service inspector-service-${entry.service}`}>{SERVICE_LABELS[entry.service]}</span>
+                        <span className="inspector-service">{SERVICE_LABELS[entry.service]}</span>
                       </td>
                       <td className="inspector-callcell" title={`${entry.method} ${entry.url}`}>
                         <span className="inspector-method">{entry.method}</span> {entry.summary}
@@ -274,38 +277,150 @@ function statusText(entry: CallEntry): string {
   return entry.status ? String(entry.status) : "ERR";
 }
 
+/** Clipboard API where allowed; a hidden textarea where it isn't (e.g. plain http on a LAN IP). */
+async function copyText(text: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return;
+  } catch {
+    // Fall through to the legacy path.
+  }
+  const area = document.createElement("textarea");
+  area.value = text;
+  area.setAttribute("readonly", "");
+  area.style.position = "fixed";
+  area.style.opacity = "0";
+  document.body.append(area);
+  area.select();
+  const ok = document.execCommand("copy");
+  area.remove();
+  if (!ok) throw new Error("Copy failed");
+}
+
+type CopyPart = "request" | "response" | "both";
+
+const COPY_LABELS: Record<CopyPart, string> = {
+  request: "Copy request",
+  response: "Copy response",
+  both: "Copy both",
+};
+
+function CopyButtons({ entry }: { entry: CallEntry }) {
+  const [done, setDone] = useState<{ part: CopyPart; ok: boolean } | null>(null);
+  const timer = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    setDone(null);
+    return () => window.clearTimeout(timer.current);
+  }, [entry.id]);
+
+  const copy = (part: CopyPart) => {
+    const text = part === "request" ? formatRequest(entry) : part === "response" ? formatResponse(entry) : formatCall(entry);
+    copyText(text).then(
+      () => setDone({ part, ok: true }),
+      () => setDone({ part, ok: false })
+    );
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => setDone(null), 1800);
+  };
+
+  return (
+    <div className="inspector-copy" role="group" aria-label="Copy this call">
+      {(Object.keys(COPY_LABELS) as CopyPart[]).map(part => (
+        <button key={part} type="button" className="button button-compact" onClick={() => copy(part)}>
+          {done?.part === part ? (done.ok ? "Copied" : "Copy failed") : COPY_LABELS[part]}
+        </button>
+      ))}
+      <span className="visually-hidden" role="status">
+        {done ? (done.ok ? `${COPY_LABELS[done.part].replace("Copy ", "")} copied` : "Copy failed") : ""}
+      </span>
+    </div>
+  );
+}
+
 function CallDetail({ entry }: { entry: CallEntry }) {
   return (
     <>
-      <div className="inspector-summary">
-        <span className="inspector-pill">{entry.method}</span>
-        <span className={`inspector-pill ${isFailure(entry) ? "inspector-pill-error" : "inspector-pill-ok"}`}>
-          {statusText(entry)}
-          {entry.statusText ? ` ${entry.statusText}` : ""}
-        </span>
-        <span className={`inspector-service inspector-service-${entry.service}`}>{SERVICE_LABELS[entry.service]}</span>
-        <span className="inspector-meta">
-          {entry.pending ? "in progress" : `${entry.durationMs} ms`} · {new Date(entry.startedAt).toLocaleTimeString()}
-        </span>
-      </div>
       <p className="inspector-call">{entry.summary}</p>
+      <div className="inspector-detail-head">
+        <div className="inspector-summary">
+          <span className="inspector-pill">{entry.method}</span>
+          <span className={`inspector-pill ${isFailure(entry) ? "inspector-pill-error" : "inspector-pill-ok"}`}>
+            {statusText(entry)}
+            {entry.statusText ? ` ${entry.statusText}` : ""}
+          </span>
+          <span className="inspector-service">{SERVICE_LABELS[entry.service]}</span>
+          <span className="inspector-meta">
+            {entry.pending ? "in progress" : `${entry.durationMs} ms`} · {new Date(entry.startedAt).toLocaleTimeString()}
+          </span>
+        </div>
+        <CopyButtons entry={entry} />
+      </div>
       <p className="inspector-url">
         <code>{entry.url}</code>
       </p>
       {entry.error && <p className="inspector-error">{entry.error}</p>}
-      <Block label="Request headers" text={JSON.stringify(entry.requestHeaders, null, 2)} />
-      <Block label="Request body" text={entry.requestBody} />
-      <Block label="Response headers" text={JSON.stringify(entry.responseHeaders, null, 2)} />
-      <Block label="Response body" text={entry.pending ? "(waiting for the response)" : entry.responseBody} />
+      <Block key={`${entry.id}-rqh`} label="Request headers" text={JSON.stringify(entry.requestHeaders, null, 2)} />
+      <Block key={`${entry.id}-rqb`} label="Request body" text={entry.requestBody} />
+      <Block key={`${entry.id}-rsh`} label="Response headers" text={JSON.stringify(entry.responseHeaders, null, 2)} />
+      <Block key={`${entry.id}-rsb`} label="Response body"
+        text={entry.pending ? undefined : entry.responseBody}
+        placeholder={entry.pending ? "(waiting for the response)" : "(empty)"}
+      />
     </>
   );
 }
 
-function Block({ label, text }: { label: string; text?: string }) {
+const CopyIcon = () => (
+  <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+    <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
+    <path d="M10.5 3.5v-.5a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v5A1.5 1.5 0 0 0 4 9.5h.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+    <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+/** A code block with a copy icon in its corner that copies exactly what it shows. */
+function Block({ label, text, placeholder = "(empty)" }: { label: string; text?: string; placeholder?: string }) {
+  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+
+  const copy = () => {
+    if (!text) return;
+    copyText(text).then(
+      () => setState("copied"),
+      () => setState("failed")
+    );
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => setState("idle"), 1600);
+  };
+
+  const name = label.toLowerCase();
   return (
     <div className="inspector-block">
       <div className="inspector-block-label">{label}</div>
-      <pre className="inspector-code">{text || "(empty)"}</pre>
+      <div className="inspector-code-wrap">
+        <pre className="inspector-code">{text || placeholder}</pre>
+        {text && (
+          <button
+            type="button"
+            className={`inspector-code-copy ${state === "copied" ? "is-copied" : ""}`}
+            aria-label={`Copy ${name}`}
+            title={state === "copied" ? "Copied" : state === "failed" ? "Copy failed" : `Copy ${name}`}
+            onClick={copy}
+          >
+            {state === "copied" ? <CheckIcon /> : <CopyIcon />}
+          </button>
+        )}
+        <span className="visually-hidden" role="status">
+          {state === "copied" ? `${label} copied` : state === "failed" ? "Copy failed" : ""}
+        </span>
+      </div>
     </div>
   );
 }

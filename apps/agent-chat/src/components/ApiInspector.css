@@ -1,20 +1,21 @@
-/* API inspector shelf, docked under the workspace (layout after box-cmis-lab's
-   HTTP inspector). Colours come from the same Box tokens as the rest of the
-   page (the semantic roles defined on .copilot), so it follows light and dark
-   mode with the app. */
+/* API inspector: a card under the workspace, in the same column, colours, type
+   and card style as the chat and the side cards (layout after box-cmis-lab's
+   HTTP inspector). Only request and response text is monospace. */
 
 .inspector {
   --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   --inset: var(--boe-token-surface-surface-secondary, #fbfbfb);
 
+  box-sizing: border-box;
+  width: min(calc(100% - 2 * var(--space-6)), calc(80rem - 2 * var(--space-6)));
   min-width: 0;
-  margin: 0 var(--space-6);
+  margin: 0 auto var(--space-5);
+  overflow: hidden;
   border: 1px solid var(--stroke);
-  border-bottom: 0;
-  border-radius: var(--radius-4) var(--radius-4) 0 0;
+  border-radius: var(--radius-4);
   background: var(--surface);
   color: var(--text);
-  box-shadow: var(--dropshadow-3);
+  box-shadow: var(--dropshadow-1);
 }
 
 /* ── Title bar ─────────────────────────────────────────────── */
@@ -37,9 +38,10 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-1) var(--space-2);
+  height: var(--control-height);
+  padding: 0 var(--space-3) 0 var(--space-2);
   border: 0;
-  border-radius: var(--radius-2);
+  border-radius: var(--radius-pill);
   background: transparent;
   color: inherit;
   cursor: pointer;
@@ -68,6 +70,7 @@
 }
 
 .inspector-title {
+  font-size: 0.9375rem;
   font-weight: 700;
 }
 
@@ -121,14 +124,20 @@
   margin-left: auto;
 }
 
+/* Same height, shape and type as the Clear button beside it. */
 .inspector-filter select {
-  min-height: 2rem;
-  padding: 0 var(--space-3);
+  height: var(--control-height);
+  padding: 0 var(--space-8) 0 var(--space-4);
   border: 1px solid var(--stroke);
-  border-radius: var(--radius-3);
-  background: var(--surface);
+  border-radius: var(--radius-pill);
+  background: var(--surface)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%23909090' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    right 0.75rem center / 0.875rem no-repeat;
   color: var(--text);
   font: inherit;
+  font-size: var(--control-font-size);
+  font-weight: var(--control-font-weight);
+  appearance: none;
   cursor: pointer;
 }
 
@@ -160,14 +169,16 @@
 }
 
 .inspector-divider {
-  width: 5px;
+  width: 1px;
+  padding: 0 2px;
   background: var(--stroke);
+  background-clip: content-box;
   cursor: col-resize;
 }
 
 .inspector-divider:hover,
 .inspector-divider:focus-visible {
-  background: var(--brand);
+  background-color: var(--brand);
   outline: none;
 }
 
@@ -180,8 +191,7 @@
 .inspector-table {
   width: 100%;
   border-collapse: collapse;
-  font-family: var(--mono);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
 }
 
 .inspector-table th,
@@ -198,7 +208,7 @@
   z-index: 1;
   background: var(--surface);
   color: var(--muted);
-  font-family: Lato, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.75rem;
   font-weight: 700;
 }
 
@@ -249,12 +259,25 @@
   border: 1px solid var(--stroke);
   border-radius: var(--radius-pill);
   color: var(--muted);
-  font-family: Lato, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 0.75rem;
   white-space: nowrap;
 }
 
 /* ── Details ───────────────────────────────────────────────── */
+
+.inspector-detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+
+.inspector-copy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
 
 .inspector-summary {
   display: flex;
@@ -268,7 +291,6 @@
   border-radius: var(--radius-pill);
   background: var(--selected);
   color: var(--brand);
-  font-family: var(--mono);
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -290,8 +312,7 @@
 
 .inspector-call {
   margin: 0;
-  font-family: var(--mono);
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   font-weight: 700;
 }
 
@@ -324,10 +345,54 @@
   text-transform: uppercase;
 }
 
+.inspector-code-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+/* Copy icon in the code block's corner, same compact height as the other controls. */
+.inspector-code-copy {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: grid;
+  place-items: center;
+  width: var(--control-height-compact);
+  height: var(--control-height-compact);
+  padding: 0;
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.inspector-code-wrap:hover .inspector-code-copy,
+.inspector-code-copy:focus-visible {
+  opacity: 1;
+  color: var(--text);
+}
+
+.inspector-code-copy:hover {
+  background: var(--surface-hover);
+}
+
+.inspector-code-copy:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.inspector-code-copy.is-copied {
+  color: color-mix(in srgb, var(--success) 75%, var(--text));
+  opacity: 1;
+}
+
 .inspector-code {
   max-height: 14rem;
   margin: 0;
-  padding: var(--space-3);
+  padding: var(--space-3) calc(var(--control-height-compact) + var(--space-4)) var(--space-3) var(--space-3);
   overflow: auto;
   border: 1px solid var(--stroke);
   border-radius: var(--radius-3);
@@ -343,7 +408,8 @@
 /* Narrow screens: list above details, no side divider. */
 @media (max-width: 720px) {
   .inspector {
-    margin: 0;
+    width: calc(100% - 2 * var(--space-4));
+    margin-bottom: var(--space-4);
   }
 
   .inspector-body {
