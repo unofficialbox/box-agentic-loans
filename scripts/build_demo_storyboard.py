@@ -22,7 +22,7 @@ HARNESSES = {
     "claude": {
         "name": "Claude", "suffix": "", "trio": "platform-trio.svg",
         "alt": "Box, Claude, and Salesforce", "title": "Loan Origination Demo",
-        "officer": 'Load the <a href="../../skills/loan-origination/SKILL.md">standalone SKILL.md</a> in Claude. Connect Box MCP and Salesforce Loan Origination.',
+        "officer": 'Load the <a href="../../skills/loan-origination-claude/SKILL.md">standalone SKILL.md</a> in Claude. Connect Box MCP and Salesforce Loan Origination.',
         "switch": 'Presenting from Amazon Quick? <a href="index-quick.html">Open the Amazon Quick edition</a>.',
     },
     "quick": {

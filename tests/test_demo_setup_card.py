@@ -43,7 +43,7 @@ class DemoSetupCardTests(unittest.TestCase):
         self.assertIn('live record', blocks)
 
     def test_skill_and_client_guide_describe_demo_setup(self):
-        skill = (ROOT / 'skills' / 'loan-origination' / 'SKILL.md').read_text()
+        skill = (ROOT / 'skills' / 'loan-origination-claude' / 'SKILL.md').read_text()
         self.assertIn('## Demo Setup', skill)
         self.assertIn('`demoSetup`', skill)
         self.assertIn('`demoBindings`', skill)

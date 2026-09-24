@@ -34,7 +34,7 @@ class StandaloneStoryboardTests(unittest.TestCase):
             for attrs in tags:
                 for key in ('src','href'):
                     if key in attrs: self.assertTrue(attrs[key].startswith(('https://','#','data:')),attrs[key][:100])
-            self.assertIn(REPO_URL+'skills/loan-origination/SKILL.md', content)
+            self.assertIn(REPO_URL+'skills/loan-origination-claude/SKILL.md', content)
             self.assertIn(REPO_URL+'output/pdf/harborview-appraisal-2026.pdf',content)
             original_image_links = [a for a in Links(original.decode()).attrs
                                     if (mimetypes.guess_type(a.get('href',''))[0] or '').startswith('image/')]

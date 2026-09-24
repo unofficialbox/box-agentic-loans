@@ -18,7 +18,7 @@ Metadata searches are:
 **CRITICAL: These IDs are STATIC. NEVER call list tools - they return hundreds of results and swamp the session.**
 
 - **Metadata template:** `losDocument` (NEVER call `list_metadata_templates`)
-- **Doc Gen template ID:** Get from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c` (use the bounded fallback in `skills/loan-origination/SKILL.md` when config reads are unavailable)
+- **Doc Gen template ID:** Get from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c` (use the bounded fallback in `skills/loan-origination-claude/SKILL.md` when config reads are unavailable)
 - **Credit Policy Hub ID:** `<CONFIGURED_ID>` "Acme Credit Policy Library" (NEVER call `list_hubs`)
 
 ### Loan Identification
@@ -273,7 +273,7 @@ A batch acceptance alone is not a generated letter. Use the output explicitly ti
 - File must be in the loan's governed folder
 
 **If Doc Gen has empty placeholders:**
-- Follow [Doc Gen diagnosis and retry](skills/loan-origination/SKILL.md#doc-gen-troubleshooting).
+- Follow [Doc Gen diagnosis and retry](skills/loan-origination-claude/SKILL.md#doc-gen-troubleshooting).
 - Read the exact job's warnings and output file. Do not conclude that typed tags are invalid or blame the template without checking Box's recognized tags.
 
 **For Doc Gen:**

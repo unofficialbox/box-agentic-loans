@@ -47,7 +47,7 @@ If step 3 answers with a filename but no document, say `show me the document` on
 **Load the presenter skill**
 
 1. Create a Project for the demo and paste the custom instructions from DEMO-CLICKPATH check P2 into the project's instructions.
-2. Add the skill: upload `skills/loan-origination/SKILL.md` (or the `.skill` archive your maintainer sends you) under **Customize**, **Skills**.
+2. Add the skill: upload `skills/loan-origination-claude/SKILL.md` (or the `.skill` archive your maintainer sends you) under **Customize**, **Skills**.
 3. Start every rehearsal in a new chat inside that project with both connectors enabled under the **+** menu.
 
 **Optional: the Demo Setup card**

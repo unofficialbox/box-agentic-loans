@@ -12,8 +12,8 @@ class DemoPagesTests(unittest.TestCase):
                 self.assertTrue((site / GUIDE / link).is_file(), link)
             portable = (site / GUIDE / 'standalone.html').read_text()
             self.assertNotIn(REPO_URL, portable)
-            self.assertIn(PUBLIC_URL + 'skills/loan-origination/SKILL.md', portable)
-            self.assertTrue((site / 'skills/loan-origination/SKILL.md').is_file())
+            self.assertIn(PUBLIC_URL + 'skills/loan-origination-claude/SKILL.md', portable)
+            self.assertTrue((site / 'skills/loan-origination-claude/SKILL.md').is_file())
             self.assertTrue((site / '.env.sample').is_file())
             for path in ['.git', '.env', 'los-salesforce-project', 'scripts']:
                 self.assertFalse((site / path).exists(), path)

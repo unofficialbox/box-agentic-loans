@@ -1048,7 +1048,7 @@ export class LoanAgent {
     }
   }
 
-  /** The 15 Doc Gen paths (skills/loan-origination/SKILL.md), from sourced data only. */
+  /** The 15 Doc Gen paths (skills/loan-origination-claude/SKILL.md), from sourced data only. */
   private letterPayload(
     loan: LoanPackage,
     extraction: NonNullable<Session["extraction"]>,
