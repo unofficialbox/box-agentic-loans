@@ -223,16 +223,16 @@ locals {
           "enterpriseId" = ""
           "provider" = "generic"
           "providerObjectId" = "salesforce/los-loan-record"
-          "scenario" = "box-claudeforce-loans"
+          "scenario" = "box-agentic-loans"
         }
         "name" = "config_salesforce_los-loan-record"
         "provider" = "generic"
-        "scenario" = "box-claudeforce-loans"
+        "scenario" = "box-agentic-loans"
         "terraformType" = "null_resource"
         "type" = "config_file"
       }
     ]
-    "scenario" = "box-claudeforce-loans"
+    "scenario" = "box-agentic-loans"
     "version" = "1.0"
   }
 }

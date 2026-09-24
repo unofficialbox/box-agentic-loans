@@ -60,7 +60,7 @@ python3 scripts/demo_operator.py bootstrap --scenario box-salesforce-los --yes
 
 ### For Presenters
 
-**📖 [Public Demo Guide](https://unofficialbox.github.io/box-claudeforce-loans/)** - Interactive HTML storyboard with screenshots and step-by-step instructions
+**📖 [Public Demo Guide](https://unofficialbox.github.io/box-agentic-loans/)** - Interactive HTML storyboard with screenshots and step-by-step instructions
 
 **🔗 [Borrower Portal](https://agentforce-box.my.site.com/loansvforcesite/login)** - Acme Bank demo portal (sign in as Dana Whitfield)
 

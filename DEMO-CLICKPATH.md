@@ -2,7 +2,7 @@
 
 Quick reference guide for running the commercial loan origination demo. Six beats across browser and AI harness showing borrower application, AI-powered loan analysis, and automated document generation.
 
-**Full demo guide**: [Public storyboard](https://unofficialbox.github.io/box-claudeforce-loans/) with screenshots and detailed walkthrough.
+**Full demo guide**: [Public storyboard](https://unofficialbox.github.io/box-agentic-loans/) with screenshots and detailed walkthrough.
 
 ---
 
