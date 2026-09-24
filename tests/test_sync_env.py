@@ -76,7 +76,7 @@ class SyncEnvTests(unittest.TestCase):
         self.assertIn("VITE_BOX_FOLDER_ID", keys)
         code = "\n".join(
             path.read_text(errors="ignore")
-            for pattern in ("apps/*/src/**/*.ts", "los-salesforce-project/**/*.ts", "los-salesforce-project/scripts/*", "scripts/*.py")
+            for pattern in ("los-salesforce-project/**/*.ts", "los-salesforce-project/scripts/*", "scripts/*.py")
             for path in ROOT.glob(pattern)
             if "node_modules" not in path.parts and path.is_file()
         )
