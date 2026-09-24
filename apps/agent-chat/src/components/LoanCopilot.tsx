@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "@unofficialbox/box-open-elements/agent-chat";
-import "@unofficialbox/box-open-elements/run-trace";
 import type { AgentChat, AgentChatMessage } from "@unofficialbox/box-open-elements/patterns/agent-chat";
-import type { RunStep, RunTrace } from "@unofficialbox/box-open-elements";
+import type { RunStep } from "@unofficialbox/box-open-elements";
 import { STARTER_PROMPTS } from "../prompts";
 import {
   agentBaseUrl,
@@ -14,6 +13,8 @@ import {
   type TurnSummary,
 } from "../transport";
 import { ApiInspector } from "./ApiInspector";
+import { applyChatTheme } from "./chatTheme";
+import { TurnActivity } from "./TurnActivity";
 import "./LoanCopilot.css";
 
 const newSessionId = () => `session-${Date.now().toString(36)}`;
@@ -48,7 +49,6 @@ export function LoanCopilot({ loan }: { loan?: string }) {
   const [loanContext, setLoanContext] = useState<LoanContext | null>(null);
 
   const chatRef = useRef<AgentChat>(null);
-  const traceRef = useRef<RunTrace>(null);
 
   useEffect(() => {
     transport.onTurnStart = () => {
@@ -86,6 +86,7 @@ export function LoanCopilot({ loan }: { loan?: string }) {
       return;
     }
     chat.transport = transport;
+    applyChatTheme(chat);
 
     // Follow new content (streamed text, an approval card) to the bottom, but only
     // while the officer hasn't scrolled up to read history. Intent comes from what
@@ -169,12 +170,6 @@ export function LoanCopilot({ loan }: { loan?: string }) {
     };
   }, [transport]);
 
-  useEffect(() => {
-    if (traceRef.current) {
-      traceRef.current.steps = steps;
-    }
-  }, [steps]);
-
   const ask = useCallback((prompt: string) => {
     void chatRef.current?.send(prompt);
   }, []);
@@ -193,8 +188,9 @@ export function LoanCopilot({ loan }: { loan?: string }) {
   const baseUrl = agentBaseUrl();
   const started = messages.length > 0;
   const shownLoan = isDemo ? DEMO_LOAN : (loanContext ?? (loan ? { loanId: loan } : null));
-  const chips = started ? (nextOptions ?? []) : [];
-  const doneCount = todos.filter(todo => todo.status === "completed").length;
+  const awaitingApproval = messages.some(message => message.proposals.some(proposal => !proposal.decision));
+  // Nothing competes with a waiting approval: next steps appear once it is decided.
+  const chips = started && !awaitingApproval ? (nextOptions ?? []) : [];
 
   return (
     <div className="copilot">
@@ -214,8 +210,15 @@ export function LoanCopilot({ loan }: { loan?: string }) {
           {shownLoan ? (
             <>
               {shownLoan.name && <span className="loan-title">{shownLoan.name}</span>}
-              <span className="pill">{shownLoan.loanId}</span>
-              {shownLoan.status && <span className="pill">{shownLoan.status}</span>}
+              <span className="loan-meta">
+                {shownLoan.loanId}
+                {shownLoan.status && (
+                  <>
+                    <span aria-hidden="true"> · </span>
+                    {shownLoan.status}
+                  </>
+                )}
+              </span>
             </>
           ) : null}
         </div>
@@ -280,40 +283,7 @@ export function LoanCopilot({ loan }: { loan?: string }) {
         </section>
 
         <aside className="rail" aria-label="Turn details">
-          {todos.length > 0 && (
-            <section className="card" aria-labelledby="plan-title">
-              <div className="card-heading">
-                <h2 className="card-title" id="plan-title">
-                  Plan
-                </h2>
-                <span className="card-count">
-                  {doneCount} of {todos.length}
-                </span>
-              </div>
-              <ol className="todos">
-                {todos.map(todo => (
-                  <li key={todo.id} className={`todo todo-${todo.status}`}>
-                    <span className="todo-mark" aria-hidden="true" />
-                    <span className="todo-text">{todo.content}</span>
-                    <span className="visually-hidden">, {todo.status.replace("_", " ")}</span>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          )}
-
-          {steps.length > 0 ? (
-            <box-run-trace ref={traceRef} heading="Decision trace" />
-          ) : (
-            <section className="card">
-              <h2 className="card-title">Decision trace</h2>
-              <p className="empty">
-                {isDemo
-                  ? "Routing is simulated in demo mode."
-                  : "Each reply shows how TypeSafe routed it, which tools ran, and what waits for your approval."}
-              </p>
-            </section>
-          )}
+          <TurnActivity todos={todos} steps={steps} awaitingApproval={awaitingApproval} isDemo={isDemo} />
         </aside>
       </main>
 

@@ -93,25 +93,29 @@
   font-weight: 700;
 }
 
+/* The loan in context: its name, then ID and status as quiet text, not boxed pills. */
 .loan-context {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
+  align-items: baseline;
+  gap: 0 var(--space-3);
   min-width: 0;
+  padding-left: var(--space-6);
+  border-left: 1px solid var(--stroke);
+}
+
+.loan-context:empty {
+  display: none;
 }
 
 .loan-title {
-  font-weight: 700;
+  font-weight: 600;
 }
 
-.pill {
-  padding: 0.125rem var(--space-3);
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--stroke);
-  font-size: 0.75rem;
+.loan-meta {
   color: var(--muted);
-  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .topbar-actions {
@@ -207,20 +211,21 @@ box-agent-chat {
   min-height: 0;
 }
 
-/* The pattern's own buttons join the page's button system. */
-box-agent-chat::part(send),
-box-agent-chat::part(stop) {
-  height: var(--control-height);
-  padding: 0 var(--space-4);
-  font-size: var(--control-font-size);
-  font-weight: var(--control-font-weight);
+/* Frame, thread and composer come from chatTheme.ts; these only size the parts. */
+box-agent-chat::part(panel) {
+  box-sizing: border-box;
+  height: 100%;
+  grid-template-rows: auto 1fr auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
-box-agent-chat::part(proposal-action) {
-  height: var(--control-height-compact);
-  padding: 0 var(--space-3);
-  font-size: var(--control-font-size);
-  font-weight: var(--control-font-weight);
+box-agent-chat::part(thread) {
+  max-block-size: none;
+  min-block-size: 0;
+  align-content: start;
 }
 
 /* The top bar names the loan, so the chat's own title is for screen readers only. */
@@ -315,27 +320,6 @@ box-agent-chat::part(title) {
   color: var(--muted);
 }
 
-box-agent-chat::part(panel) {
-  box-sizing: border-box;
-  height: 100%;
-  grid-template-rows: auto 1fr auto;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-box-agent-chat::part(thread) {
-  max-block-size: none;
-  min-block-size: 0;
-  align-content: start;
-}
-
-box-agent-chat::part(empty) {
-  border-style: solid;
-  background: var(--boe-token-surface-surface-secondary, #fbfbfb);
-}
-
 .notice {
   display: flex;
   align-items: center;
@@ -405,28 +389,6 @@ box-agent-chat::part(empty) {
   font-weight: 700;
 }
 
-/* The trace is its own card: the run-trace panel takes the card's look. */
-box-run-trace::part(panel) {
-  padding: var(--space-4);
-  border: 1px solid var(--stroke);
-  border-radius: var(--radius-4);
-  background: var(--surface);
-  box-shadow: var(--dropshadow-1);
-}
-
-/* "Details" is a text link, but it takes the same pill shape and weight as the buttons. */
-box-run-trace::part(toggle) {
-  padding: 0.125rem var(--space-2);
-  border-radius: var(--radius-pill);
-  font-size: 0.75rem;
-  font-weight: var(--control-font-weight);
-}
-
-box-run-trace::part(heading) {
-  font-size: 0.9375rem;
-  font-weight: 700;
-}
-
 .card-count,
 .card-hint,
 .empty {
@@ -435,68 +397,206 @@ box-run-trace::part(heading) {
   color: var(--muted);
 }
 
-/* Plan: Box AI's to-do list for the turn. */
-.todos {
-  display: grid;
+/* ── The turn at a glance ─────────────────────────────────── */
+
+.activity {
+  gap: var(--space-3);
+}
+
+.activity-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
   gap: var(--space-2);
+}
+
+.activity-summary {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.activity-summary-active {
+  color: var(--brand);
+}
+
+.activity-summary-approval {
+  color: color-mix(in srgb, var(--warning) 55%, var(--text));
+  font-weight: 600;
+}
+
+.activity-summary-failed {
+  color: color-mix(in srgb, var(--danger) 80%, var(--text));
+  font-weight: 600;
+}
+
+.activity-list {
+  display: grid;
+  gap: var(--space-3);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.todo {
+.activity-item {
   display: grid;
-  grid-template-columns: 1rem 1fr;
+  grid-template-columns: 1rem minmax(0, 1fr) auto;
   align-items: start;
-  gap: var(--space-2);
+  gap: var(--space-3);
   font-size: 0.8125rem;
+  line-height: 1.25rem;
 }
 
-.todo-mark {
-  width: 1rem;
-  height: 1rem;
+.activity-item .status-icon {
   margin-top: 0.125rem;
-  border-radius: 50%;
-  border: 1.5px solid var(--stroke);
-  box-sizing: border-box;
 }
 
-.todo-in_progress .todo-mark {
-  border: 2px solid transparent;
-  background:
-    linear-gradient(var(--surface), var(--surface)) padding-box,
-    var(--box-ai) border-box;
-  animation: todo-spin 1.2s linear infinite;
-}
-
-.todo-in_progress .todo-text {
-  font-weight: 700;
-}
-
-.todo-completed .todo-mark {
-  border: 0;
-  background: var(--success)
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-    center / 100% no-repeat;
-}
-
-.todo-completed .todo-text,
-.todo-skipped .todo-text {
+.activity-item-done .activity-text,
+.activity-item-skipped .activity-text {
   color: var(--muted);
 }
 
-.todo-skipped .todo-text {
+.activity-item-skipped .activity-text {
   text-decoration: line-through;
 }
 
-@keyframes todo-spin {
+.activity-item-active .activity-text {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.activity-steps {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--stroke);
+}
+
+.activity-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: var(--space-2);
+  height: var(--control-height-compact);
+  margin-left: calc(-1 * var(--space-2));
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--control-font-size);
+  font-weight: var(--control-font-weight);
+  cursor: pointer;
+}
+
+.activity-toggle:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.activity-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.activity-chevron {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+
+.activity-toggle[aria-expanded="true"] .activity-chevron {
+  transform: rotate(45deg);
+}
+
+.activity-list-steps .activity-text {
+  display: grid;
+}
+
+.activity-source {
+  color: var(--muted);
+}
+
+.activity-action {
+  overflow-wrap: anywhere;
+}
+
+.activity-detail {
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.activity-time {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* One status glyph family (StatusIcon.tsx), same 16px circle everywhere. */
+.status-icon {
+  flex: none;
+  display: block;
+}
+
+.status-ring {
+  fill: none;
+  stroke: var(--stroke);
+  stroke-width: 1.5;
+}
+
+.status-ring-dashed {
+  stroke-dasharray: 2.5 2.5;
+}
+
+.status-arc {
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  transform-origin: 8px 8px;
+  animation: status-spin 0.9s linear infinite;
+}
+
+.status-fill {
+  fill: var(--muted);
+}
+
+.status-icon-done .status-fill {
+  fill: var(--success);
+}
+
+.status-icon-warning .status-fill {
+  fill: var(--warning);
+}
+
+.status-icon-failed .status-fill {
+  fill: var(--danger);
+}
+
+.status-mark {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@keyframes status-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .todo-in_progress .todo-mark {
+  .status-arc {
     animation: none;
   }
 }
@@ -553,5 +653,7 @@ box-run-trace::part(heading) {
   .loan-context {
     order: 3;
     flex-basis: 100%;
+    padding-left: 0;
+    border-left: 0;
   }
 }

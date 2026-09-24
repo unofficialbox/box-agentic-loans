@@ -6,8 +6,16 @@ A loan officer's chat for the Harborview demo. It is built on the [box-open-elem
 - a welcome state before the first message: what the copilot does, and four starter cards (from `src/prompts.ts`, which follows Box AI's prompt structure)
 - after each reply, the agent's next steps as "Next" chips inside the chat card, under the composer; none while an approval is waiting
 - the thread follows new messages and approval cards to the bottom, and stops following while you scroll up to read
-- a side rail with the turn's **plan** (like Box AI's to-do list) and its **decision trace** (`<box-run-trace>`: routing, tool calls, approval gates)
+- a side rail card, **This turn**: the plan (always visible) and the steps (routing, tool calls, approval holds; collapsed by default, with the step in flight shown while it runs), under one summary ("Working", "Waiting for your approval", "Done · 1.2 s"). Every state uses one 16px status icon family (`StatusIcon.tsx`).
 - in live mode, the **API inspector** (below)
+
+`<box-agent-chat>` gets the page's treatment through a stylesheet adopted into its shadow root (`src/components/chatTheme.ts`): agent replies as plain text, the officer's messages as soft bubbles, one framed composer, and approval cards labelled "Needs your approval" with Approve as the primary action. Parts alone can't tell a user message from an agent one, or Approve from Reject, so those rules key on the element's own `data-role`, `data-action` and `data-decision` attributes.
+
+Design principles, from Apple's HIG (clarity, deference, consistency), Linear's calmer 2025 interface (little colour, colour for meaning), and agentic-UX practice (plans visible, steps collapsed until wanted, approval before any write):
+- the conversation is the content; chrome defers to it
+- colour means something: blue for the primary action, amber for "waiting on you", green for done, red for failed
+- one button system (pill, 13px semibold, 32px or 28px) and one status icon family
+- nothing competes with an action awaiting approval
 
 Styling follows Box's Blueprint design system:
 - Lato at 14px on a 20px line
