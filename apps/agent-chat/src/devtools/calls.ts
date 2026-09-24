@@ -1,5 +1,5 @@
 /**
- * The loan agent's API call log (GET /calls/stream), as the inspector shows it.
+ * The loan agent's API call log (GET /calls/stream), as the API console shows it.
  * Mirrors apps/loan-agent/src/callLog.ts; credentials are redacted server-side.
  */
 

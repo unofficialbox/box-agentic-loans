@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyCallEvent, isFailure, matchesFilter, type CallEntry } from "../src/inspector/calls";
+import { applyCallEvent, isFailure, matchesFilter, type CallEntry } from "../src/devtools/calls";
 
 const entry = (id: string, overrides: Partial<CallEntry> = {}): CallEntry => ({
   id,
@@ -61,7 +61,7 @@ describe("copy formats", () => {
   });
 
   it("formats the request and the response like HTTP messages", async () => {
-    const { formatRequest, formatResponse } = await import("../src/inspector/calls");
+    const { formatRequest, formatResponse } = await import("../src/devtools/calls");
     expect(formatRequest(call)).toBe(
       'POST https://api.example/mcp\nauthorization: Bearer [redacted]\ncontent-type: application/json\n\n{\n  "method": "tools/call"\n}'
     );
@@ -69,7 +69,7 @@ describe("copy formats", () => {
   });
 
   it("copies both under a line naming the call", async () => {
-    const { formatCall, formatRequest, formatResponse } = await import("../src/inspector/calls");
+    const { formatCall, formatRequest, formatResponse } = await import("../src/devtools/calls");
     const both = formatCall(call);
     expect(both.split("\n")[0]).toBe("tools/call getLoanPackage · Salesforce · 42 ms · 1970-01-01T00:00:00.000Z");
     expect(both).toContain(`── Request ──\n${formatRequest(call)}`);
@@ -77,7 +77,7 @@ describe("copy formats", () => {
   });
 
   it("says when there is no response yet, or none at all", async () => {
-    const { formatResponse } = await import("../src/inspector/calls");
+    const { formatResponse } = await import("../src/devtools/calls");
     expect(formatResponse(entry("p", { pending: true, status: 0, responseBody: "x" }))).toBe("(waiting for the response)");
     expect(formatResponse(entry("e", { status: 0, statusText: "", error: "connect ECONNREFUSED" }))).toBe(
       "(no response)\nerror: connect ECONNREFUSED"
