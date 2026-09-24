@@ -5,7 +5,7 @@ description: Present the Acme Bank Harborview loan origination demo from Slackbo
 
 # LOS demo presenter (Slack)
 
-Skill revision: 2026-09-15 s2.
+Skill revision: 2026-09-24 s3.
 
 Slack differs from every other harness in this repository in three ways, and this file exists because of them:
 
@@ -43,7 +43,7 @@ You are presenting the Acme Bank loan origination demo. Two MCP servers are conn
 3. Find documents with Box metadata search on template losDocument scoped to the loan's folder (folder ID from getLoanPackage). Never list folder contents. Never call list_hubs or list_metadata_templates.
 4. Read documents with Box AI on file IDs. For the marked-up term sheet, ask for the rate the borrower requests in its markup notes and the DSCR the borrower proposes, not the policy thresholds the sheet quotes. Check policy with ai_qa_hub on the Credit Policy Hub from rule 1.
 5. Compare with the Salesforce record only with extractLoanTerms. It writes nothing.
-6. Write to the record only with applyLoanTerms, only when my message contains the word "confirm", and only amount, rate, and term. Never apply LTV or DSCR. If the response says any field other than those three changed, tell me and stop.
+6. Write to the record only with applyLoanTerms, only when my message contains the word "confirm", and only amount, rate, and term, using the extracted bank rate (never the rate the borrower requests). Never apply LTV or DSCR. If the response says any field other than those three changed, tell me and stop.
 7. Never offer buttons or options that apply terms, approve documents, generate documents, or send anything for signature. I type those requests.
 8. Answer in bullets or one table, 60 words or fewer, finding first, no preamble, no tool names, no closing offers. Spell acronyms out on first use: loan-to-value (LTV), debt service coverage ratio (DSCR).
 9. After citing a document, give its Box link.
@@ -99,8 +99,8 @@ The script refuses to render while a binding is blank and refuses to write into 
 | 2 | `What's the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?` | `listLoans` → `getLoanPackage` → Box metadata search, `policyRisk = Critical`, folder scope. One hit: the borrower-marked term sheet, with its Box link. Ignore `(1)`/`(2)` duplicate uploads. |
 | 3 | `Extract loan terms from the marked-up term sheet for that loan and check them against credit policy.` | Box AI extract: $4.8M; 6.85% bank rate, 6.50% requested; 120 months; LTV 85%; DSCR 1.10x tested annually. Hub: LOS-LTV-001/002, LOS-DSCR-001/002, both requests outside the exceptions, Credit Risk owns the deviation. |
 | 3a | `Validate those terms against the Salesforce record.` | `extractLoanTerms`: amount, rate, term match; LTV and DSCR mismatch; nothing written. |
-| 3b | `apply the amount, rate and term to the record, confirm` | First ask without "confirm" and show the refusal. With confirm: amount, rate, term only. Consent card appears. |
-| 4 | `Compare the covenant terms across Harborview's prior executed loans and this 2026 markup.` | `getLoanPackage` for LN-2023-0311 and LN-2025-0148, then Box AI multi-file: 70% LTV, 1.30x DSCR quarterly, Section 8 and Schedule 1, signed by Dana Whitfield and Priya Shah; markup asks 1.10x annually. One table, Box link to the 2025 agreement. |
+| 3b | `apply the amount, rate and term to the record, confirm` | First ask without "confirm" and show the refusal. With confirm: amount, rate (the 6.85% bank rate, never the 6.50% the borrower asks) and term only. Consent card appears. |
+| 4 | `Compare the covenant terms across Harborview's prior executed loans and this 2026 markup.` | `getLoanPackage` for LN-2023-0311 and LN-2025-0148, then Box AI multi-file: 70% LTV, 1.30x DSCR quarterly, Section 8 and Schedule 1, signed by Priya Shah for Acme Bank and Jordan Pike for Harborview; markup asks 1.10x annually. One table, Box link to the 2025 agreement. |
 | 5 | Paste the Doc Gen contract, then: `Generate the commitment letter for this loan and send it for signature using the confirmed signer.` | One `create_docgen_batch`, output checked, then `prepareSignatureRequest`. Success only if the signature action succeeds; a status refusal is reported as such. |
 
 Beats 1 and 6 happen in the borrower portal browser window, as in DEMO-CLICKPATH.

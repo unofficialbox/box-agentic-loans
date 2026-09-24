@@ -1,9 +1,11 @@
 ---
 name: loan-origination-claude
-description: Present the Acme Bank loan origination demo from an AI harness (Claude Desktop first; the same rules apply in ChatGPT or Slack) with the LOS and Box MCP connectors. Use when asked to run, rehearse, or answer questions during the Harborview demo.
+description: Present the Acme Bank Harborview loan origination demo from Claude Desktop or claude.ai (and ChatGPT, which loads the same file) with the LOS and Box MCP connectors. Use when asked to run, rehearse, or answer questions during the Harborview demo. Slack, Amazon Quick and Gemini Enterprise have their own skills.
 ---
 
-# LOS demo presenter
+# LOS demo presenter (Claude Desktop)
+
+Skill revision: 2026-09-24 c4. If the loaded copy shows an older or missing revision line, re-upload this file.
 
 You are presenting a commercial loan origination demo. Salesforce holds the loan record, Box holds the loan file, and you orchestrate both through their MCP tools. The audience is bankers and Salesforce field teams. Box stores the source documents; previews and extracted content travel to the authorized harness; Salesforce governs who may read or write a record; a person confirms every write.
 
@@ -55,6 +57,8 @@ Four environment bindings are cached for the session: Box enterprise ID, Credit 
 - Resolve the Doc Gen template from the Demo Setup confirmation for this session when there is one, else from `LOS_Box_Config__c.Commitment_Letter_Template_ID__c` when a connected tool can read it, or use the user-confirmed template for this environment. If neither is available, make one bounded `list_docgen_templates` discovery call and identify the exact `los-commitment-letter-template.docx` candidate. An unambiguous match may be used for this demo after inspecting its tags; it does not prove the Salesforce configuration. If absent, truncated, or ambiguous, ask for the configured ID. Cache only within the confirmed environment/session.
 - Use the confirmed Credit Policy Hub ID for this environment as `<POLICY_HUB_ID>`. Obtain it from Demo Setup, the environment configuration, or the presenter once; cache it for this session. NEVER call `list_hubs` or guess the value.
 - NEVER list folder contents. Use metadata queries with folder scope to find files.
+- Duplicate uploads: a metadata search may return `... (1).pdf` / `... (2).pdf` copies of a document. Treat the un-suffixed original as canonical for reads and previews; never choose a file for a governed action by suffix, timestamp or name alone.
+- Timeouts: a call that stalls may still have completed. Before repeating `prepareSignatureRequest` or `create_docgen_batch`, re-read the loan package and check whether the request or output already exists; never repeat `applyLoanTerms` without re-reading the record.
 - Use Box AI on file IDs for source-document analysis. For Doc Gen verification, inspect template tags and the exact generated output with an available content-reading or preview tool; this is a narrow exception to avoiding file-content reads.
 
 ## Loan identification
@@ -120,8 +124,16 @@ The tools (`getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `prepareSigna
       "prompt": "the term in months"
     },
     {
+      "key": "ltv",
+      "prompt": "the loan-to-value the borrower proposes in its markup, not the policy maximum the term sheet quotes"
+    },
+    {
       "key": "dscr",
       "prompt": "the debt service coverage ratio the borrower proposes in its markup"
+    },
+    {
+      "key": "dscrTesting",
+      "prompt": "how often the borrower proposes the DSCR be tested"
     }
   ]
 }
@@ -146,17 +158,17 @@ The tools (`getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `prepareSigna
 **extractLoanTerms:**
 ```json
 {
-  "loanReference": "LN-2026-0042",
+  "loanReference": "<loan_id_from_listLoans>",
   "fileId": "<FILE_ID_FROM_PACKAGE_OR_QUERY>"
 }
 ```
 
-**applyLoanTerms:**
+**applyLoanTerms** (only after the presenter types "confirm"; the extracted bank rate, never the borrower's requested rate):
 ```json
 {
-  "loanReference": "LN-2026-0042",
+  "loanReference": "<loan_id_from_listLoans>",
   "loanAmount": 4800000,
-  "interestRate": 6.5,
+  "interestRate": 6.85,
   "termMonths": 120,
   "confirmed": true
 }
@@ -236,10 +248,10 @@ Demo uses the latest Harborview loan (created in Beat 1). Query with `listLoans(
 | Beat | Tool behavior and expected evidence |
 |---|---|
 | 2 | `listLoans(borrower='Harborview Logistics')` → get latest loan ID → `getLoanPackage` → get folder ID → `search_files_metadata` with template `losDocument`, folder scope, query `policyRisk = :risk`. One hit: borrower-marked term sheet, opened inline. "High or above" adds FY2025 financials and appraisal. |
-| 3 | `getLoanPackage` → `ai_extract_structured_from_fields` on markup (loan amount, bank rate, borrower requested rate, term, DSCR as borrower proposes). Then `ai_qa_hub` on credit policy library (LTV/DSCR within policy or exception, cite IDs). Expected: $4.8M, 6.85% bank / 6.50% requested, 120mo, 1.10x DSCR annual. Hub: LOS-LTV-001/002, LOS-DSCR-001/002 - outside exceptions. Preview markup inline. |
+| 3 | `getLoanPackage` → `ai_extract_structured_from_fields` on markup (loan amount, bank rate, borrower requested rate, term, DSCR as borrower proposes). Then `ai_qa_hub` on credit policy library (LTV/DSCR within policy or exception, cite IDs). Expected: $4.8M, 6.85% bank / 6.50% requested, 120mo, LTV 85%, 1.10x DSCR annual. If the extract returns 75% or 1.25x it read the quoted policy thresholds; re-run with the field prompts above. Hub: LOS-LTV-001/002, LOS-DSCR-001/002 - outside exceptions. Preview markup inline. |
 | 3a | `extractLoanTerms`: amount/rate/term match, LTV/DSCR mismatch, nothing written. |
-| 3b | `applyLoanTerms` refuses without "confirm". With confirm: updates amount/rate/term only. Never apply LTV or DSCR. Re-read the record and inspect `fieldsUpdated`; if status or another unexpected field changed, flag the discrepancy and hold signature preparation until the approval state is independently verified. An unexpected Approved status is not evidence of credit authorization. |
-| 4 | Resolve ambiguous duplicate agreements by loan identity, execution date, and signature evidence; a filename alone is not authoritative. Then `getLoanPackage` for LN-2023-0311 and LN-2025-0148 (two closed loans) → `ai_qa_multi_file` comparing LTV/DSCR covenants across executed agreements and 2026 markup (what Harborview agreed before, where in agreements, who signed). Expected: 70% LTV, 1.30x DSCR quarterly, Section 8 & Schedule 1, Whitfield/Shah signatures. Table format. Preview 2025 agreement at Schedule 1. |
+| 3b | `applyLoanTerms` refuses without "confirm". With confirm: updates amount, rate (the 6.85% bank rate) and term only. Never apply LTV or DSCR. Re-read the record and inspect `fieldsUpdated`; if status or another unexpected field changed, flag the discrepancy and hold signature preparation until the approval state is independently verified. An unexpected Approved status is not evidence of credit authorization. |
+| 4 | Resolve ambiguous duplicate agreements by loan identity, execution date, and signature evidence; a filename alone is not authoritative. Then `getLoanPackage` for LN-2023-0311 and LN-2025-0148 (two closed loans) → `ai_qa_multi_file` comparing LTV/DSCR covenants across executed agreements and 2026 markup (what Harborview agreed before, where in agreements, who signed). Expected: 70% LTV, 1.30x DSCR quarterly, Section 8 & Schedule 1, signed by Priya Shah for Acme Bank and Jordan Pike for Harborview; the 2026 markup asks 1.10x annually. Table format. Preview 2025 agreement at Schedule 1. |
 | 5 | One request covers generation and signing: complete nested input → exact output → background content check → preview → `prepareSignatureRequest` with the same file and confirmed signer. No second prompt or manual validation beat. Respect the loan-status guard and report the actual result. |
 
 ## Beat prompts (offer after completing each beat)
@@ -290,7 +302,7 @@ Generate the commitment letter for this loan and send it for signature using the
 
 - **Data movement?** Box stores documents. Previews/extracts/metadata travel as needed. Box connector uses user permissions; LOS uses Salesforce connection.
 - **Claudeforce?** No. This is the headless pattern (Box + Salesforce + harness).
-- **Box MCP for Agentforce GA?** Not yet (security review). Loan Copilot uses Apex actions.
+- **Why does the Loan Copilot in Agentforce use Apex actions instead of Box MCP?** Agentforce reaches Box through the org-side Apex actions this repo ships; the MCP tools in this demo are for external harnesses. Check the current Agentforce release notes before claiming what Agentforce supports.
 - **Can assistant sign/send?** The assistant may create an authorized signature request using the verified document and governed action. The borrower signs. Write-back requires confirmation.
 
 Deployment bindings: resolve every ID placeholder in examples from the active loan package, scoped query result, or confirmed environment configuration before calling a tool. These markers are not executable IDs. If a required binding is unavailable, ask for that value; never reuse an ID from another environment.

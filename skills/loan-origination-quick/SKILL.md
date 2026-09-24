@@ -8,7 +8,7 @@ trigger: run the Harborview loan origination demo
 
 # LOS demo presenter (Amazon Quick)
 
-Skill revision: 2026-09-11 r3. If the skill panel in Quick shows an older or missing revision line, or any reference to a separate Doc Gen guide, the loaded copy is stale: re-import this file and publish.
+Skill revision: 2026-09-24 r4. If the skill panel in Quick shows an older or missing revision line, or any reference to a separate Doc Gen guide, the loaded copy is stale: re-import this file and publish.
 
 You are presenting a commercial loan origination demo from Amazon Quick. Salesforce holds the loan record, Box holds the loan file, and you orchestrate both through their connector tools. The audience is bankers and Salesforce field teams. A person confirms every write.
 
@@ -185,9 +185,9 @@ All LOS tools accept a loan ID or a Salesforce record ID. For the demo, query `l
 { "loanReference": "<loan_id>", "fileId": "<FILE_ID_FROM_PACKAGE>" }
 ```
 
-**applyLoanTerms** (only after the presenter types "confirm"; amount, rate, and term only):
+**applyLoanTerms** (only after the presenter types "confirm"; amount, rate, and term only, with the extracted bank rate, never the borrower's requested rate):
 ```json
-{ "loanReference": "<loan_id>", "loanAmount": 4800000, "interestRate": 6.5, "termMonths": 120, "confirmed": true }
+{ "loanReference": "<loan_id>", "loanAmount": 4800000, "interestRate": 6.85, "termMonths": 120, "confirmed": true }
 ```
 
 ## Doc Gen and signature handoff
@@ -251,8 +251,8 @@ The borrower-portal steps happen in the browser window. The stages below run her
 | Latest loan / critical risk | Using the cached loan and folder IDs → `search_files_metadata` with `losDocument`, folder scope, `policyRisk = :risk`. The canonical hit is the borrower-marked term sheet (ignore `(1)`/`(2)` duplicates), previewed inline. Do not answer with `extractLoanTerms`. |
 | Extract & policy check | `ai_extract_structured_from_fields` on the markup with the prompts above → `ai_qa_hub` on the policy library. Expected: $4.8M; 6.85% bank rate, 6.50% requested; 120 months; LTV 85%; DSCR 1.10x tested annually. If the extract returns 75% or 1.25x, it read the quoted policy thresholds; re-run with the prompts above. Hub: LOS-LTV-001/002 and LOS-DSCR-001/002, both requests outside the exceptions, Credit Risk owns the deviation. Preview the markup. |
 | Validate vs. record | `extractLoanTerms` on the markup: amount, rate, and term match the record; LTV and DSCR mismatch; nothing written. |
-| Apply (confirmed) | Without "confirm", `applyLoanTerms` refuses; show that. With "confirm", it updates amount, rate, and term only. Re-read the record and inspect `fieldsUpdated`. |
-| Covenant precedent | Fetch the two prior-loan packages for LN-2023-0311 and LN-2025-0148 **in parallel** (independent reads; issue both `getLoanPackage` calls together) → `ai_qa_multi_file` across the two executed agreements and the 2026 markup. Expected: 70% LTV and 1.30x DSCR tested quarterly, Section 8 and Schedule 1, signed by Dana Whitfield and Priya Shah; the 2026 markup asks 1.10x annually. One table, then preview the 2025 agreement at Schedule 1. Do not answer with `extractLoanTerms`. |
+| Apply (confirmed) | Without "confirm", `applyLoanTerms` refuses; show that. With "confirm", it updates amount, rate (the 6.85% bank rate) and term only. Re-read the record and inspect `fieldsUpdated`. |
+| Covenant precedent | Fetch the two prior-loan packages for LN-2023-0311 and LN-2025-0148 **in parallel** (independent reads; issue both `getLoanPackage` calls together) → `ai_qa_multi_file` across the two executed agreements and the 2026 markup. Expected: 70% LTV and 1.30x DSCR tested quarterly, Section 8 and Schedule 1, signed by Priya Shah for Acme Bank and Jordan Pike for Harborview; the 2026 markup asks 1.10x annually. One table, then preview the 2025 agreement at Schedule 1. Do not answer with `extractLoanTerms`. |
 | Generate & sign | One request: complete nested Doc Gen input → exact output → background check → preview → `prepareSignatureRequest` with the same file and the confirmed signer. Respect the loan-status guard and report the actual result. |
 
 ## Suggested prompts (offer after completing each stage, with no beat numbering)
