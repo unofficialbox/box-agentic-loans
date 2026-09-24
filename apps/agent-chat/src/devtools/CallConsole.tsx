@@ -212,6 +212,7 @@ export function CallConsole({ baseUrl }: { baseUrl: string }) {
                     </td>
                     <td className="console-callcell" title={`${entry.method} ${entry.url}`}>
                       <span className="console-method">{entry.method}</span> {entry.summary}
+                      {entry.rpcError && <span className="console-rpc-error"> · tool error</span>}
                     </td>
                     <td className="console-num">{entry.pending ? "…" : entry.durationMs}</td>
                   </tr>
@@ -352,6 +353,11 @@ function CallDetail({ entry }: { entry: CallEntry }) {
         <code>{entry.url}</code>
       </p>
       {entry.error && <p className="console-error">{entry.error}</p>}
+      {entry.rpcError && (
+        <p className="console-error">
+          The tool call failed, although HTTP says {entry.status}: {entry.rpcError}
+        </p>
+      )}
       {entry.expected && <p className="console-note">{entry.expected}</p>}
       <Block key={`${entry.id}-rqh`} label="Request headers" text={JSON.stringify(entry.requestHeaders, null, 2)} />
       <Block key={`${entry.id}-rqb`} label="Request body" text={entry.requestBody} />

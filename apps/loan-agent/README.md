@@ -14,7 +14,7 @@ The backend for the Loan Copilot chat ([apps/agent-chat](../agent-chat/README.md
 3. **Run a fixed tool program per intent** against the LOS and Box MCP servers, then check the results against **credit policy in code** (`src/policy.ts`, which encodes `sample-data/policies/approved`). Every finding cites its policy ID.
 4. **Render from templates.** The reply text, citations, and approval cards are built in code. A reply is a sentence or two; its detail (terms, policy checks, comparisons, loan lists, flagged documents) goes out as structured `block` events that the chat renders as tables and status rows.
 
-Writes (`applyLoanTerms`, `create_docgen_batch`, `prepareSignatureRequest`) never run during a turn. They become approval cards and run only from `POST /actions/resolve`, once, and only for the same session.
+Writes (`applyLoanTerms`, `create_docgen_batch`, `prepareSignatureRequest`) never run during a turn. They become approval cards and run only from `POST /actions/resolve`, once, and only for the same session. The resolved proposal says `outcome: "done"` if the write ran and `outcome: "failed"` (with the reason as its note) if it didn't; a failed Doc Gen records no letter, so signature stays unavailable.
 
 ## What is and isn't deterministic
 
@@ -78,7 +78,7 @@ The agent records every HTTP call it makes and serves, for debugging and demos:
 Each entry has the method, URL, status, timing, and request and response headers and bodies. Credentials are removed before anything is stored: `Authorization` headers, cookies, and any `access_token`, `refresh_token`, `client_secret`, `code` or `code_verifier` value. The log is in memory only (the latest 300 calls) and is cleared on restart.
 
 Where to see it:
-- **Terminal:** one line per finished call, e.g. `[api] 200    41ms  box        POST   tools/call search_files_metadata`.
+- **Terminal:** one line per finished call, e.g. `[api] 200    41ms  box        POST   tools/call search_files_metadata`. An MCP call that answers 200 but fails inside (a JSON-RPC error, or a tool result with `isError: true`) ends with `(tool error: …)` and counts as a failure in the console.
 - **Chat UI:** the **API console** on the chat's developer tools page (`/devtools.html`, linked as **API calls ↗** from the copilot's chats sidebar in live mode).
 - **HTTP:** `GET /calls` (JSON, newest first), `GET /calls/stream` (server-sent events: a snapshot, then each call), `DELETE /calls` (clear).
 

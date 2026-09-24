@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AgentChatMessage } from "@unofficialbox/box-open-elements/patterns/agent-chat";
-import { chatTitle, collectApprovals, collectSources, proposalAnchor, summarize } from "../src/conversations";
+import { approvalState, chatTitle, collectApprovals, collectSources, proposalAnchor, summarize } from "../src/conversations";
 
 const user = (body: string): AgentChatMessage => ({ id: `u-${body}`, role: "user", body, status: "complete", citations: [], proposals: [] });
 const agent = (extra: Partial<AgentChatMessage>): AgentChatMessage => ({
@@ -45,6 +45,16 @@ describe("conversation summary", () => {
       { id: "p1", title: "Apply 3 terms", decision: "approved" },
       { id: "p2", title: "Generate letter" },
     ]);
+  });
+
+  it("keeps an approval that then failed apart from one that ran", () => {
+    const failed = agent({ proposals: [{ id: "p3", title: "Generate letter", decision: "approved", outcome: "failed" } as never] });
+    expect(collectApprovals([failed])).toEqual([{ id: "p3", title: "Generate letter", decision: "approved", outcome: "failed" }]);
+    expect(approvalState({})).toBe("waiting");
+    expect(approvalState({ decision: "approved", outcome: "done" })).toBe("approved");
+    expect(approvalState({ decision: "approved" })).toBe("approved");
+    expect(approvalState({ decision: "approved", outcome: "failed" })).toBe("failed");
+    expect(approvalState({ decision: "rejected" })).toBe("rejected");
   });
 
   it("summarizes for the sidebars", () => {

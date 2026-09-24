@@ -200,6 +200,11 @@
   word-break: break-word;
 }
 
+.console-rpc-error {
+  color: color-mix(in srgb, var(--danger) 80%, var(--text));
+  font-weight: 600;
+}
+
 .console-table .console-method {
   color: var(--muted);
 }

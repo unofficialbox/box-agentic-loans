@@ -1,4 +1,5 @@
 import type {
+  AgentActionProposal,
   AgentChatTransport,
   AgentStreamEvent,
 } from "@unofficialbox/box-open-elements/patterns/agent-chat";
@@ -50,6 +51,22 @@ export interface PromptOption {
 export interface OptionsEvent {
   kind: "options";
   options: PromptOption[];
+}
+
+/** Once approved, whether the action then ran ("done") or failed ("failed"). */
+export type ActionOutcome = "done" | "failed";
+
+/**
+ * The proposal a loan-agent backend returns from /actions/resolve: the
+ * pattern's proposal plus `outcome`, because approving an action and the
+ * action succeeding are two different facts.
+ */
+export type LoanProposal = AgentActionProposal & { outcome?: ActionOutcome };
+
+/** The outcome a resolved proposal carries, if the backend reported one. */
+export function proposalOutcome(proposal: AgentActionProposal): ActionOutcome | undefined {
+  const outcome = (proposal as LoanProposal).outcome;
+  return outcome === "done" || outcome === "failed" ? outcome : undefined;
 }
 
 /** How a result row reads at a glance. */

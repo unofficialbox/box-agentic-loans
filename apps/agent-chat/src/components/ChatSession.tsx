@@ -4,7 +4,7 @@ import type { TurnDetails } from "../activity";
 import { summarize, type ChatSummary } from "../conversations";
 import { greeting } from "../greeting";
 import { STARTER_PROMPTS } from "../prompts";
-import { createTransport, type LoanContext } from "../transport";
+import { createTransport, proposalOutcome, type LoanContext } from "../transport";
 import { useConversation, type Conversation } from "../useConversation";
 import { ApprovalCard } from "./ApprovalCard";
 import { Composer } from "./Composer";
@@ -153,7 +153,18 @@ function Thread({
   const lastAgent = [...messages].reverse().find(message => message.role === "agent");
   const awaitingApproval = messages.some(message => message.proposals.some(proposal => !proposal.decision));
   // Nothing competes with a waiting approval: next steps appear once it is decided.
-  const next = !streaming && !awaitingApproval && lastAgent ? (turns[lastAgent.id]?.options ?? []) : [];
+  // After an approved action that failed, the suggested next steps assume it
+  // worked; offer to run the same request again instead.
+  const failedAction = lastAgent?.proposals.some(proposal => proposalOutcome(proposal) === "failed");
+  const retry = failedAction && lastAgent ? previousUserMessage(messages, lastAgent.id) : undefined;
+  const next =
+    streaming || awaitingApproval || !lastAgent
+      ? []
+      : failedAction
+        ? retry
+          ? [{ label: "Try again", prompt: retry }]
+          : []
+        : (turns[lastAgent.id]?.options ?? []);
 
   return (
     <div className="thread-wrap">
@@ -201,6 +212,15 @@ function Thread({
       )}
     </div>
   );
+}
+
+/** The officer's message that the given agent reply answered. */
+function previousUserMessage(messages: AgentChatMessage[], agentId: string): string | undefined {
+  const at = messages.findIndex(message => message.id === agentId);
+  for (let i = at - 1; i >= 0; i--) {
+    if (messages[i].role === "user") return messages[i].body;
+  }
+  return undefined;
 }
 
 function Welcome({ onAsk }: { onAsk: (prompt: string) => void }) {

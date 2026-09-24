@@ -29,6 +29,12 @@ export interface CallEntry {
   error?: string;
   /** Set when a non-2xx answer is normal for this call, e.g. a 405 the MCP spec allows. */
   expected?: string;
+  /**
+   * An MCP failure inside a successful HTTP response: a JSON-RPC `error`, or a
+   * tool result with `isError: true` (e.g. Box answering 200 with "Item not
+   * found"). The call failed even though the status is 200.
+   */
+  rpcError?: string;
 }
 
 export type CallEvent = { type: "call"; entry: CallEntry } | { type: "clear" };
@@ -243,7 +249,16 @@ export function loggedFetch(log: CallLog, service: CallService, inner: FetchLike
       .clone()
       .text()
       .then(
-        text => log.put({ ...entry, pending: false, durationMs: Date.now() - started, responseBody: redactBody(text, contentType) }),
+        text => {
+          const failure = service === "salesforce" || service === "box" ? rpcError(text, contentType) : undefined;
+          log.put({
+            ...entry,
+            pending: false,
+            durationMs: Date.now() - started,
+            responseBody: redactBody(text, contentType),
+            ...(failure ? { rpcError: failure } : {}),
+          });
+        },
         error => log.put({ ...entry, pending: false, durationMs: Date.now() - started, error: `Reading the body failed: ${error}` })
       );
     return response;
@@ -254,7 +269,49 @@ export function loggedFetch(log: CallLog, service: CallService, inner: FetchLike
 export function formatCallLine(entry: CallEntry): string {
   const status = entry.error && !entry.status ? "ERR" : String(entry.status);
   const line = `[api] ${status.padEnd(3)} ${`${entry.durationMs}ms`.padStart(7)}  ${entry.service.padEnd(10)} ${entry.method.padEnd(6)} ${entry.summary}`;
+  if (entry.rpcError) return `${line} (tool error: ${entry.rpcError})`;
   return entry.expected ? `${line} (expected)` : line;
+}
+
+/**
+ * The failure an MCP response carries in its body, if any: a JSON-RPC error's
+ * message, or the text of a tool result marked isError. Reads plain JSON and
+ * event-stream `data:` lines alike.
+ */
+export function rpcError(text: string, contentType: string): string | undefined {
+  const payloads = /event-stream/i.test(contentType)
+    ? text
+        .split("\n")
+        .filter(line => line.startsWith("data:"))
+        .map(line => line.slice(5).trim())
+    : [text];
+  for (const payload of payloads) {
+    let message: unknown;
+    try {
+      message = JSON.parse(payload);
+    } catch {
+      continue;
+    }
+    for (const item of Array.isArray(message) ? message : [message]) {
+      if (!item || typeof item !== "object") continue;
+      const { error, result } = item as {
+        error?: { message?: unknown; code?: unknown };
+        result?: { isError?: unknown; content?: Array<{ type?: unknown; text?: unknown }> };
+      };
+      if (error) {
+        return typeof error.message === "string" && error.message ? error.message : `JSON-RPC error ${String(error.code ?? "")}`.trim();
+      }
+      if (result?.isError === true) {
+        const detail = (result.content ?? [])
+          .filter(part => part?.type === "text" && typeof part.text === "string")
+          .map(part => part.text as string)
+          .join(" ")
+          .trim();
+        return detail || "Tool reported an error";
+      }
+    }
+  }
+  return undefined;
 }
 
 /**

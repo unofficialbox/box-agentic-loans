@@ -1,6 +1,14 @@
-import { proposalAnchor, type ChatSummary } from "../conversations";
+import { approvalState, proposalAnchor, type ApprovalState, type ChatSummary } from "../conversations";
+import type { StatusKind } from "./StatusIcon";
 import { FileIcon, PolicyIcon } from "./icons";
 import { StatusIcon } from "./StatusIcon";
+
+const APPROVAL_ROW: Record<ApprovalState, { kind: StatusKind; label: string }> = {
+  waiting: { kind: "pending", label: "Needs your approval" },
+  approved: { kind: "done", label: "Approved" },
+  failed: { kind: "failed", label: "Approved, but it didn't complete" },
+  rejected: { kind: "skipped", label: "Rejected" },
+};
 
 /**
  * The right sidebar: what this conversation is about and what it produced,
@@ -60,15 +68,14 @@ export function DetailsPanel({ sessionId, summary }: { sessionId: string; summar
         {approvals.length ? (
           <ul className="details-list">
             {approvals.map(approval => {
-              const kind = approval.decision === "approved" ? "done" : approval.decision === "rejected" ? "skipped" : "pending";
-              const state = approval.decision === "approved" ? "Approved" : approval.decision === "rejected" ? "Rejected" : "Needs your approval";
+              const { kind, label } = APPROVAL_ROW[approvalState(approval)];
               return (
                 <li key={approval.id}>
                   <button type="button" className="details-row" onClick={() => jumpTo(approval.id)}>
                     <StatusIcon kind={kind} />
                     <span className="details-row-text">
                       <span className="details-row-title">{approval.title}</span>
-                      <span className="details-row-meta">{state}</span>
+                      <span className={`details-row-meta ${kind === "failed" ? "is-failed" : ""}`}>{label}</span>
                     </span>
                   </button>
                 </li>

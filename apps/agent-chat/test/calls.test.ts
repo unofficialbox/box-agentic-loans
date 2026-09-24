@@ -44,6 +44,10 @@ describe("filters", () => {
     expect(matchesFilter(entry("ok"), "all")).toBe(true);
     const allowed = entry("g", { method: "GET", status: 405, expected: "Expected: no event stream" });
     expect(isFailure(allowed)).toBe(false);
+    // A 200 whose MCP result says isError is still a failed call.
+    const toolError = entry("t", { status: 200, rpcError: "Item not found" });
+    expect(isFailure(toolError)).toBe(true);
+    expect(matchesFilter(toolError, "errors")).toBe(true);
     expect(matchesFilter(allowed, "errors")).toBe(false);
   });
 });
