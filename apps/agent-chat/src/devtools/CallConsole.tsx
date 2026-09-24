@@ -10,55 +10,52 @@ import {
   matchesFilter,
   type CallEntry,
   type CallFilter,
-} from "../inspector/calls";
-import "./ApiInspector.css";
+} from "./calls";
+import "./CallConsole.css";
 
-const OPEN_KEY = "loan-copilot.inspector-open";
-const HEIGHT_KEY = "loan-copilot.inspector-height";
-const RATIO_KEY = "loan-copilot.inspector-ratio";
+const RATIO_KEY = "loan-copilot.devtools-ratio";
 
 /** Per-viewer layout only; the page works without storage. */
-function readNumber(key: string, fallback: number): number {
+function readRatio(): number {
   try {
-    const value = Number(localStorage.getItem(key));
-    return localStorage.getItem(key) !== null && Number.isFinite(value) ? value : fallback;
+    const stored = localStorage.getItem(RATIO_KEY);
+    const value = Number(stored);
+    return stored !== null && Number.isFinite(value) ? value : 0.42;
   } catch {
-    return fallback;
+    return 0.42;
   }
 }
 
-function write(key: string, value: string) {
+function writeRatio(value: number) {
   try {
-    localStorage.setItem(key, value);
+    localStorage.setItem(RATIO_KEY, value.toFixed(3));
   } catch {
-    // Storage unavailable: the layout just isn't remembered.
+    // Storage unavailable: the split just isn't remembered.
   }
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-const maxHeight = () => Math.round(window.innerHeight * 0.75);
 
 /** "outdated": the agent answers but has no call log, i.e. it runs older code and needs a restart. */
 type Connection = "connecting" | "live" | "reconnecting" | "outdated";
 
 const CONNECTION_LABELS: Record<Connection, string> = {
-  connecting: "connecting",
-  live: "live",
-  reconnecting: "reconnecting",
-  outdated: "restart the loan agent",
+  connecting: "Connecting",
+  live: "Live",
+  reconnecting: "Reconnecting",
+  outdated: "Restart the loan agent",
 };
 
 /**
- * Bottom "API inspector" shelf, after box-cmis-lab's HTTP inspector: every call
- * the loan agent makes to TypeSafe, Salesforce and Box (and each chat request it
- * serves), live from GET /calls/stream, with headers and bodies.
+ * The API console, on its own page and out of the product UI (layout after
+ * box-cmis-lab's HTTP inspector): every call the loan agent makes to
+ * TypeSafe, Salesforce and Box, and each chat request it serves, live from
+ * GET /calls/stream, with headers and bodies.
  */
-export function ApiInspector({ baseUrl }: { baseUrl: string }) {
+export function CallConsole({ baseUrl }: { baseUrl: string }) {
   const [entries, setEntries] = useState<CallEntry[]>([]);
   const [connection, setConnection] = useState<Connection>("connecting");
-  const [open, setOpen] = useState(() => readNumber(OPEN_KEY, 0) === 1);
-  const [height, setHeight] = useState(() => clamp(readNumber(HEIGHT_KEY, 320), 180, maxHeight()));
-  const [ratio, setRatio] = useState(() => clamp(readNumber(RATIO_KEY, 0.42), 0.2, 0.8));
+  const [ratio, setRatio] = useState(() => clamp(readRatio(), 0.2, 0.8));
   const [filter, setFilter] = useState<CallFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const splitRef = useRef<HTMLDivElement>(null);
@@ -106,37 +103,16 @@ export function ApiInspector({ baseUrl }: { baseUrl: string }) {
   const selected = shown.find(entry => entry.id === selectedId) ?? shown[0] ?? null;
   const failures = useMemo(() => entries.filter(isFailure).length, [entries]);
 
-  const toggle = () =>
-    setOpen(current => {
-      write(OPEN_KEY, current ? "0" : "1");
-      return !current;
-    });
-
   const clearLog = useCallback(() => {
     setSelectedId(null);
     void fetch(`${baseUrl}/calls`, { method: "DELETE" }).catch(() => setEntries([]));
   }, [baseUrl]);
 
-  // Drag the title bar to resize the shelf.
-  const onBarPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (!open || event.button !== 0 || (event.target as HTMLElement).closest("button, select")) return;
-    const startY = event.clientY;
-    const startHeight = height;
-    const move = (moveEvent: globalThis.PointerEvent) => setHeight(clamp(startHeight + startY - moveEvent.clientY, 180, maxHeight()));
-    const up = (upEvent: globalThis.PointerEvent) => {
-      write(HEIGHT_KEY, String(Math.round(clamp(startHeight + startY - upEvent.clientY, 180, maxHeight()))));
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-  };
-
   // Drag (or arrow-key) the divider between the list and the details.
   const setSplit = (next: number) => {
     const value = clamp(next, 0.2, 0.8);
     setRatio(value);
-    write(RATIO_KEY, value.toFixed(3));
+    writeRatio(value);
   };
   const onDividerPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     const box = splitRef.current?.getBoundingClientRect();
@@ -162,112 +138,102 @@ export function ApiInspector({ baseUrl }: { baseUrl: string }) {
   };
 
   return (
-    <section
-      className={`inspector ${open ? "is-open" : ""}`}
-      aria-label="API inspector"
-      style={{ ["--inspector-height" as string]: `${height}px` }}
-    >
-      <div className="inspector-bar" onPointerDown={onBarPointerDown}>
-        <button type="button" className="inspector-toggle" aria-expanded={open} onClick={toggle}>
-          <span className="inspector-chevron" aria-hidden="true" />
-          <span className="inspector-title">API inspector</span>
-          <span className="inspector-badge">{entries.length}</span>
-          {failures > 0 && <span className="inspector-badge inspector-badge-error">{failures} failed</span>}
-        </button>
+    <section className="console" aria-label="API calls">
+      <div className="console-bar">
+        <span className="console-count">
+          {entries.length} call{entries.length === 1 ? "" : "s"}
+          {failures > 0 && <span className="console-badge-error">{failures} failed</span>}
+        </span>
         <span
-          className={`inspector-conn inspector-conn-${connection}`}
+          className={`console-conn console-conn-${connection}`}
           title={
             connection === "outdated"
               ? "The loan agent answers but has no call log: it is running older code. Pull main and restart it (npm start in apps/loan-agent)."
-              : `Call log: ${connection}`
+              : `Call log: ${CONNECTION_LABELS[connection].toLowerCase()}`
           }
         >
-          <span className="inspector-dot" aria-hidden="true" />
+          <span className="console-dot" aria-hidden="true" />
           {CONNECTION_LABELS[connection]}
         </span>
-        {open && (
-          <div className="inspector-actions">
-            <label className="inspector-filter">
-              <span className="visually-hidden">Show</span>
-              <select value={filter} onChange={event => setFilter(event.target.value as CallFilter)}>
-                {CALL_FILTERS.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button type="button" className="button" onClick={clearLog}>
-              Clear
-            </button>
-          </div>
-        )}
+        <div className="console-actions">
+          <label className="console-filter">
+            <span className="visually-hidden">Show</span>
+            <select value={filter} onChange={event => setFilter(event.target.value as CallFilter)}>
+              {CALL_FILTERS.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="button" className="button" onClick={clearLog}>
+            Clear
+          </button>
+        </div>
       </div>
 
-      {open && (
-        <div className="inspector-body" ref={splitRef} style={{ gridTemplateColumns: `${ratio}fr auto ${1 - ratio}fr` }}>
-          <div className="inspector-list">
-            {shown.length === 0 ? (
-              <p className="inspector-empty">
-                {connection === "outdated"
-                  ? `The loan agent at ${baseUrl} has no call log, so it is running code from before the inspector. Pull main, then stop it and run npm start in apps/loan-agent again.`
-                  : entries.length === 0
-                    ? "No calls yet. Ask the copilot something: its TypeSafe, Salesforce and Box calls appear here."
-                    : "No calls match this filter."}
-              </p>
-            ) : (
-              <table className="inspector-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Status</th>
-                    <th scope="col">Service</th>
-                    <th scope="col">Call</th>
-                    <th scope="col" className="inspector-num">
-                      ms
-                    </th>
+      <div className="console-body" ref={splitRef} style={{ gridTemplateColumns: `${ratio}fr auto ${1 - ratio}fr` }}>
+        <div className="console-list">
+          {shown.length === 0 ? (
+            <p className="console-empty">
+              {connection === "outdated"
+                ? `The loan agent at ${baseUrl} has no call log, so it is running code from before the console. Pull main, then stop it and run npm start in apps/loan-agent again.`
+                : entries.length === 0
+                  ? "No calls yet. Ask the copilot something: its TypeSafe, Salesforce and Box calls appear here as they happen."
+                  : "No calls match this filter."}
+            </p>
+          ) : (
+            <table className="console-table">
+              <thead>
+                <tr>
+                  <th scope="col">Status</th>
+                  <th scope="col">Service</th>
+                  <th scope="col">Call</th>
+                  <th scope="col" className="console-num">
+                    ms
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {shown.map(entry => (
+                  <tr
+                    key={entry.id}
+                    tabIndex={0}
+                    aria-selected={entry.id === selected?.id}
+                    className={isFailure(entry) ? "is-failure" : entry.expected ? "is-expected" : undefined}
+                    onClick={() => setSelectedId(entry.id)}
+                    onKeyDown={event => onRowKey(event, entry.id)}
+                  >
+                    <td className="console-status">{statusText(entry)}</td>
+                    <td>
+                      <span className="console-service">{SERVICE_LABELS[entry.service]}</span>
+                    </td>
+                    <td className="console-callcell" title={`${entry.method} ${entry.url}`}>
+                      <span className="console-method">{entry.method}</span> {entry.summary}
+                    </td>
+                    <td className="console-num">{entry.pending ? "…" : entry.durationMs}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {shown.map(entry => (
-                    <tr
-                      key={entry.id}
-                      tabIndex={0}
-                      aria-selected={entry.id === selected?.id}
-                      className={isFailure(entry) ? "is-failure" : entry.expected ? "is-expected" : undefined}
-                      onClick={() => setSelectedId(entry.id)}
-                      onKeyDown={event => onRowKey(event, entry.id)}
-                    >
-                      <td className="inspector-status">{statusText(entry)}</td>
-                      <td>
-                        <span className="inspector-service">{SERVICE_LABELS[entry.service]}</span>
-                      </td>
-                      <td className="inspector-callcell" title={`${entry.method} ${entry.url}`}>
-                        <span className="inspector-method">{entry.method}</span> {entry.summary}
-                      </td>
-                      <td className="inspector-num">{entry.pending ? "…" : entry.durationMs}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-          <div
-            className="inspector-divider"
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Resize the call list"
-            aria-valuenow={Math.round(ratio * 100)}
-            aria-valuemin={20}
-            aria-valuemax={80}
-            tabIndex={0}
-            onPointerDown={onDividerPointerDown}
-            onKeyDown={onDividerKey}
-          />
-          <div className="inspector-detail">
-            {selected ? <CallDetail entry={selected} /> : <p className="inspector-empty">Select a call.</p>}
-          </div>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
-      )}
+        <div
+          className="console-divider"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize the call list"
+          aria-valuenow={Math.round(ratio * 100)}
+          aria-valuemin={20}
+          aria-valuemax={80}
+          tabIndex={0}
+          onPointerDown={onDividerPointerDown}
+          onKeyDown={onDividerKey}
+        />
+        <div className="console-detail">
+          {selected ? <CallDetail entry={selected} /> : <p className="console-empty">Select a call.</p>}
+        </div>
+      </div>
     </section>
   );
 }
@@ -325,7 +291,7 @@ function CopyButtons({ entry }: { entry: CallEntry }) {
   };
 
   return (
-    <div className="inspector-copy" role="group" aria-label="Copy this call">
+    <div className="console-copy" role="group" aria-label="Copy this call">
       {(Object.keys(COPY_LABELS) as CopyPart[]).map(part => (
         <button key={part} type="button" className="button button-compact" onClick={() => copy(part)}>
           {done?.part === part ? (done.ok ? "Copied" : "Copy failed") : COPY_LABELS[part]}
@@ -341,30 +307,30 @@ function CopyButtons({ entry }: { entry: CallEntry }) {
 function CallDetail({ entry }: { entry: CallEntry }) {
   return (
     <>
-      <p className="inspector-call">{entry.summary}</p>
-      <div className="inspector-detail-head">
-        <div className="inspector-summary">
-          <span className="inspector-pill">{entry.method}</span>
+      <p className="console-call">{entry.summary}</p>
+      <div className="console-detail-head">
+        <div className="console-summary">
+          <span className="console-pill">{entry.method}</span>
           <span
-            className={`inspector-pill ${
-              isFailure(entry) ? "inspector-pill-error" : entry.expected ? "inspector-pill-neutral" : "inspector-pill-ok"
+            className={`console-pill ${
+              isFailure(entry) ? "console-pill-error" : entry.expected ? "console-pill-neutral" : "console-pill-ok"
             }`}
           >
             {statusText(entry)}
             {entry.statusText ? ` ${entry.statusText}` : ""}
           </span>
-          <span className="inspector-service">{SERVICE_LABELS[entry.service]}</span>
-          <span className="inspector-meta">
+          <span className="console-service">{SERVICE_LABELS[entry.service]}</span>
+          <span className="console-meta">
             {entry.pending ? "in progress" : `${entry.durationMs} ms`} · {new Date(entry.startedAt).toLocaleTimeString()}
           </span>
         </div>
         <CopyButtons entry={entry} />
       </div>
-      <p className="inspector-url">
+      <p className="console-url">
         <code>{entry.url}</code>
       </p>
-      {entry.error && <p className="inspector-error">{entry.error}</p>}
-      {entry.expected && <p className="inspector-note">{entry.expected}</p>}
+      {entry.error && <p className="console-error">{entry.error}</p>}
+      {entry.expected && <p className="console-note">{entry.expected}</p>}
       <Block key={`${entry.id}-rqh`} label="Request headers" text={JSON.stringify(entry.requestHeaders, null, 2)} />
       <Block key={`${entry.id}-rqb`} label="Request body" text={entry.requestBody} />
       <Block key={`${entry.id}-rsh`} label="Response headers" text={JSON.stringify(entry.responseHeaders, null, 2)} />
@@ -407,14 +373,14 @@ function Block({ label, text, placeholder = "(empty)" }: { label: string; text?:
 
   const name = label.toLowerCase();
   return (
-    <div className="inspector-block">
-      <div className="inspector-block-label">{label}</div>
-      <div className="inspector-code-wrap">
-        <pre className="inspector-code">{text || placeholder}</pre>
+    <div className="console-block">
+      <div className="console-block-label">{label}</div>
+      <div className="console-code-wrap">
+        <pre className="console-code">{text || placeholder}</pre>
         {text && (
           <button
             type="button"
-            className={`inspector-code-copy ${state === "copied" ? "is-copied" : ""}`}
+            className={`console-code-copy ${state === "copied" ? "is-copied" : ""}`}
             aria-label={`Copy ${name}`}
             title={state === "copied" ? "Copied" : state === "failed" ? "Copy failed" : `Copy ${name}`}
             onClick={copy}

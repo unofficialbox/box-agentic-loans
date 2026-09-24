@@ -4,8 +4,9 @@ import type { TurnDetails } from "../activity";
 import { STARTER_PROMPTS } from "../prompts";
 import { agentBaseUrl, createTransport, type LoanContext } from "../transport";
 import { useConversation, type Conversation } from "../useConversation";
-import { ApiInspector } from "./ApiInspector";
+import { greeting } from "../greeting";
 import { ApprovalCard } from "./ApprovalCard";
+import { BrandMark } from "./BrandMark";
 import { Composer } from "./Composer";
 import { ResultBlocks, documentIds } from "./ResultBlocks";
 import { TurnProgress } from "./TurnProgress";
@@ -49,17 +50,11 @@ export function LoanCopilot({ loan }: { loan?: string }) {
   return (
     <div className="copilot">
       <header className="topbar">
-        <div className="brand">
-          <span className="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-              <path d="M12 2.5l2.1 6.4 6.4 2.1-6.4 2.1L12 19.5l-2.1-6.4L3.5 11l6.4-2.1z" />
-            </svg>
-          </span>
-          <div>
-            <p className="brand-name">Acme Bank</p>
-            <p className="brand-product">Loan Copilot</p>
-          </div>
-        </div>
+        <p className="wordmark">
+          <BrandMark />
+          <span className="wordmark-bank">Acme Bank</span>
+          <span className="wordmark-product">Loan Copilot</span>
+        </p>
         <div className="loan-context" aria-label="Current loan">
           {shownLoan ? (
             <>
@@ -82,6 +77,14 @@ export function LoanCopilot({ loan }: { loan?: string }) {
               Demo script
             </span>
           )}
+          {!isDemo && baseUrl && (
+            // Developer tooling lives on its own page, opened beside the copilot.
+            <a className="button button-quiet" href="devtools.html" target="loan-copilot-devtools" title="Open the API console in a new tab">
+              API calls
+              <span aria-hidden="true">↗</span>
+              <span className="visually-hidden"> (opens in a new tab)</span>
+            </a>
+          )}
           <button type="button" className="button" onClick={newChat}>
             New chat
           </button>
@@ -95,7 +98,6 @@ export function LoanCopilot({ loan }: { loan?: string }) {
         </div>
       </main>
 
-      {!isDemo && baseUrl && <ApiInspector baseUrl={baseUrl} />}
     </div>
   );
 }
@@ -200,17 +202,23 @@ function Thread({ conversation, onAsk }: { conversation: Conversation; onAsk: (p
 function Welcome({ onAsk }: { onAsk: (prompt: string) => void }) {
   return (
     <div className="welcome">
-      <h1 className="welcome-title">Ask about a loan</h1>
+      <h1 className="welcome-title">
+        {greeting()}.<span className="welcome-question"> Which loan are we working on?</span>
+      </h1>
       <p className="welcome-lede">
-        Name a borrower or a loan ID. The copilot reads Box and Salesforce, checks credit policy, and asks before it changes
-        anything.
+        Name a borrower or a loan ID. The copilot reads the loan's documents in Box and its record in Salesforce, checks
+        them against credit policy, and asks before it changes anything.
       </p>
-      <ul className="starters" aria-label="Suggested prompts">
+      <h2 className="starters-title">Start with</h2>
+      <ul className="starters">
         {STARTER_PROMPTS.map(prompt => (
           <li key={prompt.id}>
             <button type="button" className="starter" onClick={() => onAsk(prompt.content)}>
               <span className="starter-title">{prompt.title}</span>
               <span className="starter-description">{prompt.description}</span>
+              <span className="starter-go" aria-hidden="true">
+                →
+              </span>
             </button>
           </li>
         ))}

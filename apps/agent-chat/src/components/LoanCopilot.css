@@ -1,53 +1,12 @@
-/* The Loan Copilot page. Values follow Box's Blueprint design
-   system (the web app's own tokens): 4px spacing scale, radii, drop shadows,
-   and the Box AI gradient. Colours come from the Box tokens applied to <html>
-   (light or dark), so nothing here is hard-coded per theme. */
+/* The Loan Copilot page. Tokens, buttons and status glyphs come from
+   styles/base.css. */
 
 .copilot {
-  /* Blueprint primitives */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.25rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
-  --radius-1: 0.25rem;
-  --radius-2: 0.375rem;
-  --radius-3: 0.5rem;
-  --radius-4: 0.75rem;
-  --radius-pill: 2rem;
-  --dropshadow-1: 0 0 0.5rem 0 #0000000d;
-  --dropshadow-3: 0 0.25rem 0.75rem 0 #0000001a;
-  --box-ai: linear-gradient(135deg, #fe03dc 0%, #2784fa 100%);
-  --box-ai-hover: linear-gradient(135deg, #cb02b0 0%, #1f6ac8 100%);
-
-  /* Semantic roles over the Box tokens */
-  --brand: var(--boe-token-surface-surface-brand, #0061d5);
-  --surface: var(--boe-token-surface-surface, #ffffff);
-  --surface-hover: var(--boe-token-surface-surface-hover, #f4f4f4);
-  --selected: var(--boe-token-surface-item-surface-selected, #f2f7fd);
-  --stroke: var(--boe-token-stroke-stroke, #e8e8e8);
-  --text: var(--boe-token-text-text, #222222);
-  --muted: var(--boe-token-text-text-secondary, #6f6f6f);
-  --success: var(--boe-token-surface-status-surface-success, #26c281);
-  --warning: var(--boe-token-surface-status-surface-inprogress, #f5b31b);
-  --danger: var(--boe-token-surface-status-surface-error, #ed3757);
-  --focus: 0 0 0 3px color-mix(in srgb, #2486fc 35%, transparent);
-
-  /* One button system: pill-shaped, 13px semibold, in two heights. */
-  --control-height: 2rem;
-  --control-height-compact: 1.75rem;
-  --control-font-size: 0.8125rem;
-  --control-font-weight: 600;
-
   /* One reading measure for the conversation: about 75 characters of reply text. */
   --measure: 44rem;
 
   display: grid;
-  /* The workspace keeps a usable height: with the inspector open the page
-     scrolls rather than squeezing the conversation. */
-  grid-template-rows: auto minmax(30rem, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
   height: 100%;
   background: var(--surface);
 }
@@ -64,36 +23,8 @@
   border-bottom: 1px solid var(--stroke);
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-/* The Box AI mark: the product gradient behind a sparkle. */
-.brand-mark {
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: var(--radius-3);
-  background: var(--box-ai);
-  color: #ffffff;
-}
-
-.brand-name,
-.brand-product {
+.topbar .wordmark {
   margin: 0;
-  line-height: 1.2;
-}
-
-.brand-name {
-  font-size: 0.75rem;
-  color: var(--muted);
-}
-
-.brand-product {
-  font-weight: 700;
 }
 
 /* The loan in context: its name, then ID and status as quiet text, not boxed pills. */
@@ -138,75 +69,6 @@
   color: color-mix(in srgb, var(--warning) 45%, var(--text));
 }
 
-.button,
-.chip,
-.icon-button {
-  appearance: none;
-  cursor: pointer;
-  color: inherit;
-  font: inherit;
-}
-
-.button,
-.chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  height: var(--control-height);
-  padding: 0 var(--space-4);
-  border: 1px solid var(--stroke);
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  font-size: var(--control-font-size);
-  font-weight: var(--control-font-weight);
-  line-height: 1;
-  white-space: nowrap;
-}
-
-/* Compact: controls inside dense content (suggestions, the inspector). */
-.chip,
-.button-compact {
-  height: var(--control-height-compact);
-  padding: 0 var(--space-3);
-}
-
-.button:hover,
-.chip:hover,
-.icon-button:hover {
-  background: var(--surface-hover);
-}
-
-.button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-/* The one filled button: the action the officer is being asked to take. */
-.button-primary {
-  border-color: transparent;
-  background: var(--brand);
-  color: #fff;
-}
-
-.button-primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--brand) 85%, #000);
-}
-
-.icon-button {
-  border: 0;
-  border-radius: var(--radius-1);
-  background: transparent;
-  font-size: 1.125rem;
-  line-height: 1;
-  padding: var(--space-1) var(--space-2);
-}
-
-:is(.button, .chip, .icon-button):focus-visible {
-  outline: none;
-  box-shadow: var(--focus);
-}
-
 /* ── Workspace: one centred column ─────────────────────────
    The thread scrolls at the page's edge; its content keeps a reading measure.
    The composer docks under it at the same width. */
@@ -249,65 +111,84 @@
   padding: 0 var(--space-6) var(--space-5);
 }
 
-/* ── Welcome ─────────────────────────────────────────────── */
+/* ── Welcome ─────────────────────────────────────────────
+   A greeting in the bank's voice and a short list of ways in, set on the same
+   left edge as the conversation that replaces it (not a centred card grid). */
 
 .welcome {
   display: grid;
-  align-content: center;
-  justify-items: center;
-  gap: var(--space-3);
-  padding: var(--space-8) 0 var(--space-4);
-  text-align: center;
+  align-content: start;
+  gap: var(--space-4);
+  padding: 12vh 0 var(--space-4);
 }
 
 .welcome-title {
   margin: 0;
-  font-size: 1.5rem;
-  line-height: 2rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.welcome-question {
+  color: var(--muted);
 }
 
 .welcome-lede {
-  max-width: 34rem;
+  max-width: 36rem;
   margin: 0;
   color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.starters-title {
+  margin: var(--space-6) 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .starters {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
-  width: 100%;
-  margin: var(--space-4) 0 0;
+  margin: 0;
   padding: 0;
+  border-top: 1px solid var(--stroke);
   list-style: none;
+}
+
+.starters li {
+  border-bottom: 1px solid var(--stroke);
 }
 
 .starter {
   display: grid;
-  align-content: start;
-  gap: var(--space-1);
+  grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-6);
   width: 100%;
-  height: 100%;
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--stroke);
-  border-radius: var(--radius-4);
-  background: var(--surface);
+  padding: var(--space-3) var(--space-2);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: inherit;
   font: inherit;
   text-align: start;
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition: background-color 0.15s ease;
 }
 
 .starter:hover {
-  border-color: color-mix(in srgb, var(--brand) 40%, var(--stroke));
   background: var(--surface-hover);
 }
 
 .starter:focus-visible {
   outline: none;
+  border-radius: var(--radius-2);
   box-shadow: var(--focus);
 }
 
@@ -316,8 +197,18 @@
 }
 
 .starter-description {
-  font-size: 0.8125rem;
   color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.starter-go {
+  color: var(--muted);
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.starter:hover .starter-go {
+  color: var(--brand);
+  transform: translateX(2px);
 }
 
 /* ── Messages ────────────────────────────────────────────── */
@@ -1047,77 +938,6 @@ a.source:focus-visible {
   }
 }
 
-/* One status glyph family (StatusIcon.tsx), same 16px circle everywhere. */
-.status-icon {
-  flex: none;
-  display: block;
-}
-
-.status-ring {
-  fill: none;
-  stroke: var(--stroke);
-  stroke-width: 1.5;
-}
-
-.status-ring-dashed {
-  stroke-dasharray: 2.5 2.5;
-}
-
-.status-arc {
-  fill: none;
-  stroke: var(--brand);
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  transform-origin: 8px 8px;
-  animation: status-spin 0.9s linear infinite;
-}
-
-.status-fill {
-  fill: var(--muted);
-}
-
-.status-icon-done .status-fill {
-  fill: var(--success);
-}
-
-.status-icon-warning .status-fill {
-  fill: var(--warning);
-}
-
-.status-icon-failed .status-fill {
-  fill: var(--danger);
-}
-
-.status-mark {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-@keyframes status-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .status-arc {
-    animation: none;
-  }
-}
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-
 /* ── Narrow screens ──────────────────────────────────────── */
 
 @media (max-width: 56rem) {
@@ -1135,11 +955,19 @@ a.source:focus-visible {
   }
 
   .welcome {
-    padding: var(--space-4) 0 var(--space-2);
+    padding: var(--space-6) 0 var(--space-2);
   }
 
-  .starters {
-    grid-template-columns: 1fr;
+  .welcome-title {
+    font-size: 1.625rem;
+  }
+
+  .starter {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .starter-description {
+    grid-row: 2;
   }
 
   .fact {
