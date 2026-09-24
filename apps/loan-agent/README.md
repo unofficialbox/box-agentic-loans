@@ -21,6 +21,15 @@ Signature follows `LosSendForSignature`:
 - **`prepared` is the only success signal.** A refusal (status, a file outside the loan folder, a Box Sign error) comes back as `outcome: "failed"` with Salesforce's summary.
 - **One request per letter.** Once a request exists for a letter, even one Box Sign created without a signing URL, the agent won't create a second.
 
+## Box AI calls: parallel and reused
+
+Box AI is the slow part of a turn, so the agent runs each call as early as it can and runs it only once per conversation:
+- **Extraction** runs `extractLoanTerms` and the term sheet's covenant extraction at the same time.
+- **Covenant comparison** reads every prior loan's package and extracts each agreement's covenants at the same time, alongside the current markup's.
+- **Per conversation**, each file's covenants and each prior loan's package are kept. Comparing again, or comparing after an extraction, makes no new Box AI call; the trace says "reused from earlier in this conversation". A failed call isn't kept, so asking again retries it.
+
+Results, citations and trace step numbers still come out in the same order however the calls finish, so the replay test stays byte-identical.
+
 ## What is and isn't deterministic
 
 | Step | Deterministic? |
@@ -65,7 +74,7 @@ The fixes it gives:
 
 ```bash
 npm install
-npm test                 # 95 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
+npm test                 # 98 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
 npm start                # http://LOAN_AGENT_HOST:LOAN_AGENT_PORT
 
 # Without MCP access, TypeSafe still decides but the tools are seeded fixtures:
