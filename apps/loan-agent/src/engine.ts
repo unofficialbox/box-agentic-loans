@@ -70,6 +70,13 @@ interface Session {
   letter?: { loanId: string; fileId: string; fileName: string };
   /** The Box Sign request made for the letter, so a second one is never created for it. */
   signature?: { fileId: string; requestId: string };
+  /**
+   * Box AI covenant extractions by file, and prior loans' packages by loan ID,
+   * for this conversation: comparing again, or after a new extraction, reuses
+   * them instead of paying for the same Box AI call twice.
+   */
+  covenants?: Map<string, Promise<CovenantFields>>;
+  packages?: Map<string, Promise<LoanPackage>>;
 }
 
 /** What an approved action reports: a note, and anything it produced worth linking. */
@@ -544,22 +551,28 @@ export class LoanAgent {
       return;
     }
 
+    // Every prior loan, and this markup, at once: none depends on another.
+    const [priorResults, current] = await Promise.all([
+      Promise.all(
+        prior.map(async row => {
+          const pkg = await this.priorPackage(turn, session, row.loanId);
+          const agreement = pkg.documents.find(doc => filePattern("loan agreement")!.test(doc.name));
+          return agreement ? { row, pkg, agreement, covenants: await this.covenantsFor(turn, session, agreement) } : { row, pkg };
+        })
+      ),
+      this.currentCovenants(turn, session, loan),
+    ]);
+    // Results and citations in loan order, whatever order the calls finished in.
     const precedent: NonNullable<Session["precedent"]> = [];
     const missing: string[] = [];
-    for (const row of prior) {
-      const pkg = await turn.step("LOS · getLoanPackage", row.loanId, () => this.tools.getLoanPackage(row.loanId));
-      const agreement = pkg.documents.find(doc => filePattern("loan agreement")!.test(doc.name));
-      if (!agreement) {
-        missing.push(row.loanId);
+    for (const entry of priorResults) {
+      if (!("agreement" in entry) || !entry.agreement || !entry.covenants) {
+        missing.push(entry.row.loanId);
         continue;
       }
-      const covenants = await turn.step("Box AI · extract covenants", agreement.name, () =>
-        this.tools.extractCovenants(agreement.fileId)
-      );
-      precedent.push({ loanId: row.loanId, file: agreement, covenants });
-      turn.cite(documentCitation(pkg, agreement.fileId, agreement.name));
+      precedent.push({ loanId: entry.row.loanId, file: entry.agreement, covenants: entry.covenants });
+      turn.cite(documentCitation(entry.pkg, entry.agreement.fileId, entry.agreement.name));
     }
-    const current = await this.currentCovenants(turn, session, loan);
     turn.advance();
     session.precedent = precedent;
 
@@ -860,15 +873,42 @@ export class LoanAgent {
     if (cached && cached.file.fileId === file.fileId) {
       return cached;
     }
-    const result = await turn.step("LOS · extractLoanTerms", file.name, () => this.tools.extractLoanTerms(loanId, file.fileId));
+    // Terms and covenants come from separate Box AI calls on the same file: run them together.
+    const [result, covenants] = await Promise.all([
+      turn.step("LOS · extractLoanTerms", file.name, () => this.tools.extractLoanTerms(loanId, file.fileId)),
+      filePattern("term sheet")!.test(file.name) ? this.covenantsFor(turn, session, file) : Promise.resolve(undefined),
+    ]);
     if (!result.extracted) {
       throw new UserFacingError(`Box AI could not extract terms from ${file.name}.`);
     }
-    const covenants = filePattern("term sheet")!.test(file.name)
-      ? await turn.step("Box AI · extract covenants", file.name, () => this.tools.extractCovenants(file.fileId))
-      : undefined;
     session.extraction = { loanId, file, result, covenants };
     return session.extraction;
+  }
+
+  /** A file's covenants, extracted once per conversation (a failed call isn't kept, so it can be retried). */
+  private covenantsFor(turn: Turn, session: Session, file: LoanDocument): Promise<CovenantFields> {
+    session.covenants ??= new Map();
+    let pending = session.covenants.get(file.fileId);
+    if (!pending) {
+      pending = turn.step("Box AI · extract covenants", file.name, () => this.tools.extractCovenants(file.fileId));
+      session.covenants.set(file.fileId, pending);
+      pending.catch(() => session.covenants?.delete(file.fileId));
+    } else {
+      turn.note("Box AI · extract covenants", `${file.name} · reused from earlier in this conversation`, "succeeded");
+    }
+    return pending;
+  }
+
+  /** A prior loan's package, read once per conversation. */
+  private priorPackage(turn: Turn, session: Session, loanId: string): Promise<LoanPackage> {
+    session.packages ??= new Map();
+    let pending = session.packages.get(loanId);
+    if (!pending) {
+      pending = turn.step("LOS · getLoanPackage", loanId, () => this.tools.getLoanPackage(loanId));
+      session.packages.set(loanId, pending);
+      pending.catch(() => session.packages?.delete(loanId));
+    }
+    return pending;
   }
 
   private async currentCovenants(turn: Turn, session: Session, loan: LoanPackage) {

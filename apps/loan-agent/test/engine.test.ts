@@ -456,6 +456,89 @@ describe("document types for risk search hits", () => {
   });
 });
 
+describe("extraction speed", () => {
+  /** Fixtures that take time, count calls, and record how many ran at once. */
+  function slowTools() {
+    const tools = new FixtureToolGateway();
+    const calls: string[] = [];
+    let running = 0;
+    let peak = 0;
+    const slow = <A extends unknown[], R>(name: string, fn: (...args: A) => Promise<R>, ms: (args: A) => number) =>
+      async (...args: A) => {
+        calls.push(name);
+        running++;
+        peak = Math.max(peak, running);
+        await new Promise(resolve => setTimeout(resolve, ms(args)));
+        try {
+          return await fn(...args);
+        } finally {
+          running--;
+        }
+      };
+    // The older loan's agreement answers last, to show results don't follow finishing order.
+    tools.extractCovenants = slow("extractCovenants", tools.extractCovenants.bind(tools), ([fileId]) => (fileId === "900005" ? 30 : 10));
+    tools.extractLoanTerms = slow("extractLoanTerms", tools.extractLoanTerms.bind(tools), () => 10);
+    return { tools, calls, peak: () => peak };
+  }
+
+  function agentWith(tools: FixtureToolGateway) {
+    const decider = new StubDecider(Object.fromEntries(CLICKPATH));
+    return new LoanAgent(tools, decider, { high: 0.85, medium: 0.5, now: () => new Date("2026-09-23T12:00:00Z") });
+  }
+
+  it("extracts the terms and covenants of a term sheet together", async () => {
+    const slow = slowTools();
+    const agent = agentWith(slow.tools);
+    await send(agent, CLICKPATH[0][0]);
+    await send(agent, CLICKPATH[1][0]);
+    expect(slow.calls).toEqual(["extractLoanTerms", "extractCovenants"]);
+    expect(slow.peak()).toBe(2);
+  });
+
+  it("reads every prior loan at once, keeps loan order, and reuses covenants already extracted", async () => {
+    const slow = slowTools();
+    const agent = agentWith(slow.tools);
+    await send(agent, CLICKPATH[0][0]);
+    await send(agent, CLICKPATH[1][0]);
+    slow.calls.length = 0;
+    const turn = await send(agent, CLICKPATH[4][0]);
+    // Two prior agreements; the markup's covenants came with the extraction.
+    expect(slow.calls).toEqual(["extractCovenants", "extractCovenants"]);
+    expect(slow.peak()).toBe(2);
+    expect(turn.trace).toContain("Box AI · extract covenants:succeeded");
+    const agreements = turn.citations.filter(label => label.includes("loan-agreement"));
+    expect(agreements).toEqual([...agreements].sort());
+    const [table] = turn.blocks;
+    expect(table).toMatchObject({ columns: ["Covenant", "LN-2023-0311", "LN-2025-0148", "This markup"] });
+
+    slow.calls.length = 0;
+    const again = await send(agent, CLICKPATH[4][0]);
+    expect(slow.calls).toEqual([]);
+    expect(again.blocks).toEqual(turn.blocks);
+    expect(again.events.some(event => event.kind === "trace" && event.step.description?.includes("reused from earlier"))).toBe(true);
+  });
+
+  it("does not keep a failed extraction, so asking again retries it", async () => {
+    const tools = new FixtureToolGateway();
+    const extract = tools.extractCovenants.bind(tools);
+    let failures = 1;
+    let calls = 0;
+    tools.extractCovenants = async (fileId: string) => {
+      calls++;
+      if (failures-- > 0) throw new Error("Box AI is busy");
+      return extract(fileId);
+    };
+    const agent = agentWith(tools);
+    await send(agent, CLICKPATH[0][0]);
+    const failed = await send(agent, CLICKPATH[4][0]);
+    expect(failed.trace).toContain("Box AI · extract covenants:failed");
+    const before = calls;
+    const retried = await send(agent, CLICKPATH[4][0]);
+    expect(calls).toBeGreaterThan(before);
+    expect(retried.blocks[0]).toMatchObject({ type: "table" });
+  });
+});
+
 describe("determinism", () => {
   it("replays the clickpath to byte-identical output", async () => {
     const run = async () => {
