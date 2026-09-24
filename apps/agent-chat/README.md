@@ -27,13 +27,13 @@ The loan comes from `?recordId=` or `?loan=` in the URL when the page is opened 
 
 ## API inspector
 
-In live mode a dark **API inspector** shelf sits at the bottom of the page, modelled on the HTTP inspector in [box-cmis-lab](https://github.com/unofficialbox/box-cmis-lab). It shows every call the loan agent makes to TypeSafe, Salesforce and Box, plus each chat request, live from the backend's `GET /calls/stream`:
+In live mode an **API inspector** shelf sits at the bottom of the page, in the page's own Box theme colours (light or dark), laid out like the HTTP inspector in [box-cmis-lab](https://github.com/unofficialbox/box-cmis-lab). It shows every call the loan agent makes to TypeSafe, Salesforce and Box, plus each chat request, live from the backend's `GET /calls/stream`:
 - the list shows status, service, the call (e.g. `tools/call getLoanPackage`) and time in ms, newest first
 - select a row to see its URL and its request and response headers and bodies
 - filter by service or errors, or **Clear** the log (`DELETE /calls`)
 - drag the title bar to resize the shelf, and the divider to resize the list; both sizes and the open/closed state are remembered in this browser
 
-Credentials are redacted by the backend before they reach the page. The demo script makes no API calls, so the shelf is hidden in demo mode.
+If the agent answers but has no call log (it is still running code from before the inspector), the shelf says to restart it instead of retrying. Credentials are redacted by the backend before they reach the page. The demo script makes no API calls, so the shelf is hidden in demo mode.
 
 ## Backend contract
 
