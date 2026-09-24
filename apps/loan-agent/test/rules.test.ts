@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { parseExtraction, parseLoanList, parseLoanPackage } from "../src/los.js";
-import { checkDscr, checkGuaranty, checkLtv, checkRate, money } from "../src/policy.js";
+import { checkDscr, checkGuaranty, checkGuarantyExclusions, checkLtv, checkRate, evaluateTerms, money } from "../src/policy.js";
 import { TypeSafeClient, TypeSafeError, toDecision } from "../src/typesafe.js";
 import { loanReference, namedBorrowers, namedFields, valueOverrides } from "../src/understand.js";
 
@@ -84,6 +84,21 @@ describe("credit policy rules", () => {
     [5.99, "outside"],
   ])("rate %s → %s", (rate, verdict) => {
     expect(checkRate(rate).verdict).toBe(verdict);
+  });
+
+  it("asks the officer to confirm ownership for anyone left out of the guaranty, and says nothing when no one is", () => {
+    expect(checkGuarantyExclusions(undefined)).toBeUndefined();
+    expect(checkGuarantyExclusions([])).toBeUndefined();
+    expect(checkGuarantyExclusions(["Harborview Employee Holdings LP"])).toEqual({
+      topic: "Guarantors",
+      verdict: "confirm",
+      detail:
+        "Harborview Employee Holdings LP gives no guaranty. Confirm ownership: an owner of 20% or more left out is outside policy, even with the exception",
+      policyIds: ["LOS-GUAR-001", "LOS-GUAR-002"],
+    });
+    expect(checkGuarantyExclusions(["A LP", "B LLC", "C"])?.detail).toMatch(/^A LP, B LLC and C give no guaranty\./);
+    const findings = evaluateTerms({}, { guarantyType: "limited", guarantyExclusions: ["A LP"] });
+    expect(findings.map(finding => finding.topic)).toEqual(["Loan-to-value", "Debt service coverage", "Pricing", "Guaranty", "Guarantors"]);
   });
 
   it("treats a limited guaranty as the cash-collateral exception", () => {

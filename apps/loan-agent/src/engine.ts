@@ -650,6 +650,8 @@ export class LoanAgent {
           ? fields.guarantyType + (fields.guarantyCapPerPerson ? ` ${money(fields.guarantyCapPerPerson)} cap` : "")
           : undefined
       ),
+      // Only where the document's guaranty was read: otherwise "none" would be a guess.
+      row("Left out of guaranty", fields => (fields.guarantyExclusions?.length ? fields.guarantyExclusions.join(", ") : fields.guarantyType ? "none" : undefined)),
     ];
     const departures = covenantRows.filter(entry => entry.status).length;
     turn.say([
@@ -1158,6 +1160,7 @@ const VERDICT_STATUS: Record<PolicyFinding["verdict"], CheckStatus> = {
   within: "pass",
   exception: "warn",
   outside: "fail",
+  confirm: "warn",
   unknown: "info",
 };
 
@@ -1165,6 +1168,7 @@ const VERDICT_LABEL: Record<PolicyFinding["verdict"], string> = {
   within: "Within policy",
   exception: "Needs exception",
   outside: "Outside policy",
+  confirm: "Needs confirmation",
   unknown: "Not found",
 };
 
@@ -1175,6 +1179,7 @@ export function policySummary(findings: PolicyFinding[]): string {
     n("within") && `${n("within")} within policy`,
     n("exception") && `${n("exception")} ${n("exception") === 1 ? "needs an exception" : "need exceptions"}`,
     n("outside") && `${n("outside")} ${n("outside") === 1 ? "is" : "are"} outside policy`,
+    n("confirm") && `${n("confirm")} ${n("confirm") === 1 ? "needs" : "need"} your confirmation`,
     n("unknown") && `${n("unknown")} couldn't be checked`,
   ].filter((part): part is string => Boolean(part));
   if (parts.length === 0) return "No policy checks applied.";

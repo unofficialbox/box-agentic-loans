@@ -93,7 +93,7 @@ describe("clickpath on fixtures", () => {
     const { agent } = setup();
     await send(agent, CLICKPATH[0][0]);
     const turn = await send(agent, CLICKPATH[1][0]);
-    expect(turn.text).toMatch(/^Extracted \d+ terms from harborview-term-sheet-2026-borrower-markup\.pdf\. Of 4 policy checks, /);
+    expect(turn.text).toMatch(/^Extracted \d+ terms from harborview-term-sheet-2026-borrower-markup\.pdf\. Of 5 policy checks, 2 within policy, 1 needs an exception, 1 is outside policy and 1 needs your confirmation\.$/);
     expect(turn.text).not.toMatch(/[•✓✗]/);
     const [facts, checks] = turn.blocks;
     expect(facts).toMatchObject({ type: "facts", title: "Terms" });
@@ -107,6 +107,13 @@ describe("clickpath on fixtures", () => {
       expect.objectContaining({ label: "Debt service coverage", status: "fail", value: "Outside policy", detail: expect.stringMatching(/^1\.1x tested annually/) })
     );
     expect(rows).toContainEqual(expect.objectContaining({ label: "Pricing", status: "pass" }));
+    expect(rows).toContainEqual({
+      label: "Guarantors",
+      value: "Needs confirmation",
+      detail:
+        "Harborview Employee Holdings LP gives no guaranty. Confirm ownership: an owner of 20% or more left out is outside policy, even with the exception",
+      status: "warn",
+    });
     expect(turn.citations).toContain("LOS-DSCR-001 · Standard DSCR");
   });
 
@@ -166,6 +173,11 @@ describe("clickpath on fixtures", () => {
     const rows = table.type === "table" ? table.rows : [];
     expect(rows).toContainEqual({ cells: ["LTV max", "70%", "70%", "75%"], status: "warn", note: "Departs from precedent" });
     expect(rows).toContainEqual({ cells: ["Testing", "quarterly", "quarterly", "annual"], status: "warn", note: "Departs from precedent" });
+    expect(rows).toContainEqual({
+      cells: ["Left out of guaranty", "none", "none", "Harborview Employee Holdings LP"],
+      status: "warn",
+      note: "Departs from precedent",
+    });
     expect(turn.citations).toContain("harborview-loan-agreement-2023-executed.pdf");
   });
 

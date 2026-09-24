@@ -16,6 +16,8 @@ export interface CovenantFields {
   testFrequency?: string;
   guarantyType?: string;
   guarantyCapPerPerson?: number;
+  /** Parties the document says give no guaranty, e.g. an owner the borrower's markup leaves out. */
+  guarantyExclusions?: string[];
 }
 
 /** One thing Doc Gen needs, checked as the signed-in Box user. */
@@ -130,5 +132,12 @@ export const COVENANT_FIELDS = [
     displayName: "Guaranty cap per guarantor ($)",
     type: "float",
     prompt: "The dollar cap per individual guarantor if the guaranty is limited; empty if unlimited.",
+  },
+  {
+    key: "guarantyExclusions",
+    displayName: "Parties excluded from the guaranty",
+    type: "string",
+    prompt:
+      "Every owner, shareholder, member or other party the document says will not give a guaranty, including any the borrower's markup proposes to leave out. Names only, separated by semicolons. Leave empty if the document excludes no one.",
   },
 ] as const;
