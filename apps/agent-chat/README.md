@@ -22,6 +22,8 @@ A loan officer's chat for the Harborview demo. The conversation runs on the head
 
 Every status uses one 16px icon family (`StatusIcon.tsx`), always with text beside it, so colour is never the only signal.
 
+The full design guidelines, with the anti-patterns to avoid and a pre-ship checklist, are in [DESIGN.md](./DESIGN.md).
+
 Design principles, from Apple's HIG (clarity, deference, consistency), Linear's calmer 2025 interface (little colour, colour for meaning), and agentic-UX practice (plans visible, steps collapsed until wanted, approval before any write):
 - the conversation is the content; chrome defers to it, and the work behind a reply is one click away rather than always on screen
 - colour means something: blue for the primary action, amber for "waiting on you", green for done, red for failed
