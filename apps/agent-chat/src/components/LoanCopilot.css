@@ -1,4 +1,4 @@
-/* Layout shell around box-agent-chat. Values follow Box's Blueprint design
+/* The Loan Copilot page. Values follow Box's Blueprint design
    system (the web app's own tokens): 4px spacing scale, radii, drop shadows,
    and the Box AI gradient. Colours come from the Box tokens applied to <html>
    (light or dark), so nothing here is hard-coded per theme. */
@@ -35,18 +35,21 @@
   --danger: var(--boe-token-surface-status-surface-error, #ed3757);
   --focus: 0 0 0 3px color-mix(in srgb, #2486fc 35%, transparent);
 
-  /* One button system, matching box-agent-chat's own Send and approval buttons:
-     pill-shaped, 13px semibold, in two heights. */
+  /* One button system: pill-shaped, 13px semibold, in two heights. */
   --control-height: 2rem;
   --control-height-compact: 1.75rem;
   --control-font-size: 0.8125rem;
   --control-font-weight: 600;
+
+  /* One reading measure for the conversation: about 75 characters of reply text. */
+  --measure: 44rem;
 
   display: grid;
   /* The workspace keeps a usable height: with the inspector open the page
      scrolls rather than squeezing the conversation. */
   grid-template-rows: auto minmax(30rem, 1fr) auto;
   height: 100%;
+  background: var(--surface);
 }
 
 /* ── Top bar ─────────────────────────────────────────────── */
@@ -137,7 +140,6 @@
 
 .button,
 .chip,
-.notice-dismiss,
 .icon-button {
   appearance: none;
   cursor: pointer;
@@ -175,86 +177,86 @@
   background: var(--surface-hover);
 }
 
-:is(.button, .chip, .notice-dismiss, .icon-button):focus-visible {
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* The one filled button: the action the officer is being asked to take. */
+.button-primary {
+  border-color: transparent;
+  background: var(--brand);
+  color: #fff;
+}
+
+.button-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--brand) 85%, #000);
+}
+
+.icon-button {
+  border: 0;
+  border-radius: var(--radius-1);
+  background: transparent;
+  font-size: 1.125rem;
+  line-height: 1;
+  padding: var(--space-1) var(--space-2);
+}
+
+:is(.button, .chip, .icon-button):focus-visible {
   outline: none;
   box-shadow: var(--focus);
 }
 
-/* ── Workspace ───────────────────────────────────────────── */
+/* ── Workspace: one centred column ─────────────────────────
+   The thread scrolls at the page's edge; its content keeps a reading measure.
+   The composer docks under it at the same width. */
 
 .workspace {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 21rem;
-  gap: var(--space-5);
-  width: 100%;
-  max-width: 80rem;
-  margin: 0 auto;
-  padding: var(--space-5) var(--space-6);
-  min-height: 0;
-}
-
-/* One card: the chat, any notice, and the suggested prompts under the composer. */
-.conversation {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  overflow: hidden;
-  border: 1px solid var(--stroke);
-  border-radius: var(--radius-4);
-  background: var(--surface);
-  box-shadow: var(--dropshadow-1);
 }
 
-/* Let the pattern fill the column: the thread grows, the composer stays put. */
-box-agent-chat {
+.thread {
   flex: 1 1 auto;
   min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  outline: none;
+  /* Content fades as it passes under the composer rather than being cut. */
+  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--space-6)), transparent);
 }
 
-/* Frame, thread and composer come from chatTheme.ts; these only size the parts. */
-box-agent-chat::part(panel) {
-  box-sizing: border-box;
-  height: 100%;
-  grid-template-rows: auto 1fr auto;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+.thread:focus-visible {
+  box-shadow: inset var(--focus);
 }
 
-box-agent-chat::part(thread) {
-  max-block-size: none;
-  min-block-size: 0;
+.thread-column {
+  display: grid;
   align-content: start;
+  gap: var(--space-8);
+  width: 100%;
+  max-width: calc(var(--measure) + 2 * var(--space-6));
+  min-height: 100%;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6) var(--space-6);
 }
 
-/* The top bar names the loan, so the chat's own title is for screen readers only. */
-box-agent-chat::part(title) {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+.composer-dock {
+  width: 100%;
+  max-width: calc(var(--measure) + 2 * var(--space-6));
+  margin: 0 auto;
+  padding: 0 var(--space-6) var(--space-5);
 }
 
-/* Before the first message the welcome takes the thread's place; only the composer shows. */
-.conversation.is-empty box-agent-chat {
-  flex: 0 0 auto;
-}
-
-.conversation.is-empty box-agent-chat::part(header),
-.conversation.is-empty box-agent-chat::part(thread) {
-  display: none;
-}
+/* ── Welcome ─────────────────────────────────────────────── */
 
 .welcome {
-  flex: 1 1 auto;
   display: grid;
   align-content: center;
   justify-items: center;
   gap: var(--space-3);
-  padding: var(--space-8) var(--space-6) var(--space-4);
+  padding: var(--space-8) 0 var(--space-4);
   text-align: center;
 }
 
@@ -263,6 +265,7 @@ box-agent-chat::part(title) {
   font-size: 1.5rem;
   line-height: 2rem;
   font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .welcome-lede {
@@ -276,7 +279,6 @@ box-agent-chat::part(title) {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
   width: 100%;
-  max-width: 40rem;
   margin: var(--space-4) 0 0;
   padding: 0;
   list-style: none;
@@ -284,6 +286,7 @@ box-agent-chat::part(title) {
 
 .starter {
   display: grid;
+  align-content: start;
   gap: var(--space-1);
   width: 100%;
   height: 100%;
@@ -295,15 +298,12 @@ box-agent-chat::part(title) {
   font: inherit;
   text-align: start;
   cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .starter:hover {
-  border-color: transparent;
-  background:
-    linear-gradient(var(--surface), var(--surface)) padding-box,
-    var(--box-ai) border-box;
-  box-shadow: var(--dropshadow-3);
+  border-color: color-mix(in srgb, var(--brand) 40%, var(--stroke));
+  background: var(--surface-hover);
 }
 
 .starter:focus-visible {
@@ -320,115 +320,133 @@ box-agent-chat::part(title) {
   color: var(--muted);
 }
 
-.notice {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin: 0 var(--space-4) var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-3);
-  background: var(--selected);
+/* ── Messages ────────────────────────────────────────────── */
+
+/* The officer: a soft bubble on the right. */
+.message-user {
+  justify-self: end;
+  max-width: min(36rem, 85%);
+  padding: var(--space-2) var(--space-4);
+  border-radius: 1.25rem 1.25rem 0.375rem 1.25rem;
+  background: var(--surface-hover);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  animation: message-in 0.18s ease-out;
+}
+
+.message-user p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* The agent: plain text on the page, with its results and sources under it. */
+.reply {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  animation: message-in 0.18s ease-out;
+}
+
+.reply-text {
+  display: grid;
+  gap: var(--space-3);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+.reply-text p {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.reply-error {
+  margin: 0;
+  color: color-mix(in srgb, var(--danger) 85%, var(--text));
+}
+
+.reply-warning {
+  margin: 0;
+  color: var(--muted);
   font-size: 0.8125rem;
 }
 
-.notice-dismiss,
-.icon-button {
-  margin-inline-start: auto;
-  border: 0;
-  border-radius: var(--radius-1);
-  background: transparent;
-  font-size: 1.125rem;
-  line-height: 1;
-  padding: var(--space-1) var(--space-2);
+/* ── Progress: "Worked for 2.4 s ›" ──────────────────────── */
+
+.progress {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
 }
 
-.suggestions {
-  display: flex;
-  flex-wrap: wrap;
+.progress-toggle {
+  display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  border-top: 1px solid var(--stroke);
-}
-
-.suggestions-label {
-  font-size: 0.75rem;
-  font-weight: 700;
+  min-height: var(--control-height-compact);
+  margin: 0 0 0 calc(-1 * var(--space-2));
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
   color: var(--muted);
-}
-
-/* ── Right rail ──────────────────────────────────────────── */
-
-.rail {
-  display: grid;
-  align-content: start;
-  gap: var(--space-4);
-  min-height: 0;
-  overflow-y: auto;
-}
-
-.card {
-  display: grid;
-  gap: var(--space-2);
-  padding: var(--space-4);
-  border-radius: var(--radius-4);
-  border: 1px solid var(--stroke);
-  background: var(--surface);
-  box-shadow: var(--dropshadow-1);
-}
-
-.card-heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-
-.card-title {
-  margin: 0;
-  font-size: 0.9375rem;
-  font-weight: 700;
-}
-
-.card-count,
-.card-hint,
-.empty {
-  margin: 0;
-  font-size: 0.75rem;
-  color: var(--muted);
-}
-
-/* ── The turn at a glance ─────────────────────────────────── */
-
-.activity {
-  gap: var(--space-3);
-}
-
-.activity-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-
-.activity-summary {
-  color: var(--muted);
-  font-size: 0.75rem;
+  font: inherit;
+  font-size: var(--control-font-size);
   font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+  text-align: start;
 }
 
-.activity-summary-active {
-  color: var(--brand);
+button.progress-toggle {
+  cursor: pointer;
 }
 
-.activity-summary-approval {
-  color: color-mix(in srgb, var(--warning) 55%, var(--text));
-  font-weight: 600;
+button.progress-toggle:hover {
+  background: var(--surface-hover);
+  color: var(--text);
 }
 
-.activity-summary-failed {
-  color: color-mix(in srgb, var(--danger) 80%, var(--text));
-  font-weight: 600;
+.progress-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+/* In flight, the step name shimmers gently; everything else is quiet. */
+.progress-active .progress-label {
+  color: var(--text);
+  background: linear-gradient(90deg, var(--text) 0%, var(--muted) 50%, var(--text) 100%) 0 0 / 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: shimmer 2s linear infinite;
+}
+
+.progress-failed .progress-label {
+  color: color-mix(in srgb, var(--danger) 85%, var(--text));
+}
+
+.progress-chevron {
+  width: 0.375rem;
+  height: 0.375rem;
+  margin-left: var(--space-1);
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+
+.progress-toggle[aria-expanded="true"] .progress-chevron {
+  transform: rotate(45deg);
+}
+
+/* The work, on request: the plan, then each step with its timing. */
+.progress-detail {
+  display: grid;
+  gap: var(--space-4);
+  width: 100%;
+  padding: var(--space-1) 0 var(--space-1) var(--space-4);
+  border-left: 2px solid var(--stroke);
 }
 
 .activity-list {
@@ -461,57 +479,23 @@ box-agent-chat::part(title) {
   text-decoration: line-through;
 }
 
-.activity-item-active .activity-text {
+.activity-item-active .activity-action {
   color: var(--text);
   font-weight: 600;
 }
 
-.activity-steps {
-  display: grid;
-  gap: var(--space-3);
-  padding-top: var(--space-3);
-  border-top: 1px solid var(--stroke);
-}
-
-.activity-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-self: start;
-  gap: var(--space-2);
-  height: var(--control-height-compact);
-  margin-left: calc(-1 * var(--space-2));
-  padding: 0 var(--space-2);
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--muted);
-  font: inherit;
-  font-size: var(--control-font-size);
-  font-weight: var(--control-font-weight);
-  cursor: pointer;
-}
-
-.activity-toggle:hover {
-  background: var(--surface-hover);
+.activity-item-active .activity-text {
   color: var(--text);
 }
 
-.activity-toggle:focus-visible {
-  outline: none;
-  box-shadow: var(--focus);
+.activity-list-steps {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--stroke);
 }
 
-.activity-chevron {
-  width: 0.375rem;
-  height: 0.375rem;
-  border-right: 1.5px solid currentColor;
-  border-bottom: 1.5px solid currentColor;
-  transform: rotate(-45deg);
-  transition: transform 0.15s ease;
-}
-
-.activity-toggle[aria-expanded="true"] .activity-chevron {
-  transform: rotate(45deg);
+.activity-list:first-child {
+  padding-top: 0;
+  border-top: 0;
 }
 
 .activity-list-steps .activity-text {
@@ -538,6 +522,529 @@ box-agent-chat::part(title) {
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* ── Result blocks ───────────────────────────────────────── */
+
+.blocks {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.block {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.block-title {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.block-footnote {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+/* Facts: a two-column label/value list on hairlines. */
+.facts {
+  display: grid;
+  margin: 0;
+}
+
+.fact {
+  display: grid;
+  grid-template-columns: minmax(7rem, 12rem) 1fr;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--stroke);
+  font-size: 0.875rem;
+}
+
+.fact:first-child {
+  border-top: 1px solid var(--stroke);
+}
+
+.fact dt {
+  color: var(--muted);
+}
+
+.fact dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Checks: verdict glyph, rule, verdict in words, and why. */
+.checks {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.check {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--stroke);
+}
+
+.check:first-child {
+  border-top: 1px solid var(--stroke);
+}
+
+.check .status-icon {
+  margin-top: 0.1875rem;
+}
+
+.check-body {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.check-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 var(--space-4);
+}
+
+.check-label {
+  font-weight: 600;
+}
+
+.check-value {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.check-pass .check-value {
+  color: color-mix(in srgb, var(--success) 60%, var(--text));
+}
+
+.check-warn .check-value {
+  color: color-mix(in srgb, var(--warning) 50%, var(--text));
+}
+
+.check-fail .check-value {
+  color: color-mix(in srgb, var(--danger) 80%, var(--text));
+}
+
+.check-info .check-value {
+  color: var(--muted);
+}
+
+.check-detail {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  overflow-wrap: anywhere;
+}
+
+/* Tables: hairline rows, numbers aligned, wide ones scroll in their frame. */
+.table-frame {
+  overflow-x: auto;
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-3);
+}
+
+.table-frame:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.result-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-table th,
+.result-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--stroke);
+  text-align: start;
+  vertical-align: top;
+}
+
+.result-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.result-table thead th {
+  background: var(--surface-hover);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.result-table tbody th {
+  min-width: 9rem;
+  font-weight: 600;
+}
+
+.result-table td {
+  white-space: nowrap;
+}
+
+/* The column under discussion ("This markup", "Record") reads last and strongest. */
+.result-table td:last-child {
+  font-weight: 600;
+}
+
+.row-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.row-head .status-icon {
+  margin-top: 0.125rem;
+}
+
+.row-note {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1rem;
+}
+
+.row-warn td:last-child {
+  color: color-mix(in srgb, var(--warning) 50%, var(--text));
+}
+
+.row-fail td:last-child {
+  color: color-mix(in srgb, var(--danger) 80%, var(--text));
+}
+
+/* Documents: one row per file, the whole row opens it in Box. */
+.documents {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.document {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-3);
+  color: inherit;
+  text-decoration: none;
+}
+
+a.document:hover {
+  background: var(--surface-hover);
+}
+
+a.document:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.document-icon {
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.document-text {
+  display: grid;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.document-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.document-detail {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.document-open {
+  color: var(--muted);
+}
+
+/* ── Sources ─────────────────────────────────────────────── */
+
+.sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+}
+
+.sources-label {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.sources ul {
+  display: contents;
+  list-style: none;
+}
+
+.sources-more {
+  padding: 0.1875rem var(--space-2);
+  border: 0;
+  border-radius: var(--radius-2);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sources-more:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.sources-more:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+/* Sources are references, not actions: quiet tags, links only where they go somewhere. */
+.source {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 0.1875rem var(--space-2);
+  border-radius: var(--radius-2);
+  background: var(--surface-hover);
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.25;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+a.source {
+  color: var(--brand);
+}
+
+a.source:hover {
+  text-decoration: underline;
+}
+
+a.source:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+/* ── Approval: the one card in the thread ────────────────── */
+
+.approval {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--stroke);
+  border-left: 3px solid var(--warning);
+  border-radius: var(--radius-4);
+  background: var(--surface);
+  box-shadow: var(--dropshadow-3);
+}
+
+.approval-eyebrow {
+  margin: 0;
+  color: color-mix(in srgb, var(--warning) 55%, var(--text));
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Decided: back to a quiet record; the edge and eyebrow say how it went. */
+.approval-approved,
+.approval-rejected {
+  box-shadow: none;
+}
+
+.approval-approved {
+  border-left-color: var(--success);
+}
+
+.approval-approved .approval-eyebrow {
+  color: color-mix(in srgb, var(--success) 60%, var(--text));
+}
+
+.approval-rejected {
+  border-left-color: var(--stroke);
+}
+
+.approval-rejected .approval-eyebrow {
+  color: var(--muted);
+}
+
+.approval-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.approval-summary,
+.approval-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.approval-params {
+  margin: var(--space-1) 0;
+}
+
+.approval-params .fact {
+  font-size: 0.8125rem;
+}
+
+.approval-error {
+  margin: 0;
+  color: color-mix(in srgb, var(--danger) 85%, var(--text));
+  font-size: 0.8125rem;
+}
+
+.approval-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.approval-hint {
+  margin-inline-start: var(--space-2);
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* ── Next steps ──────────────────────────────────────────── */
+
+.next {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: calc(-1 * var(--space-4));
+}
+
+/* ── Composer ────────────────────────────────────────────── */
+
+.composer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-4);
+  background: var(--surface);
+  box-shadow: var(--dropshadow-3);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.composer:focus-within {
+  border-color: color-mix(in srgb, var(--brand) 55%, var(--stroke));
+  box-shadow: var(--dropshadow-3), var(--focus);
+}
+
+.composer-input {
+  box-sizing: border-box;
+  min-height: 2.5rem;
+  max-height: 12rem;
+  padding: var(--space-2) 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+}
+
+.composer-input::placeholder {
+  color: var(--muted);
+}
+
+.composer-button {
+  display: grid;
+  place-items: center;
+  width: var(--control-height);
+  height: var(--control-height);
+  margin-bottom: 0.25rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.composer-send {
+  background: var(--brand);
+  color: #fff;
+}
+
+.composer-send:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.composer-stop {
+  background: var(--text);
+  color: var(--surface);
+}
+
+.composer-button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+@keyframes message-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reply,
+  .message-user {
+    animation: none;
+  }
+
+  .progress-active .progress-label {
+    animation: none;
+    background: none;
+    color: var(--text);
+  }
 }
 
 /* One status glyph family (StatusIcon.tsx), same 16px circle everywhere. */
@@ -610,35 +1117,42 @@ box-agent-chat::part(title) {
   white-space: nowrap;
 }
 
-/* ── Narrow screens: rail drops below the conversation ───── */
+
+/* ── Narrow screens ──────────────────────────────────────── */
 
 @media (max-width: 56rem) {
   .copilot {
-    height: auto;
-    min-height: 100%;
-    grid-template-rows: auto auto auto;
-    align-content: start;
+    grid-template-rows: auto minmax(0, 1fr) auto;
   }
 
-  .workspace {
-    grid-template-columns: 1fr;
-    padding: var(--space-4);
+  .thread-column {
+    gap: var(--space-6);
+    padding: var(--space-5) var(--space-4) var(--space-4);
   }
 
-  .workspace {
-    align-content: start;
+  .composer-dock {
+    padding: 0 var(--space-3) var(--space-3);
   }
 
   .welcome {
-    padding: var(--space-6) var(--space-4) var(--space-2);
+    padding: var(--space-4) 0 var(--space-2);
   }
 
   .starters {
     grid-template-columns: 1fr;
   }
 
-  box-agent-chat::part(thread) {
-    max-block-size: 60vh;
+  .fact {
+    grid-template-columns: minmax(6rem, 40%) 1fr;
+  }
+
+  .approval {
+    padding: var(--space-4);
+  }
+
+  .approval-hint {
+    flex-basis: 100%;
+    margin: 0;
   }
 
   .topbar {

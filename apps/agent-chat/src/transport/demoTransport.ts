@@ -5,7 +5,7 @@ import type {
 } from "@unofficialbox/box-open-elements/patterns/agent-chat";
 import { PROMPT_LIBRARY } from "../prompts";
 import { routeIntent, type DemoBeat } from "./demoScript";
-import type { LoanAgentTransport, PromptOption, RunStep, Todo, TraceListener, TurnSummary } from "./types";
+import type { LoanAgentTransport, PromptOption, ResultBlock, RunStep, Todo, TraceListener, TurnSummary } from "./types";
 
 export interface DemoTimings {
   /** Delay before each streamed chunk, and per trace step. */
@@ -24,6 +24,7 @@ export class DemoLoanAgentTransport implements LoanAgentTransport {
   readonly mode = "demo" as const;
   onTurnStart?: () => void;
   onTrace?: TraceListener;
+  onBlock?: (block: ResultBlock) => void;
   onTodos?: (todos: Todo[]) => void;
   onOptions?: (options: PromptOption[]) => void;
   onTurnEnd?: (summary: TurnSummary) => void;
@@ -79,6 +80,13 @@ export class DemoLoanAgentTransport implements LoanAgentTransport {
       }
       await sleep(this.timings.chunkMs);
       request.onEvent({ kind: "delta", text: chunk });
+    }
+
+    for (const block of beat.blocks ?? []) {
+      if (aborted()) {
+        return end("incomplete");
+      }
+      this.onBlock?.(block);
     }
 
     for (const citation of beat.citations) {

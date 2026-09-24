@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { AgentEvent, Proposal } from "../src/contract.js";
-import { LoanAgent } from "../src/engine.js";
+import { LoanAgent, policySummary } from "../src/engine.js";
 import { FixtureToolGateway } from "../src/fixtures.js";
+import type { PolicyFinding } from "../src/policy.js";
 import { ActionRequiredError } from "../src/tools.js";
 import { TypeSafeError, type ChoiceDecision, type Decider } from "../src/typesafe.js";
 import { INTENTS, type Intent } from "../src/understand.js";
@@ -60,16 +61,26 @@ async function send(agent: LoanAgent, message: string, session = "s1") {
   const text = events.map(event => (event.kind === "delta" ? event.text : "")).join("");
   const citations = events.flatMap(event => (event.kind === "citation" ? [event.citation.label] : []));
   const proposals = events.flatMap(event => (event.kind === "proposal" ? [event.proposal] : []));
+  const blocks = events.flatMap(event => (event.kind === "block" ? [event.block] : []));
   const trace = events.flatMap(event => (event.kind === "trace" && event.step.status !== "running" ? [`${event.step.title}:${event.step.status}`] : []));
-  return { events, text, citations, proposals, trace };
+  return { events, text, citations, proposals, blocks, trace };
 }
 
 describe("clickpath on fixtures", () => {
   it("finds the latest active loan and its critical-risk documents", async () => {
     const { agent } = setup();
     const turn = await send(agent, CLICKPATH[0][0]);
-    expect(turn.text).toContain("LN-2026-0003");
-    expect(turn.text).toContain("harborview-term-sheet-2026-borrower-markup.pdf (Term Sheet)");
+    expect(turn.text).toBe(
+      "In Harborview Logistics Commercial Real Estate 2026 (LN-2026-0003, Approved), 1 document is flagged Critical policy risk."
+    );
+    expect(turn.blocks).toEqual([
+      {
+        type: "documents",
+        items: [
+          expect.objectContaining({ name: "harborview-term-sheet-2026-borrower-markup.pdf", detail: "Term Sheet · Critical risk" }),
+        ],
+      },
+    ]);
     expect(turn.citations).toEqual(["harborview-term-sheet-2026-borrower-markup.pdf"]);
     expect(turn.trace).toContain("Rule · latest loan:succeeded");
     expect(turn.events.find(event => event.kind === "context")).toMatchObject({
@@ -82,10 +93,20 @@ describe("clickpath on fixtures", () => {
     const { agent } = setup();
     await send(agent, CLICKPATH[0][0]);
     const turn = await send(agent, CLICKPATH[1][0]);
-    expect(turn.text).toContain("• Amount $4.8M");
-    expect(turn.text).toContain("✓ Loan-to-value: 75% within the 75% limit");
-    expect(turn.text).toContain("✗ Debt service coverage: 1.1x tested annually");
-    expect(turn.text).toContain("✓ Pricing: 6.85% at or above the 6.50% floor");
+    expect(turn.text).toMatch(/^Extracted \d+ terms from harborview-term-sheet-2026-borrower-markup\.pdf\. Of 4 policy checks, /);
+    expect(turn.text).not.toMatch(/[•✓✗]/);
+    const [facts, checks] = turn.blocks;
+    expect(facts).toMatchObject({ type: "facts", title: "Terms" });
+    expect(facts.type === "facts" && facts.rows).toContainEqual({ label: "Amount", value: "$4.8M" });
+    expect(checks).toMatchObject({ type: "checks", title: "Credit policy" });
+    const rows = checks.type === "checks" ? checks.rows : [];
+    expect(rows).toContainEqual(
+      expect.objectContaining({ label: "Loan-to-value", status: "pass", detail: "75% within the 75% limit" })
+    );
+    expect(rows).toContainEqual(
+      expect.objectContaining({ label: "Debt service coverage", status: "fail", value: "Outside policy", detail: expect.stringMatching(/^1\.1x tested annually/) })
+    );
+    expect(rows).toContainEqual(expect.objectContaining({ label: "Pricing", status: "pass" }));
     expect(turn.citations).toContain("LOS-DSCR-001 · Standard DSCR");
   });
 
@@ -94,7 +115,13 @@ describe("clickpath on fixtures", () => {
     await send(agent, CLICKPATH[0][0]);
     await send(agent, CLICKPATH[1][0]);
     const turn = await send(agent, CLICKPATH[2][0]);
-    expect(turn.text).toContain("• Rate: document 6.85, record 6.5 (mismatch)");
+    expect(turn.text).toMatch(/fields match, 1 mismatch\. Nothing has been written\.$/);
+    expect(turn.blocks[0]).toMatchObject({ type: "table", columns: ["Field", "Document", "Record"] });
+    expect(turn.blocks[0].type === "table" && turn.blocks[0].rows).toContainEqual({
+      cells: ["Rate", "6.85", "6.5"],
+      status: "fail",
+      note: "Mismatch",
+    });
     expect(turn.trace.some(step => step.startsWith("LOS · extractLoanTerms"))).toBe(false);
   });
 
@@ -133,8 +160,12 @@ describe("clickpath on fixtures", () => {
     const { agent } = setup();
     await send(agent, CLICKPATH[0][0]);
     const turn = await send(agent, CLICKPATH[4][0]);
-    expect(turn.text).toContain("• LTV max: 70% (LN-2023-0311) · 70% (LN-2025-0148) · 75% (this markup) ← departs from precedent");
-    expect(turn.text).toContain("• Testing: quarterly (LN-2023-0311) · quarterly (LN-2025-0148) · annual (this markup) ← departs from precedent");
+    expect(turn.text).toMatch(/depart from precedent\.$/);
+    const [table] = turn.blocks;
+    expect(table).toMatchObject({ type: "table", columns: ["Covenant", "LN-2023-0311", "LN-2025-0148", "This markup"] });
+    const rows = table.type === "table" ? table.rows : [];
+    expect(rows).toContainEqual({ cells: ["LTV max", "70%", "70%", "75%"], status: "warn", note: "Departs from precedent" });
+    expect(rows).toContainEqual({ cells: ["Testing", "quarterly", "quarterly", "annual"], status: "warn", note: "Departs from precedent" });
     expect(turn.citations).toContain("harborview-loan-agreement-2023-executed.pdf");
   });
 
@@ -161,6 +192,34 @@ describe("clickpath on fixtures", () => {
     const turn = await send(agent, "Send it for signature");
     expect(turn.text).toContain("Generate the commitment letter first");
     expect(turn.proposals).toEqual([]);
+  });
+});
+
+describe("structured results", () => {
+  it("lists loans as a table, newest first", async () => {
+    const { tools } = setup();
+    const agent = new LoanAgent(tools, new StubDecider({ "Harborview Logistics closed loans": "list_loans" }), { high: 0.85, medium: 0.5 });
+    const turn = await send(agent, "Harborview Logistics closed loans");
+    expect(turn.text).toMatch(/^\d+ loans? for Harborview Logistics, Closed, newest first\.$/);
+    expect(turn.blocks[0]).toMatchObject({ type: "table", columns: ["Loan", "Name", "Status", "Amount"] });
+    const ids = turn.blocks[0].type === "table" ? turn.blocks[0].rows.map(row => row.cells[0]) : [];
+    expect(ids).toEqual([...ids].sort().reverse());
+  });
+
+  it("never formats results as text bullets or glyphs", async () => {
+    const { agent } = setup();
+    for (const message of [...CLICKPATH.map(([m]) => m), "what can you do?"]) {
+      expect((await send(agent, message)).text, message).not.toMatch(/[•✓✗←]/);
+    }
+  });
+
+  it("sums up policy findings in one sentence", () => {
+    const finding = (verdict: PolicyFinding["verdict"]): PolicyFinding => ({ topic: "Pricing", verdict, detail: "", policyIds: [] });
+    expect(policySummary([finding("within"), finding("within"), finding("exception"), finding("outside")])).toBe(
+      "Of 4 policy checks, 2 within policy, 1 needs an exception and 1 is outside policy."
+    );
+    expect(policySummary([finding("outside"), finding("outside")])).toBe("Of 2 policy checks, 2 are outside policy.");
+    expect(policySummary([])).toBe("No policy checks applied.");
   });
 });
 
@@ -272,7 +331,7 @@ describe("document types for risk search hits", () => {
     };
     const turn = await send(agent, CLICKPATH[0][0]);
     expect(looked).toHaveLength(1);
-    expect(turn.text).toContain("harborview-term-sheet-2026-borrower-markup.pdf (Term Sheet)");
+    expect(turn.blocks[0]).toMatchObject({ items: [{ detail: "Term Sheet · Critical risk" }] });
     expect(turn.trace).toContain("Box · get_file_details:succeeded");
   });
 
@@ -280,7 +339,7 @@ describe("document types for risk search hits", () => {
     const { tools, agent } = withoutTypes();
     tools.getDocumentType = () => Promise.reject(new Error("Box 403"));
     const turn = await send(agent, CLICKPATH[0][0]);
-    expect(turn.text).toMatch(/• harborview-term-sheet-2026-borrower-markup\.pdf(?! \()/);
+    expect(turn.blocks[0]).toMatchObject({ items: [{ name: "harborview-term-sheet-2026-borrower-markup.pdf", detail: "Critical risk" }] });
     expect(turn.trace).toContain("Box · get_file_details:warning");
     expect(turn.events.find(event => event.kind === "done")).toMatchObject({ status: "complete" });
   });

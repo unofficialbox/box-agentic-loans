@@ -23,6 +23,7 @@ describe("parseEvent", () => {
     expect(parseEvent('{"kind":"context","loan":{"loanId":"LN-2026-0003"}}')?.kind).toBe("context");
     expect(parseEvent('{"kind":"delta","text":"hi"}')).toEqual({ kind: "delta", text: "hi" });
     expect(parseEvent('{"kind":"trace","step":{"id":"a","title":"A"}}')?.kind).toBe("trace");
+    expect(parseEvent('{"kind":"block","block":{"type":"facts","rows":[]}}')?.kind).toBe("block");
   });
 
   it("drops blank, malformed, and unknown lines", () => {

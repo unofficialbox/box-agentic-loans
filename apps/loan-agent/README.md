@@ -12,7 +12,7 @@ The backend for the Loan Copilot chat ([apps/agent-chat](../agent-chat/README.md
 
    TypeSafe is asked again only to break a tie, for example two files that both look like term sheets. If nothing resolves, the agent asks instead of guessing.
 3. **Run a fixed tool program per intent** against the LOS and Box MCP servers, then check the results against **credit policy in code** (`src/policy.ts`, which encodes `sample-data/policies/approved`). Every finding cites its policy ID.
-4. **Render from templates.** The reply text, citations, and approval cards are built in code.
+4. **Render from templates.** The reply text, citations, and approval cards are built in code. A reply is a sentence or two; its detail (terms, policy checks, comparisons, loan lists, flagged documents) goes out as structured `block` events that the chat renders as tables and status rows.
 
 Writes (`applyLoanTerms`, `create_docgen_batch`, `prepareSignatureRequest`) never run during a turn. They become approval cards and run only from `POST /actions/resolve`, once, and only for the same session.
 
@@ -49,7 +49,7 @@ Salesforce sign-in goes to the org's My Domain (`LOS_MCP_LOGIN_URL`), not `login
 
 ```bash
 npm install
-npm test                 # 77 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
+npm test                 # 80 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
 npm start                # http://LOAN_AGENT_HOST:LOAN_AGENT_PORT
 
 # Without MCP access, TypeSafe still decides but the tools are seeded fixtures:

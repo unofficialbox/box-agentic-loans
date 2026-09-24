@@ -53,10 +53,39 @@ export interface PromptOption {
 /** Answered, waiting on the officer (a question or an approval), or failed. */
 export type TurnStatus = "complete" | "needs_input" | "error";
 
+/** How a row reads at a glance: within bounds, needs a look, out of bounds, or just information. */
+export type CheckStatus = "pass" | "warn" | "fail" | "info";
+
+/**
+ * Structured results, rendered by the client as real tables and status rows
+ * rather than text. A reply is a short sentence (`delta`) plus these.
+ */
+export type ResultBlock =
+  /** Label/value pairs: extracted terms, a loan's attributes. */
+  | { type: "facts"; title?: string; rows: Array<{ label: string; value: string }> }
+  /** Rules checked, each with a verdict. */
+  | {
+      type: "checks";
+      title?: string;
+      rows: Array<{ label: string; value?: string; detail?: string; status: CheckStatus }>;
+    }
+  /** A comparison or listing; a row's status marks it, its note says why. */
+  | {
+      type: "table";
+      title?: string;
+      columns: string[];
+      rows: Array<{ cells: string[]; status?: CheckStatus; note?: string }>;
+      footnote?: string;
+    }
+  /** Box files, each linked; `id` matches the file's citation. */
+  | { type: "documents"; title?: string; items: Array<{ id: string; name: string; detail?: string; href?: string }> };
+
 export type AgentEventBody =
   | { kind: "context"; loan: LoanContext }
   | { kind: "delta"; text: string }
   | { kind: "citation"; citation: Citation }
+  /** A structured result, shown after the reply's text. */
+  | { kind: "block"; block: ResultBlock }
   | { kind: "proposal"; proposal: Proposal }
   | { kind: "trace"; step: TraceStep }
   /** The plan for this turn; each event is a full snapshot. */

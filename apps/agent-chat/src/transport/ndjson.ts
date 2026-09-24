@@ -1,6 +1,6 @@
 import type { LoanAgentEvent, TurnSummary } from "./types";
 
-const KINDS = new Set(["delta", "citation", "proposal", "trace", "context", "todos", "options", "done"]);
+const KINDS = new Set(["delta", "citation", "block", "proposal", "trace", "context", "todos", "options", "done"]);
 
 /** Narrow one decoded line to a known event; anything else is dropped. */
 export function parseEvent(line: string): LoanAgentEvent | null {

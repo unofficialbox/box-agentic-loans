@@ -1,18 +1,24 @@
 # Loan Copilot chat
 
-A loan officer's chat for the Harborview demo. It is built on the [box-open-elements agent-chat pattern](https://unofficialbox.github.io/box-open-elements/patterns/agent-chat/). `<box-agent-chat>` handles the whole conversation: the streaming thread, citation chips, approval cards, and the composer. This app adds a few things around it:
+A loan officer's chat for the Harborview demo. The conversation runs on the headless `AgentChatController` from the [box-open-elements agent-chat pattern](https://unofficialbox.github.io/box-open-elements/patterns/agent-chat/). The controller owns the messages, streaming, stop and approvals. The page renders the thread itself (`LoanCopilot.tsx`, `useConversation.ts`), so each reply can carry more than text:
+- **Progress line.** Above each reply, a line names the step in flight while the agent works ("Extract terms with Box AI…"). When it finishes, the line reads "Worked for 2.4 s", like Claude and Perplexity. Open it to see the plan and every step: routing, tool calls and approval holds, each with its timing. It is collapsed by default.
+- **Results as structure, not text.** The reply is a sentence or two. Its detail arrives as `block` events, rendered as:
+  - label/value **facts** (extracted terms)
+  - **checks** with a verdict in words and a status icon (credit policy)
+  - **tables** (record comparison, covenant precedent, loan lists), with rows that depart from the norm marked and explained
+  - **documents** that open in Box
+- **Sources.** Quiet tags under the reply. The first three show; the rest sit behind "N more". A file already shown as a document isn't repeated.
+- **Approval card.** One card per governed action ("Needs your approval"), with Approve as the primary action. Nothing runs until then. Once decided, it settles into a quiet record.
+- **Next steps.** After the latest reply, chips offer what to do next. None show while an approval is waiting.
+- **Top bar.** Shows the loan in context, plus a "Demo script" tag in demo mode.
+- **Welcome state.** Before the first message: what the copilot does, and four starter cards (from `src/prompts.ts`).
+- **One column.** A single centred column at a reading measure, with the composer docked under it. Enter sends and Shift+Enter adds a line. While a reply streams, the send button becomes Stop. The thread follows new content to the bottom, and stops following while you scroll up to read.
+- **API inspector** (below), in live mode.
 
-- a top bar with the loan in context, and a "Demo script" tag in demo mode only
-- a welcome state before the first message: what the copilot does, and four starter cards (from `src/prompts.ts`, which follows Box AI's prompt structure)
-- after each reply, the agent's next steps as "Next" chips inside the chat card, under the composer; none while an approval is waiting
-- the thread follows new messages and approval cards to the bottom, and stops following while you scroll up to read
-- a side rail card, **This turn**: the plan (always visible) and the steps (routing, tool calls, approval holds; collapsed by default, with the step in flight shown while it runs), under one summary ("Working", "Waiting for your approval", "Done · 1.2 s"). Every state uses one 16px status icon family (`StatusIcon.tsx`).
-- in live mode, the **API inspector** (below)
-
-`<box-agent-chat>` gets the page's treatment through a stylesheet adopted into its shadow root (`src/components/chatTheme.ts`): agent replies as plain text, the officer's messages as soft bubbles, one framed composer, and approval cards labelled "Needs your approval" with Approve as the primary action. Parts alone can't tell a user message from an agent one, or Approve from Reject, so those rules key on the element's own `data-role`, `data-action` and `data-decision` attributes.
+Every status uses one 16px icon family (`StatusIcon.tsx`), always with text beside it, so colour is never the only signal.
 
 Design principles, from Apple's HIG (clarity, deference, consistency), Linear's calmer 2025 interface (little colour, colour for meaning), and agentic-UX practice (plans visible, steps collapsed until wanted, approval before any write):
-- the conversation is the content; chrome defers to it
+- the conversation is the content; chrome defers to it, and the work behind a reply is one click away rather than always on screen
 - colour means something: blue for the primary action, amber for "waiting on you", green for done, red for failed
 - one button system (pill, 13px semibold, 32px or 28px) and one status icon family
 - nothing competes with an action awaiting approval
@@ -25,7 +31,7 @@ Styling follows Box's Blueprint design system:
 ```bash
 npm install
 npm run dev        # http://localhost:3003
-npm test           # transport, NDJSON and inspector unit tests
+npm test           # transport, NDJSON, progress and inspector unit tests
 npm run build
 ```
 
@@ -56,11 +62,12 @@ If the agent answers but has no call log (it is still running code from before t
 |---|---|
 | `{"kind":"delta","text":"…"}` | The **next chunk** of the reply. It is appended, not a replacement. |
 | `{"kind":"citation","citation":{"id","label","href?"}}` | A cited document or policy. |
+| `{"kind":"block","block":{"type",…}}` | A structured result, shown under the reply's text. `type` is `facts` (`rows: [{label, value}]`), `checks` (`rows: [{label, value?, detail?, status}]`), `table` (`columns`, `rows: [{cells, status?, note?}]`, `footnote?`) or `documents` (`items: [{id, name, detail?, href?}]`). `status` is `pass`, `warn`, `fail` or `info`. |
 | `{"kind":"proposal","proposal":{"id","title","summary?","params?":[{"label","value"}]}}` | A governed write held for approval. |
 | `{"kind":"trace","step":{"id","title","description?","status","startedAt?","finishedAt?"}}` | A trace step. Sending the same `id` again updates that step. `status` is `running`, `succeeded`, `warning`, `failed`, or `skipped`. |
 | `{"kind":"context","loan":{"loanId","name?","borrower?","status?"}}` | The loan this turn resolved to. The top bar shows it. |
-| `{"kind":"todos","todos":[{"id","content","status"}]}` | The plan for this turn, sent as a full snapshot each time. `status` is `pending`, `in_progress`, `completed`, or `skipped`. The **Plan** card shows it. |
-| `{"kind":"options","options":[{"label","prompt"}]}` | Prompts to offer next. These replace the starter chips. |
+| `{"kind":"todos","todos":[{"id","content","status"}]}` | The plan for this turn, sent as a full snapshot each time. `status` is `pending`, `in_progress`, `completed`, or `skipped`. The reply's progress line shows it. |
+| `{"kind":"options","options":[{"label","prompt"}]}` | Prompts to offer next, as chips after the reply. |
 | `{"kind":"done","status":"complete"\|"needs_input"\|"error"}` | Always the last event. `needs_input` means the agent asked a question or is waiting on an approval. |
 
 Every event may also carry `seq` (1, 2, 3… per turn). If the stream ends without `done`, or a `seq` number never arrives, the page tells the officer the reply may be incomplete. Box AI's own client checks its stream the same way.
@@ -86,7 +93,10 @@ The backend has to keep a `proposalId → session` mapping. It should also cache
 
 ## Files
 
-- `src/components/LoanCopilot.tsx`: the page shell around the pattern
+- `src/components/LoanCopilot.tsx`: the page: top bar, thread, replies, composer dock
+- `src/useConversation.ts`: the `AgentChatController` session plus each turn's plan, steps, blocks and timing
+- `src/activity.ts`: the progress line's wording and timings
+- `src/components/TurnProgress.tsx`, `ResultBlocks.tsx`, `ApprovalCard.tsx`, `Composer.tsx`: the parts of a reply, and the message box
 - `src/components/ApiInspector.tsx` and `src/inspector/calls.ts`: the API inspector shelf and its call-log events
 - `src/transport/httpTransport.ts`: the live backend transport
 - `src/transport/ndjson.ts`: the stream reader
