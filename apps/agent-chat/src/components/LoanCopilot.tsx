@@ -170,7 +170,7 @@ export function LoanCopilot({ loan }: { loan?: string }) {
       </main>
 
       <aside className="pane pane-right" id="pane-right" aria-label="Details" inert={!open.right}>
-        <DetailsPanel summary={active} />
+        <DetailsPanel sessionId={activeId} summary={active} />
       </aside>
 
       {narrow && (open.left || open.right) && <div className="scrim" aria-hidden="true" onClick={closeDrawers} />}

@@ -10,15 +10,17 @@ import { StatusIcon } from "./StatusIcon";
  * permission result, so the thread reads as history rather than as cards.
  */
 export function ApprovalCard({
+  sessionId,
   proposal,
   onResolve,
 }: {
+  sessionId: string;
   proposal: AgentActionProposal;
   onResolve: (decision: AgentActionDecision) => Promise<string | undefined>;
 }) {
   const [busy, setBusy] = useState<AgentActionDecision | null>(null);
   const [error, setError] = useState<string>();
-  const anchor = proposalAnchor(proposal.id);
+  const anchor = proposalAnchor(sessionId, proposal.id);
 
   const decide = async (decision: AgentActionDecision) => {
     setBusy(decision);

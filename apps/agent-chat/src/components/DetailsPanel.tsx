@@ -7,12 +7,12 @@ import { StatusIcon } from "./StatusIcon";
  * the way Claude and ChatGPT keep outputs and sources beside the chat. It is
  * about the conversation, not the turn: the turn's steps stay in the reply.
  */
-export function DetailsPanel({ summary }: { summary: ChatSummary }) {
+export function DetailsPanel({ sessionId, summary }: { sessionId: string; summary: ChatSummary }) {
   const { loan, approvals, sources } = summary;
   const waiting = approvals.filter(approval => !approval.decision).length;
 
   const jumpTo = (proposalId: string) => {
-    const card = document.getElementById(proposalAnchor(proposalId));
+    const card = document.getElementById(proposalAnchor(sessionId, proposalId));
     if (!card) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     card.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });

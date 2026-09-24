@@ -52,8 +52,9 @@ describe("conversation summary", () => {
     expect(summarize([], null, false)).toMatchObject({ title: "New chat", started: false });
   });
 
-  it("makes a safe DOM id for a proposal", () => {
-    expect(proposalAnchor("proposal-1")).toBe("proposal-proposal-1");
-    expect(proposalAnchor("a b/c")).toBe("proposal-a-b-c");
+  it("makes a safe DOM id for a proposal, unique across chats", () => {
+    expect(proposalAnchor("session-a", "proposal-1")).toBe("proposal-session-a-proposal-1");
+    expect(proposalAnchor("session-a", "proposal-1")).not.toBe(proposalAnchor("session-b", "proposal-1"));
+    expect(proposalAnchor("s", "a b/c")).toBe("proposal-s-a-b-c");
   });
 });

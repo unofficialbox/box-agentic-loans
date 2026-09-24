@@ -65,7 +65,7 @@ export function ChatSession({
 
   return (
     <section className="session" hidden={!active} aria-label={summary.title}>
-      <Thread conversation={conversation} onAsk={ask} />
+      <Thread sessionId={sessionId} conversation={conversation} onAsk={ask} />
       <div className="composer-dock">
         <Composer streaming={streaming} onSend={conversation.send} onStop={conversation.stop} inputRef={inputRef} />
       </div>
@@ -73,7 +73,15 @@ export function ChatSession({
   );
 }
 
-function Thread({ conversation, onAsk }: { conversation: Conversation; onAsk: (prompt: string) => void }) {
+function Thread({
+  sessionId,
+  conversation,
+  onAsk,
+}: {
+  sessionId: string;
+  conversation: Conversation;
+  onAsk: (prompt: string) => void;
+}) {
   const { messages, turns, streaming, resolve } = conversation;
   const threadRef = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
@@ -163,6 +171,7 @@ function Thread({ conversation, onAsk }: { conversation: Conversation; onAsk: (p
                 ) : (
                   <Reply
                     key={message.id}
+                    sessionId={sessionId}
                     message={message}
                     turn={turns[message.id]}
                     onResolve={(proposalId, decision) => resolve(proposalId, decision)}
@@ -256,10 +265,12 @@ function Sources({ citations }: { citations: AgentChatMessage["citations"] }) {
 }
 
 function Reply({
+  sessionId,
   message,
   turn,
   onResolve,
 }: {
+  sessionId: string;
   message: AgentChatMessage;
   turn?: TurnDetails;
   onResolve: Conversation["resolve"];
@@ -289,7 +300,7 @@ function Reply({
       <ResultBlocks blocks={blocks} />
       <Sources citations={sources} />
       {message.proposals.map(proposal => (
-        <ApprovalCard key={proposal.id} proposal={proposal} onResolve={decision => onResolve(proposal.id, decision)} />
+        <ApprovalCard key={proposal.id} sessionId={sessionId} proposal={proposal} onResolve={decision => onResolve(proposal.id, decision)} />
       ))}
       {failed && (
         <p className="reply-error" role="alert">

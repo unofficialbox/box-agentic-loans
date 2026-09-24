@@ -76,7 +76,11 @@ export function summarize(
   };
 }
 
-/** The DOM id of a proposal's card in the thread, so the details panel can jump to it. */
-export function proposalAnchor(proposalId: string): string {
-  return `proposal-${proposalId.replace(/[^A-Za-z0-9_-]/g, "-")}`;
+/**
+ * The DOM id of a proposal's card, so the details panel can jump to it.
+ * Scoped by conversation: every chat stays mounted, and proposal IDs are only
+ * unique within one (the demo transport numbers each chat's from 1).
+ */
+export function proposalAnchor(sessionId: string, proposalId: string): string {
+  return `proposal-${`${sessionId}-${proposalId}`.replace(/[^A-Za-z0-9_-]/g, "-")}`;
 }
