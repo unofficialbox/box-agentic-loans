@@ -37,7 +37,7 @@ def package(output: Path, root: Path = ROOT, skill_name: str = 'loan-origination
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
-    parser.add_argument('--skill', default='loan-origination-claude', choices=['loan-origination-claude', 'loan-origination-quick', 'loan-origination-slack'])
+    parser.add_argument('--skill', default='loan-origination-claude', choices=['loan-origination-claude', 'loan-origination-quick', 'loan-origination-slack', 'loan-origination-gemini'])
     parser.add_argument('--bindings', type=Path, help='runtime defaults JSON (gitignored) whose values replace the angle-bracket environment placeholders')
     args = parser.parse_args()
     bindings = None
