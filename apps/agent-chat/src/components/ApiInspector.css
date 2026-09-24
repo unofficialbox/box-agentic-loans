@@ -272,10 +272,13 @@
   gap: var(--space-2);
 }
 
-.inspector-copy-button {
+/* Secondary actions: quieter than the page's primary buttons. */
+.inspector .inspector-copy-button {
   min-height: 1.75rem;
   padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
   font-size: 0.75rem;
+  font-weight: 400;
 }
 
 .inspector-summary {

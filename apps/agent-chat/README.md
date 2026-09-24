@@ -3,7 +3,9 @@
 A loan officer's chat for the Harborview demo. It is built on the [box-open-elements agent-chat pattern](https://unofficialbox.github.io/box-open-elements/patterns/agent-chat/). `<box-agent-chat>` handles the whole conversation: the streaming thread, citation chips, approval cards, and the composer. This app adds a few things around it:
 
 - a top bar with the loan in context, and a "Demo script" tag in demo mode only
-- suggested prompts inside the chat card, under the composer: starters ("Try") before the first message, then the agent's next steps ("Next"). The prompts come from `src/prompts.ts`, which follows Box AI's prompt structure.
+- a welcome state before the first message: what the copilot does, and four starter cards (from `src/prompts.ts`, which follows Box AI's prompt structure)
+- after each reply, the agent's next steps as "Next" chips inside the chat card, under the composer; none while an approval is waiting
+- the thread follows new messages and approval cards to the bottom, and stops following while you scroll up to read
 - a side rail with the turn's **plan** (like Box AI's to-do list) and its **decision trace** (`<box-run-trace>`: routing, tool calls, approval gates)
 - in live mode, the **API inspector** (below)
 

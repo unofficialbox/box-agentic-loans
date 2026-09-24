@@ -341,6 +341,7 @@ function CopyButtons({ entry }: { entry: CallEntry }) {
 function CallDetail({ entry }: { entry: CallEntry }) {
   return (
     <>
+      <p className="inspector-call">{entry.summary}</p>
       <div className="inspector-detail-head">
         <div className="inspector-summary">
           <span className="inspector-pill">{entry.method}</span>
@@ -355,7 +356,6 @@ function CallDetail({ entry }: { entry: CallEntry }) {
         </div>
         <CopyButtons entry={entry} />
       </div>
-      <p className="inspector-call">{entry.summary}</p>
       <p className="inspector-url">
         <code>{entry.url}</code>
       </p>

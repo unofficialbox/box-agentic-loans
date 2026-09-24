@@ -36,7 +36,9 @@
   --focus: 0 0 0 3px color-mix(in srgb, #2486fc 35%, transparent);
 
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  /* The workspace keeps a usable height: with the inspector open the page
+     scrolls rather than squeezing the conversation. */
+  grid-template-rows: auto minmax(30rem, 1fr) auto;
   height: 100%;
 }
 
@@ -94,11 +96,6 @@
 
 .loan-title {
   font-weight: 700;
-}
-
-.loan-title-empty {
-  font-weight: 400;
-  color: var(--muted);
 }
 
 .pill {
@@ -172,8 +169,8 @@
 
 /* One card: the chat, any notice, and the suggested prompts under the composer. */
 .conversation {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto auto;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
   overflow: hidden;
   border: 1px solid var(--stroke);
@@ -184,7 +181,100 @@
 
 /* Let the pattern fill the column: the thread grows, the composer stays put. */
 box-agent-chat {
+  flex: 1 1 auto;
   min-height: 0;
+}
+
+/* The top bar names the loan, so the chat's own title is for screen readers only. */
+box-agent-chat::part(title) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Before the first message the welcome takes the thread's place; only the composer shows. */
+.conversation.is-empty box-agent-chat {
+  flex: 0 0 auto;
+}
+
+.conversation.is-empty box-agent-chat::part(header),
+.conversation.is-empty box-agent-chat::part(thread) {
+  display: none;
+}
+
+.welcome {
+  flex: 1 1 auto;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-6) var(--space-4);
+  text-align: center;
+}
+
+.welcome-title {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 2rem;
+  font-weight: 700;
+}
+
+.welcome-lede {
+  max-width: 34rem;
+  margin: 0;
+  color: var(--muted);
+}
+
+.starters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 40rem;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.starter {
+  display: grid;
+  gap: var(--space-1);
+  width: 100%;
+  height: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-4);
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.starter:hover {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    var(--box-ai) border-box;
+  box-shadow: var(--dropshadow-3);
+}
+
+.starter:focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+.starter-title {
+  font-weight: 700;
+}
+
+.starter-description {
+  font-size: 0.8125rem;
+  color: var(--muted);
 }
 
 box-agent-chat::part(panel) {
@@ -281,6 +371,20 @@ box-agent-chat::part(empty) {
 
 .card-title {
   margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+/* The trace is its own card: the run-trace panel takes the card's look. */
+box-run-trace::part(panel) {
+  padding: var(--space-4);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-4);
+  background: var(--surface);
+  box-shadow: var(--dropshadow-1);
+}
+
+box-run-trace::part(heading) {
   font-size: 0.9375rem;
   font-weight: 700;
 }
@@ -383,13 +487,16 @@ box-agent-chat::part(empty) {
     padding: var(--space-4);
   }
 
-  .conversation {
-    grid-template-rows: auto auto auto;
+  .workspace {
     align-content: start;
   }
 
-  .workspace {
-    align-content: start;
+  .welcome {
+    padding: var(--space-6) var(--space-4) var(--space-2);
+  }
+
+  .starters {
+    grid-template-columns: 1fr;
   }
 
   box-agent-chat::part(thread) {
@@ -398,5 +505,15 @@ box-agent-chat::part(empty) {
 
   .topbar {
     padding: var(--space-3) var(--space-4);
+  }
+
+  /* Brand and New chat share the first row; the loan gets its own line below. */
+  .topbar-actions {
+    order: 2;
+  }
+
+  .loan-context {
+    order: 3;
+    flex-basis: 100%;
   }
 }

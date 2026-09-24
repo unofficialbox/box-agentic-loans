@@ -483,7 +483,7 @@ export class LoanAgent {
         return result.ok ? result.message : `The LOS refused: ${result.message}`;
       },
     });
-    turn.note("Approval gate · applyLoanTerms", "Held until a person approves", "warning");
+    turn.note("Held for approval · applyLoanTerms", "Nothing happens until you approve it in the chat", "succeeded");
     turn.say([`Ready to write ${fields.length} field${fields.length === 1 ? "" : "s"} to ${loanId}. Nothing is written until you approve.`]);
     turn.propose(proposal);
   }
@@ -579,7 +579,7 @@ export class LoanAgent {
         return "Letter generated. Ask me to send it for signature when ready.";
       },
     });
-    turn.note("Approval gate · create_docgen_batch", "Held until a person approves", "warning");
+    turn.note("Held for approval · create_docgen_batch", "Nothing happens until you approve it in the chat", "succeeded");
     turn.say([`Commitment letter for ${loanId} is ready to generate. Approve to create it in the loan folder.`]);
     turn.propose(proposal);
   }
@@ -610,7 +610,7 @@ export class LoanAgent {
         return result.ok ? result.message : `Not sent: ${result.message}`;
       },
     });
-    turn.note("Approval gate · prepareSignatureRequest", "Held until a person approves", "warning");
+    turn.note("Held for approval · prepareSignatureRequest", "Nothing happens until you approve it in the chat", "succeeded");
     turn.say(["Ready to send the letter for signature. Approve to create the Box Sign request."]);
     turn.propose(proposal);
   }

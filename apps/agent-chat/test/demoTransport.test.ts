@@ -70,7 +70,7 @@ describe("DemoLoanAgentTransport", () => {
     const proposal = events.find(event => event.kind === "proposal");
     expect(proposal?.kind).toBe("proposal");
     if (proposal?.kind !== "proposal") return;
-    expect(trace[trace.length - 1]?.step.status).toBe("warning");
+    expect(trace[trace.length - 1]?.step).toMatchObject({ title: "Held for approval · applyLoanTerms", status: "succeeded" });
 
     const resolved = await transport.resolveAction({
       proposalId: proposal.proposal.id,
