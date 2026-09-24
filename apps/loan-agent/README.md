@@ -76,7 +76,7 @@ The check proves the template file exists and the user can open it. It can't pro
 
 ```bash
 npm install
-npm test                 # 110 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
+npm test                 # 112 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
 npm start                # http://LOAN_AGENT_HOST:LOAN_AGENT_PORT
 
 # Without MCP access, TypeSafe still decides but the tools are seeded fixtures:
@@ -145,4 +145,4 @@ The log holds loan data from your org, so keep the server on localhost.
 - **No user authentication.** The bearer token is the chat session ID, not a credential, so keep `LOAN_AGENT_HOST=127.0.0.1`. Put real auth in front before exposing it.
 - **Box response formats.** `search_files_metadata`, `get_file_details`, `ai_extract_structured_from_fields`, `get_docgen_template_by_id` and `get_folder_details` are tested against responses captured from a live Box MCP server (`test/boxResponses.ts`, identifiers replaced). A successful `create_docgen_batch` hasn't been captured yet, because that means generating a real letter. If its response doesn't name the output file, the agent refuses to send anything for signature rather than choosing a file by name.
 - **Pricing check is partial.** SOFR isn't returned by any tool, so the pricing rule checks only the 6.50% absolute floor.
-- **Guaranty check is partial.** It covers limited vs unlimited. It does not yet detect an omitted owner.
+- **Guaranty check is partial.** It covers limited vs unlimited, and flags anyone the document leaves out of the guaranty ("Harborview Employee Holdings LP gives no guaranty") as **Needs confirmation**. It can't rule on it: every owner of 20% or more must guarantee, but no tool returns ownership percentages yet. Once an ownership schedule or record field exists, the same check can say outside policy.

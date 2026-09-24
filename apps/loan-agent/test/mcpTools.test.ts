@@ -35,6 +35,15 @@ describe("Box responses as the Box MCP server returns them", () => {
     });
   });
 
+  it("reads the parties left out of the guaranty as a list, and nothing as nothing", () => {
+    expect(parseCovenants(box.exclusionsFromMarkup).guarantyExclusions).toEqual(["Harborview Employee Holdings LP"]);
+    expect(parseCovenants({ guarantyType: "unlimited", ...box.exclusionsFromExecutedAgreement }).guarantyExclusions).toBeUndefined();
+    expect(parseCovenants({ guarantyExclusions: "A LP; B LLC\nC" }).guarantyExclusions).toEqual(["A LP", "B LLC", "C"]);
+    for (const nothing of ["", "None", "N/A", "none."]) {
+      expect(parseCovenants({ guarantyType: "limited", guarantyExclusions: nothing }).guarantyExclusions).toBeUndefined();
+    }
+  });
+
   it("names the Doc Gen template by fileName and the folder by name", () => {
     expect(itemName(box.docgenTemplate)).toBe("los-commitment-letter-template.docx");
     expect(itemName(box.folderDetails)).toBe("Harborview Logistics Commercial Real Estate 2026_22");

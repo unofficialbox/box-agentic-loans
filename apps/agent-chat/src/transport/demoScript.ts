@@ -94,7 +94,7 @@ export const DEMO_BEATS: DemoBeat[] = [
       { connector: "LOS MCP", tool: "getLoanPackage", detail: "governed document set for this loan" },
       { connector: "LOS MCP", tool: "extractLoanTerms", detail: "Box AI extract + credit policy Hub check" },
     ],
-    reply: "Extracted 5 terms from the borrower markup. Of 5 policy checks, 1 needs an exception and 4 are outside policy.",
+    reply: "Extracted 5 terms from the borrower markup. Of 6 policy checks, 1 needs an exception, 4 are outside policy and 1 needs your confirmation.",
     blocks: [
       {
         type: "facts",
@@ -119,7 +119,14 @@ export const DEMO_BEATS: DemoBeat[] = [
           },
           { label: "Loan-to-value", value: "Outside policy", detail: "85% over the 75% standard and 80% exception limit", status: "fail" },
           { label: "Debt service coverage", value: "Outside policy", detail: "1.10x tested annually; minimum 1.25x, quarterly", status: "fail" },
-          { label: "Guaranty", value: "Outside policy", detail: "Capped at $1M each, employee LP omitted", status: "fail" },
+          { label: "Guaranty", value: "Outside policy", detail: "Capped at $1M each with no cash collateral", status: "fail" },
+          {
+            label: "Guarantors",
+            value: "Needs confirmation",
+            detail:
+              "Harborview Employee Holdings LP gives no guaranty. Confirm ownership: an owner of 20% or more left out is outside policy, even with the exception",
+            status: "warn",
+          },
           { label: "Collateral", value: "Outside policy", detail: "FF&E ($850K) added to collateral value is excluded by policy", status: "fail" },
         ],
       },
@@ -180,7 +187,7 @@ export const DEMO_BEATS: DemoBeat[] = [
       { connector: "LOS MCP", tool: "listLoans", detail: "Harborview Logistics · status Closed" },
       { connector: "Box MCP", tool: "ai_qa_multi_file", detail: "2023 + 2025 agreements vs 2026 markup" },
     ],
-    reply: "Harborview Logistics's executed loans against the LN-2026-0042 markup: 4 covenants depart from precedent.",
+    reply: "Harborview Logistics's executed loans against the LN-2026-0042 markup: 5 covenants depart from precedent.",
     blocks: [
       {
         type: "table",
@@ -190,6 +197,7 @@ export const DEMO_BEATS: DemoBeat[] = [
           { cells: ["DSCR min", "1.30x", "1.30x", "1.10x"], status: "warn", note: "Departs from precedent" },
           { cells: ["Testing", "quarterly", "quarterly", "annual"], status: "warn", note: "Departs from precedent" },
           { cells: ["Guaranty", "unlimited", "unlimited", "$1M cap each"], status: "warn", note: "Departs from precedent" },
+          { cells: ["Left out of guaranty", "none", "none", "Harborview Employee Holdings LP"], status: "warn", note: "Departs from precedent" },
         ],
         footnote: "The 2026 FF&E claim cites the 2025 equipment loan, but that pool secures the 2025 loan, not this one.",
       },

@@ -86,6 +86,10 @@ export const covenantExtraction = {
   guarantyCapPerPerson: 1000000,
 };
 
+/** The guarantyExclusions field alone: on the 2026 markup, and on the 2025 executed agreement (no one left out). */
+export const exclusionsFromMarkup = { guarantyExclusions: "Harborview Employee Holdings LP" };
+export const exclusionsFromExecutedAgreement = {};
+
 /** get_docgen_template_by_id: the name is `fileName`, not `name`. */
 export const docgenTemplate = {
   fileName: "los-commitment-letter-template.docx",

@@ -293,7 +293,18 @@ export function parseCovenants(result: unknown): CovenantFields {
     testFrequency: text("testFrequency"),
     guarantyType: text("guarantyType"),
     guarantyCapPerPerson: number("guarantyCapPerPerson"),
+    guarantyExclusions: names(answer.guarantyExclusions),
   };
+}
+
+/** "A; B" → ["A", "B"]; nothing, or a stand-in for nothing, → undefined. */
+function names(value: unknown): string[] | undefined {
+  if (typeof value !== "string") return undefined;
+  const list = value
+    .split(/[;\n]/)
+    .map(name => name.trim())
+    .filter(name => name && !/^(none|n\/a|not applicable|no one)\.?$/i.test(name));
+  return list.length ? list : undefined;
 }
 
 /** A Doc Gen template (`fileName`) or folder (`name`) by name. */

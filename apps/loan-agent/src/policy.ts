@@ -6,10 +6,11 @@ import type { Terms } from "./los.js";
  * rules. Same terms in → same findings out: no model reads the policy.
  */
 
-export type Verdict = "within" | "exception" | "outside" | "unknown";
+/** "confirm": outside policy if a fact no tool returns holds; a person must check it. */
+export type Verdict = "within" | "exception" | "outside" | "confirm" | "unknown";
 
 export interface PolicyFinding {
-  topic: "Loan-to-value" | "Debt service coverage" | "Pricing" | "Guaranty";
+  topic: "Loan-to-value" | "Debt service coverage" | "Pricing" | "Guaranty" | "Guarantors";
   verdict: Verdict;
   /** One line: the value and the rule it was measured against. */
   detail: string;
@@ -129,6 +130,23 @@ export function checkGuaranty(type: string | undefined, capPerPerson?: number): 
   return { topic: "Guaranty", verdict: "outside", detail: "No guaranty offered", policyIds };
 }
 
+/**
+ * Every owner of 20% or more must guarantee, and leaving one out is outside
+ * policy even under the limited-guaranty exception (LOS-GUAR-002). No tool
+ * returns ownership yet, so a party the document leaves out is flagged for
+ * the officer to confirm, not ruled on.
+ */
+export function checkGuarantyExclusions(excluded: string[] | undefined): PolicyFinding | undefined {
+  if (!excluded?.length) return undefined;
+  const who = excluded.length === 1 ? excluded[0] : `${excluded.slice(0, -1).join(", ")} and ${excluded.at(-1)}`;
+  return {
+    topic: "Guarantors",
+    verdict: "confirm",
+    detail: `${who} ${excluded.length === 1 ? "gives" : "give"} no guaranty. Confirm ownership: an owner of 20% or more left out is outside policy, even with the exception`,
+    policyIds: ["LOS-GUAR-001", "LOS-GUAR-002"],
+  };
+}
+
 export function evaluateTerms(terms: Terms, covenants?: CovenantFields): PolicyFinding[] {
   const findings = [
     checkLtv(num(terms.ltv)),
@@ -138,6 +156,8 @@ export function evaluateTerms(terms: Terms, covenants?: CovenantFields): PolicyF
   if (covenants?.guarantyType) {
     findings.push(checkGuaranty(covenants.guarantyType, covenants.guarantyCapPerPerson));
   }
+  const exclusions = checkGuarantyExclusions(covenants?.guarantyExclusions);
+  if (exclusions) findings.push(exclusions);
   return findings;
 }
 

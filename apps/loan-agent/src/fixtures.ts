@@ -90,7 +90,7 @@ const EXTRACTIONS: Record<string, Record<string, unknown>> = {
 };
 
 const COVENANTS: Record<string, CovenantFields> = {
-  [FILES.termSheet.id]: { ltvMax: 75, dscrMin: 1.1, testFrequency: "annual", guarantyType: "limited", guarantyCapPerPerson: 1000000 },
+  [FILES.termSheet.id]: { ltvMax: 75, dscrMin: 1.1, testFrequency: "annual", guarantyType: "limited", guarantyCapPerPerson: 1000000, guarantyExclusions: ["Harborview Employee Holdings LP"] },
   [FILES.agreement2023.id]: { ltvMax: 70, dscrMin: 1.3, testFrequency: "quarterly", guarantyType: "unlimited" },
   [FILES.agreement2025.id]: { ltvMax: 70, dscrMin: 1.3, testFrequency: "quarterly", guarantyType: "unlimited" },
 };
