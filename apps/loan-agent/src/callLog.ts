@@ -27,6 +27,8 @@ export interface CallEntry {
   responseHeaders: Record<string, string>;
   responseBody?: string;
   error?: string;
+  /** Set when a non-2xx answer is normal for this call, e.g. a 405 the MCP spec allows. */
+  expected?: string;
 }
 
 export type CallEvent = { type: "call"; entry: CallEntry } | { type: "clear" };
@@ -229,6 +231,7 @@ export function loggedFetch(log: CallLog, service: CallService, inner: FetchLike
       status: response.status,
       statusText: response.statusText,
       responseHeaders: redactHeaders(response.headers),
+      expected: expectedAnswer(method, base.summary, response.status),
     };
     // A GET event stream stays open for server-initiated messages: show it, don't read it.
     if (!response.body || (method === "GET" && /event-stream/i.test(contentType))) {
@@ -250,5 +253,22 @@ export function loggedFetch(log: CallLog, service: CallService, inner: FetchLike
 /** One line per finished call, for the server's terminal. */
 export function formatCallLine(entry: CallEntry): string {
   const status = entry.error && !entry.status ? "ERR" : String(entry.status);
-  return `[api] ${status.padEnd(3)} ${`${entry.durationMs}ms`.padStart(7)}  ${entry.service.padEnd(10)} ${entry.method.padEnd(6)} ${entry.summary}`;
+  const line = `[api] ${status.padEnd(3)} ${`${entry.durationMs}ms`.padStart(7)}  ${entry.service.padEnd(10)} ${entry.method.padEnd(6)} ${entry.summary}`;
+  return entry.expected ? `${line} (expected)` : line;
+}
+
+/**
+ * MCP Streamable HTTP: a client opens GET for server-initiated messages and
+ * sends DELETE to end its session. A server that offers neither answers 405,
+ * which the spec allows and the SDK handles; tool calls are unaffected.
+ */
+export function expectedAnswer(method: string, summary: string, status: number): string | undefined {
+  if (status !== 405) return undefined;
+  if (method === "GET" && summary === "open event stream") {
+    return "Expected: this MCP server doesn't offer a server-to-client event stream. The MCP spec allows a 405 here, and tool calls work without it.";
+  }
+  if (method === "DELETE" && summary === "close session") {
+    return "Expected: this MCP server doesn't support ending a session explicitly. The MCP spec allows a 405 here.";
+  }
+  return undefined;
 }

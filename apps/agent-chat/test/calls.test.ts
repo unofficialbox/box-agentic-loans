@@ -42,6 +42,9 @@ describe("filters", () => {
     expect(matchesFilter(failed, "errors")).toBe(true);
     expect(matchesFilter(entry("ok"), "errors")).toBe(false);
     expect(matchesFilter(entry("ok"), "all")).toBe(true);
+    const allowed = entry("g", { method: "GET", status: 405, expected: "Expected: no event stream" });
+    expect(isFailure(allowed)).toBe(false);
+    expect(matchesFilter(allowed, "errors")).toBe(false);
   });
 });
 

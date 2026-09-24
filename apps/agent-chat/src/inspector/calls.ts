@@ -21,6 +21,8 @@ export interface CallEntry {
   responseHeaders: Record<string, string>;
   responseBody?: string;
   error?: string;
+  /** A non-2xx answer that is normal for this call; not counted as a failure. */
+  expected?: string;
 }
 
 export type CallStreamEvent =
@@ -66,6 +68,7 @@ export const SERVICE_LABELS: Record<CallService, string> = {
 };
 
 export function isFailure(entry: CallEntry): boolean {
+  if (entry.expected) return false;
   return Boolean(entry.error) || (!entry.pending && (entry.status === 0 || entry.status >= 400));
 }
 

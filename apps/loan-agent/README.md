@@ -49,7 +49,7 @@ Salesforce sign-in goes to the org's My Domain (`LOS_MCP_LOGIN_URL`), not `login
 
 ```bash
 npm install
-npm test                 # 75 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
+npm test                 # 77 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
 npm start                # http://LOAN_AGENT_HOST:LOAN_AGENT_PORT
 
 # Without MCP access, TypeSafe still decides but the tools are seeded fixtures:
@@ -81,6 +81,8 @@ Where to see it:
 - **Terminal:** one line per finished call, e.g. `[api] 200    41ms  box        POST   tools/call search_files_metadata`.
 - **Chat UI:** the **API inspector** shelf at the bottom of the Loan Copilot page (live mode only).
 - **HTTP:** `GET /calls` (JSON, newest first), `GET /calls/stream` (server-sent events: a snapshot, then each call), `DELETE /calls` (clear).
+
+An MCP server that offers no server-to-client event stream answers the client's `GET` with 405, which the MCP spec allows; the log marks that call (and a 405 to the session-closing `DELETE`) as expected, not failed.
 
 The log holds loan data from your org, so keep the server on localhost.
 

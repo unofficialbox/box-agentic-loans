@@ -233,7 +233,7 @@ export function ApiInspector({ baseUrl }: { baseUrl: string }) {
                       key={entry.id}
                       tabIndex={0}
                       aria-selected={entry.id === selected?.id}
-                      className={isFailure(entry) ? "is-failure" : undefined}
+                      className={isFailure(entry) ? "is-failure" : entry.expected ? "is-expected" : undefined}
                       onClick={() => setSelectedId(entry.id)}
                       onKeyDown={event => onRowKey(event, entry.id)}
                     >
@@ -345,7 +345,11 @@ function CallDetail({ entry }: { entry: CallEntry }) {
       <div className="inspector-detail-head">
         <div className="inspector-summary">
           <span className="inspector-pill">{entry.method}</span>
-          <span className={`inspector-pill ${isFailure(entry) ? "inspector-pill-error" : "inspector-pill-ok"}`}>
+          <span
+            className={`inspector-pill ${
+              isFailure(entry) ? "inspector-pill-error" : entry.expected ? "inspector-pill-neutral" : "inspector-pill-ok"
+            }`}
+          >
             {statusText(entry)}
             {entry.statusText ? ` ${entry.statusText}` : ""}
           </span>
@@ -360,6 +364,7 @@ function CallDetail({ entry }: { entry: CallEntry }) {
         <code>{entry.url}</code>
       </p>
       {entry.error && <p className="inspector-error">{entry.error}</p>}
+      {entry.expected && <p className="inspector-note">{entry.expected}</p>}
       <Block key={`${entry.id}-rqh`} label="Request headers" text={JSON.stringify(entry.requestHeaders, null, 2)} />
       <Block key={`${entry.id}-rqb`} label="Request body" text={entry.requestBody} />
       <Block key={`${entry.id}-rsh`} label="Response headers" text={JSON.stringify(entry.responseHeaders, null, 2)} />

@@ -240,6 +240,10 @@
   font-weight: 700;
 }
 
+.inspector-table tr.is-expected .inspector-status {
+  color: var(--muted);
+}
+
 .inspector-table tr.is-failure .inspector-status {
   color: color-mix(in srgb, var(--danger) 80%, var(--text));
 }
@@ -298,6 +302,17 @@
 .inspector-pill-ok {
   background: color-mix(in srgb, var(--success) 16%, transparent);
   color: color-mix(in srgb, var(--success) 70%, var(--text));
+}
+
+.inspector-pill-neutral {
+  background: var(--surface-hover);
+  color: var(--muted);
+}
+
+.inspector-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
 }
 
 .inspector-pill-error {
