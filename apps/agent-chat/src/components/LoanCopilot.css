@@ -35,6 +35,13 @@
   --danger: var(--boe-token-surface-status-surface-error, #ed3757);
   --focus: 0 0 0 3px color-mix(in srgb, #2486fc 35%, transparent);
 
+  /* One button system, matching box-agent-chat's own Send and approval buttons:
+     pill-shaped, 13px semibold, in two heights. */
+  --control-height: 2rem;
+  --control-height-compact: 1.75rem;
+  --control-font-size: 0.8125rem;
+  --control-font-weight: 600;
+
   display: grid;
   /* The workspace keeps a usable height: with the inspector open the page
      scrolls rather than squeezing the conversation. */
@@ -134,13 +141,28 @@
   font: inherit;
 }
 
-.button {
-  padding: var(--space-1) var(--space-4);
-  min-height: 2rem;
-  border-radius: var(--radius-3);
+.button,
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  height: var(--control-height);
+  padding: 0 var(--space-4);
   border: 1px solid var(--stroke);
+  border-radius: var(--radius-pill);
   background: var(--surface);
-  font-weight: 700;
+  font-size: var(--control-font-size);
+  font-weight: var(--control-font-weight);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Compact: controls inside dense content (suggestions, the inspector). */
+.chip,
+.button-compact {
+  height: var(--control-height-compact);
+  padding: 0 var(--space-3);
 }
 
 .button:hover,
@@ -183,6 +205,22 @@
 box-agent-chat {
   flex: 1 1 auto;
   min-height: 0;
+}
+
+/* The pattern's own buttons join the page's button system. */
+box-agent-chat::part(send),
+box-agent-chat::part(stop) {
+  height: var(--control-height);
+  padding: 0 var(--space-4);
+  font-size: var(--control-font-size);
+  font-weight: var(--control-font-weight);
+}
+
+box-agent-chat::part(proposal-action) {
+  height: var(--control-height-compact);
+  padding: 0 var(--space-3);
+  font-size: var(--control-font-size);
+  font-weight: var(--control-font-weight);
 }
 
 /* The top bar names the loan, so the chat's own title is for screen readers only. */
@@ -335,14 +373,6 @@ box-agent-chat::part(empty) {
   color: var(--muted);
 }
 
-.chip {
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--stroke);
-  background: var(--surface);
-  font-size: 0.8125rem;
-}
-
 /* ── Right rail ──────────────────────────────────────────── */
 
 .rail {
@@ -382,6 +412,14 @@ box-run-trace::part(panel) {
   border-radius: var(--radius-4);
   background: var(--surface);
   box-shadow: var(--dropshadow-1);
+}
+
+/* "Details" is a text link, but it takes the same pill shape and weight as the buttons. */
+box-run-trace::part(toggle) {
+  padding: 0.125rem var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: var(--control-font-weight);
 }
 
 box-run-trace::part(heading) {

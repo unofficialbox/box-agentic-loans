@@ -34,6 +34,7 @@ In live mode an **API inspector** card sits under the chat, in the same column, 
 - the list shows status, service, the call (e.g. `tools/call getLoanPackage`) and time in ms, newest first
 - select a row to see its URL and its request and response headers and bodies
 - **Copy request**, **Copy response** or **Copy both** puts the call on the clipboard as HTTP-style text (request or status line, headers, blank line, body), already redacted
+- each code block (request or response headers or body) has a copy icon in its corner that copies exactly what the block shows
 - filter by service or errors, or **Clear** the log (`DELETE /calls`)
 - drag the title bar to resize the shelf, and the divider to resize the list; both sizes and the open/closed state are remembered in this browser
 

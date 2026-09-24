@@ -327,7 +327,7 @@ function CopyButtons({ entry }: { entry: CallEntry }) {
   return (
     <div className="inspector-copy" role="group" aria-label="Copy this call">
       {(Object.keys(COPY_LABELS) as CopyPart[]).map(part => (
-        <button key={part} type="button" className="button inspector-copy-button" onClick={() => copy(part)}>
+        <button key={part} type="button" className="button button-compact" onClick={() => copy(part)}>
           {done?.part === part ? (done.ok ? "Copied" : "Copy failed") : COPY_LABELS[part]}
         </button>
       ))}
@@ -360,19 +360,67 @@ function CallDetail({ entry }: { entry: CallEntry }) {
         <code>{entry.url}</code>
       </p>
       {entry.error && <p className="inspector-error">{entry.error}</p>}
-      <Block label="Request headers" text={JSON.stringify(entry.requestHeaders, null, 2)} />
-      <Block label="Request body" text={entry.requestBody} />
-      <Block label="Response headers" text={JSON.stringify(entry.responseHeaders, null, 2)} />
-      <Block label="Response body" text={entry.pending ? "(waiting for the response)" : entry.responseBody} />
+      <Block key={`${entry.id}-rqh`} label="Request headers" text={JSON.stringify(entry.requestHeaders, null, 2)} />
+      <Block key={`${entry.id}-rqb`} label="Request body" text={entry.requestBody} />
+      <Block key={`${entry.id}-rsh`} label="Response headers" text={JSON.stringify(entry.responseHeaders, null, 2)} />
+      <Block key={`${entry.id}-rsb`} label="Response body"
+        text={entry.pending ? undefined : entry.responseBody}
+        placeholder={entry.pending ? "(waiting for the response)" : "(empty)"}
+      />
     </>
   );
 }
 
-function Block({ label, text }: { label: string; text?: string }) {
+const CopyIcon = () => (
+  <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+    <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
+    <path d="M10.5 3.5v-.5a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v5A1.5 1.5 0 0 0 4 9.5h.5" fill="none" stroke="currentColor" strokeWidth="1.4" />
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+    <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+/** A code block with a copy icon in its corner that copies exactly what it shows. */
+function Block({ label, text, placeholder = "(empty)" }: { label: string; text?: string; placeholder?: string }) {
+  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+
+  const copy = () => {
+    if (!text) return;
+    copyText(text).then(
+      () => setState("copied"),
+      () => setState("failed")
+    );
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => setState("idle"), 1600);
+  };
+
+  const name = label.toLowerCase();
   return (
     <div className="inspector-block">
       <div className="inspector-block-label">{label}</div>
-      <pre className="inspector-code">{text || "(empty)"}</pre>
+      <div className="inspector-code-wrap">
+        <pre className="inspector-code">{text || placeholder}</pre>
+        {text && (
+          <button
+            type="button"
+            className={`inspector-code-copy ${state === "copied" ? "is-copied" : ""}`}
+            aria-label={`Copy ${name}`}
+            title={state === "copied" ? "Copied" : state === "failed" ? "Copy failed" : `Copy ${name}`}
+            onClick={copy}
+          >
+            {state === "copied" ? <CheckIcon /> : <CopyIcon />}
+          </button>
+        )}
+        <span className="visually-hidden" role="status">
+          {state === "copied" ? `${label} copied` : state === "failed" ? "Copy failed" : ""}
+        </span>
+      </div>
     </div>
   );
 }
