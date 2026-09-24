@@ -39,6 +39,8 @@ export interface ToolGateway {
   getLoanPackage(loan: string): Promise<LoanPackage>;
   extractLoanTerms(loanId: string, fileId: string): Promise<Extraction>;
   findByPolicyRisk(folderId: string, risk: string): Promise<MetadataHit[]>;
+  /** The file's losDocument documentType, for search hits that came back without it. */
+  getDocumentType(fileId: string): Promise<string | undefined>;
   extractCovenants(fileId: string): Promise<CovenantFields>;
 
   applyLoanTerms(loanId: string, terms: Terms): Promise<WriteResult>;

@@ -10,7 +10,7 @@ import {
   type Terms,
 } from "./los.js";
 import { POLICIES, evaluateTerms, money, type PolicyFinding } from "./policy.js";
-import { ActionRequiredError, type CovenantFields, type ToolGateway } from "./tools.js";
+import { ActionRequiredError, type CovenantFields, type MetadataHit, type ToolGateway } from "./tools.js";
 import { TypeSafeError, runnerUp, type Decider } from "./typesafe.js";
 import {
   INTENTS,
@@ -357,9 +357,10 @@ export class LoanAgent {
     const loan = await this.resolveLoan(turn, session, message, loanHint, { preferLatest: true });
     const risk = riskLevel(message);
     const lines = [`Latest loan: ${loanLine(loan)}`];
-    const hits = await turn.step("Box · search_files_metadata", `losDocument · policyRisk = '${risk}'`, () =>
+    const found = await turn.step("Box · search_files_metadata", `losDocument · policyRisk = '${risk}'`, () =>
       this.tools.findByPolicyRisk(requireFolder(loan), risk)
     );
+    const hits = await this.withDocumentTypes(turn, found);
     turn.advance();
     if (hits.length === 0) {
       turn.say([...lines, "", `No documents in this loan are flagged ${risk} policy risk.`]);
@@ -374,6 +375,31 @@ export class LoanAgent {
     for (const hit of hits) {
       turn.cite(documentCitation(loan, hit.fileId, hit.name));
     }
+  }
+
+  /**
+   * Fills in documentType for hits the search returned without it, one Box
+   * lookup per file. The label is cosmetic: a failed lookup leaves it off.
+   */
+  private async withDocumentTypes(turn: Turn, hits: MetadataHit[]): Promise<MetadataHit[]> {
+    const missing = hits.filter(hit => !hit.documentType);
+    if (missing.length === 0) return hits;
+    const types = await turn.step(
+      "Box · get_file_details",
+      `losDocument documentType · ${missing.length} file${missing.length === 1 ? "" : "s"}`,
+      () =>
+        Promise.all(
+          missing.map(hit =>
+            this.tools.getDocumentType(hit.fileId).then(
+              type => [hit.fileId, type] as const,
+              () => [hit.fileId, undefined] as const
+            )
+          )
+        ),
+      results => (results.every(([, type]) => type) ? "succeeded" : "warning")
+    );
+    const byId = new Map(types);
+    return hits.map(hit => (hit.documentType ? hit : { ...hit, documentType: byId.get(hit.fileId) }));
   }
 
   private async extractAndCheck(turn: Turn, session: Session, message: string, loanHint?: string) {
