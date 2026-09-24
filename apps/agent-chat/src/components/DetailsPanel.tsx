@@ -47,6 +47,12 @@ export function DetailsPanel({ sessionId, summary }: { sessionId: string; summar
                   <dd>{loan.status}</dd>
                 </div>
               )}
+              {loan.risk && (
+                <div>
+                  <dt>Risk</dt>
+                  <dd>{loan.risk}</dd>
+                </div>
+              )}
               {loan.borrower && (
                 <div>
                   <dt>Borrower</dt>

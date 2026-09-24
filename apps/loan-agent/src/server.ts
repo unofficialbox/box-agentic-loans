@@ -15,7 +15,7 @@ import {
   loginPath,
   type OAuthProvider,
 } from "./oauth.js";
-import type { ToolGateway } from "./tools.js";
+import type { DocGenCheck, ToolGateway } from "./tools.js";
 import { TypeSafeClient } from "./typesafe.js";
 
 /**
@@ -87,8 +87,30 @@ function tools(): ToolGateway {
   );
 }
 
+const gateway = tools();
+
+/**
+ * The Doc Gen template, checked as the signed-in Box user when Box connects
+ * (at startup, or right after sign-in), so a scope or sharing problem shows
+ * up in the terminal and on /health, not only when the officer approves.
+ * Each letter request checks again, with the loan's folder.
+ */
+let docgen: (DocGenCheck & { checkedAt: string }) | undefined;
+
+async function checkDocGen() {
+  try {
+    const result = await gateway.checkDocGen();
+    docgen = { ...result, checkedAt: new Date().toISOString() };
+    for (const item of result.items) {
+      console.log(item.ok ? `[docgen] Template ready: ${item.detail}` : `[docgen] ${item.detail}\n[docgen] To fix: ${item.fix}`);
+    }
+  } catch (error) {
+    console.log(`[docgen] Not checked: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 const agent = new LoanAgent(
-  tools(),
+  gateway,
   new TypeSafeClient({
     apiKey: config.typesafe.apiKey,
     apiUrl: config.typesafe.apiUrl,
@@ -252,6 +274,7 @@ async function oauthCallback(oauth: OAuthClient, params: URLSearchParams, res: S
   try {
     await oauth.completeLogin(params);
     page(res, 200, `${label} connected`, `The loan agent can now use its ${label} tools. You can close this tab.`);
+    if (oauth.provider.id === "box") void checkDocGen();
   } catch (error) {
     if (!(error instanceof OAuthError)) throw error;
     page(res, 400, `${label} sign-in failed`, error.message);
@@ -270,6 +293,7 @@ const server = createServer(async (req, res) => {
           ok: true,
           fixtures: config.fixtures,
           connectors: Object.fromEntries(oauthClients.map(client => [client.provider.id, client.connected ? "connected" : "not_connected"])),
+          docgen: docgen ?? "not_checked",
         })
       );
     } else if (req.method === "GET" && oauthClients.some(client => url.pathname === loginPath(client.provider))) {
@@ -315,4 +339,5 @@ server.listen(config.port, config.host, () => {
       console.log(`${label} is not connected yet. Sign in: ${baseUrl}${loginPath(client.provider)}`);
     }
   }
+  if (connectors?.box.oauth.connected) void checkDocGen();
 });

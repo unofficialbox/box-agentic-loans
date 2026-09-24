@@ -121,7 +121,9 @@ export function LoanCopilot({ loan }: { loan?: string }) {
 
   const chats = sessions.map(id => ({ id, summary: summaries[id] ?? EMPTY_SUMMARY }));
   const heading = active.loan?.name ?? (active.started ? active.title : "Loan Copilot");
-  const meta = active.loan ? [active.loan.loanId, active.loan.status].filter(Boolean).join(" · ") : undefined;
+  const meta = active.loan
+    ? [active.loan.loanId, active.loan.status, active.loan.risk && `${active.loan.risk} risk`].filter(Boolean).join(" · ")
+    : undefined;
 
   return (
     <div

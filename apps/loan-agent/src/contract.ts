@@ -37,6 +37,8 @@ export interface LoanContext {
   name?: string;
   borrower?: string;
   status?: string;
+  /** Risk rating, e.g. "High"; separate from status. */
+  risk?: string;
 }
 
 export type TodoStatus = "pending" | "in_progress" | "completed" | "skipped";

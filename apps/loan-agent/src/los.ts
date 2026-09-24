@@ -27,6 +27,8 @@ export interface LoanPackage {
   name?: string;
   borrower?: string;
   status?: string;
+  /** The loan's risk rating, when the LOS reports one ("High"). */
+  risk?: string;
   documents: LoanDocument[];
   summary: string;
 }
@@ -94,8 +96,10 @@ export function parseLoanList(summary: string): LoanRow[] {
 
 // "- harborview-appraisal-2026.pdf - https://app.box.com/file/123"
 const DOC_LINE = /^-\s*(.+?)\s+-\s+(https:\/\/\S+\/file\/(\d+))\s*$/;
-// "LN-2026-0003 -- Name. Borrower: X. Status: Approved."
-const HEADER = /^(LN-\d{4}-\d{4})\s+--\s+(.+?)\.\s+Borrower:\s+(.+?)\.\s+Status:\s+(.+?)\.?$/;
+// "LN-2026-0003 -- Name. Borrower: X. Status: Approved." and, when the LOS
+// rates it, "… Status: Underwriting. Risk: High." (risk is its own field, not
+// part of the status).
+const HEADER = /^(LN-\d{4}-\d{4})\s+--\s+(.+?)\.\s+Borrower:\s+(.+?)\.\s+Status:\s+(.+?)(?:\.\s+Risk:\s+(.+?))?\.?$/;
 
 export function parseLoanPackage(values: Record<string, unknown>): LoanPackage {
   const summary = String(values.outputSummary ?? "");
@@ -117,6 +121,7 @@ export function parseLoanPackage(values: Record<string, unknown>): LoanPackage {
     name: header?.[2],
     borrower: header?.[3],
     status: header?.[4],
+    risk: header?.[5],
     documents,
     summary,
   };

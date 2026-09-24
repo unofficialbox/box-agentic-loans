@@ -47,9 +47,20 @@ Salesforce sign-in goes to the org's My Domain (`LOS_MCP_LOGIN_URL`), not `login
 - **Revoked refresh token.** The agent forgets it and asks you to sign in again.
 - **Not signed in yet.** Every step that needs that connector replies with its sign-in link, and `/health` reports `"connectors": {"salesforce": ..., "box": ...}` as `connected` or `not_connected`.
 
+### Box Doc Gen check
+
+Doc Gen fails for reasons only Box can see: the sign-in lacks the Doc Gen scope, or the template or loan folder isn't shared with the signed-in Box user. Box then answers "Access denied" or "Item not found", which it also says for items the user can't see. So the agent checks, as that user, before it asks anyone to approve a letter:
+- **When Box connects** (at startup, or right after sign-in), it looks up the template `LOS_DOCGEN_TEMPLATE_FILE_ID` with `get_docgen_template_by_id`. It prints `[docgen] Template ready: …`, or the problem and the fix, and `/health` reports the result under `docgen`.
+- **On every letter request** it checks the template and the loan's folder (`get_folder_details`). If either fails, there is no approval card. The reply says nothing was created and lists each check, what's wrong and how to fix it, and it offers **Check again**.
+
+The fixes it gives:
+- **Access denied / scopes:** give the Box MCP Server integration the Doc Gen scope (`docgen.readwrite`), then sign in to Box again.
+- **Template not found:** check `LOS_DOCGEN_TEMPLATE_FILE_ID`; the file must be a Doc Gen template shared with the signed-in user.
+- **Folder not found:** invite the signed-in user to the loan workspace as an Editor.
+
 ```bash
 npm install
-npm test                 # 80 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
+npm test                 # 89 tests: rules, parsers, the TypeSafe client, the full clickpath on fixtures
 npm start                # http://LOAN_AGENT_HOST:LOAN_AGENT_PORT
 
 # Without MCP access, TypeSafe still decides but the tools are seeded fixtures:

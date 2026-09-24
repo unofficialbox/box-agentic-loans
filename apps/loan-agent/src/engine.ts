@@ -105,7 +105,7 @@ const PLANS: Record<Intent, string[]> = {
   validate_record: ["Resolve the loan", "Get the extracted terms", "Compare with the loan record"],
   apply_terms: ["Resolve the loan", "Collect the terms to apply", "Hold the write for your approval"],
   compare_history: ["Resolve the loan", "Find prior executed loans", "Extract covenants from each agreement", "Compare with this markup"],
-  generate_letter: ["Resolve the loan", "Build the 15 Doc Gen fields", "Hold generation for your approval"],
+  generate_letter: ["Resolve the loan", "Build the 15 Doc Gen fields", "Check Box Doc Gen access", "Hold generation for your approval"],
   send_for_signature: ["Find the letter generated in this session", "Confirm the signer", "Hold the Box Sign request for your approval"],
   list_loans: ["Query LOS loans"],
   out_of_scope: [],
@@ -149,6 +149,8 @@ class Turn {
   private todos: Todo[] = [];
   private current = 0;
   proposed = false;
+  /** Set when the turn stops short on purpose: the rest of the plan is skipped and these are offered next. */
+  stoppedWith?: PromptOption[];
 
   constructor(private readonly sink: Emit) {}
 
@@ -239,7 +241,10 @@ class Turn {
 
   context(loan: LoanPackage) {
     if (loan.loanId) {
-      this.emit({ kind: "context", loan: { loanId: loan.loanId, name: loan.name, borrower: loan.borrower, status: loan.status } });
+      this.emit({
+        kind: "context",
+        loan: { loanId: loan.loanId, name: loan.name, borrower: loan.borrower, status: loan.status, ...(loan.risk ? { risk: loan.risk } : {}) },
+      });
     }
   }
 }
@@ -267,9 +272,9 @@ export class LoanAgent {
       }
       turn.plan(PLANS[intent]);
       await this.dispatch(intent, turn, session, sessionId, message, loanHint);
-      turn.finishPlan(true);
-      turn.options(NEXT[intent].map(next => INTENT_PROMPTS[next]));
-      if (turn.proposed) status = "needs_input";
+      turn.finishPlan(!turn.stoppedWith);
+      turn.options(turn.stoppedWith ?? NEXT[intent].map(next => INTENT_PROMPTS[next]));
+      if (turn.proposed || turn.stoppedWith) status = "needs_input";
     } catch (error) {
       turn.finishPlan(false);
       if (error instanceof UserFacingError || error instanceof ActionRequiredError) {
@@ -595,6 +600,34 @@ export class LoanAgent {
     const userInput = this.letterPayload(loan, extraction, findings, session.precedent);
     const folderId = requireFolder(loan);
     const fileName = `${loanId}-Commitment-Letter`;
+    turn.advance();
+
+    // Ask Box before asking the officer: never hold an approval that can only fail.
+    const readiness = await turn.step(
+      "Box · check Doc Gen access",
+      "template and loan folder, as the signed-in Box user",
+      () => this.tools.checkDocGen(folderId),
+      result => (result.ready ? "succeeded" : "failed")
+    );
+    if (!readiness.ready) {
+      turn.say([
+        `I can't generate the commitment letter for ${loanId} yet: Box Doc Gen isn't available to the signed-in Box user. Nothing was created.`,
+      ]);
+      turn.block({
+        type: "checks",
+        title: "Box Doc Gen",
+        rows: readiness.items.map(item => ({
+          label: item.what === "template" ? "Template" : "Loan folder",
+          value: item.ok ? "Available" : "Not available",
+          detail: item.ok ? item.detail : `${item.detail} To fix: ${item.fix}`,
+          status: item.ok ? ("pass" as const) : ("fail" as const),
+        })),
+      });
+      // The check ran; it's the approval hold after it that is skipped.
+      turn.advance();
+      turn.stoppedWith = [{ label: "Check again", prompt: INTENT_PROMPTS.generate_letter.prompt }];
+      return;
+    }
     turn.advance();
 
     const proposal = this.propose(sessionId, {
