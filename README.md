@@ -77,6 +77,13 @@ Works with any AI harness - choose your platform:
 - **[Presenter Guide](docs/PRESENTING.md)** - Tips for delivering the demo
 - **[Demo Clickpath](DEMO-CLICKPATH.md)** - Beat-by-beat prompts and walkthrough
 
+### Presenter Skills
+
+One self-contained `SKILL.md` per harness, under `skills/`:
+- **[loan-origination-claude](skills/loan-origination-claude/SKILL.md)** - Claude Desktop (also ChatGPT)
+- **[loan-origination-quick](skills/loan-origination-quick/SKILL.md)** - Amazon Quick
+- **[loan-origination-slack](skills/loan-origination-slack/SKILL.md)** - Slackbot (render bindings first)
+
 ### Cleanup Between Demos
 
 ```bash

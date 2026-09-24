@@ -17,10 +17,9 @@ class RepositoryNavigationTests(unittest.TestCase):
         targets = {target.split("#", 1)[0] for target in MARKDOWN_LINK.findall(readme)}
         expected = {
             "DEMO-CLICKPATH.md",
-            "skills/loan-origination/SKILL.md",
+            "skills/loan-origination-claude/SKILL.md",
             "docs/SETUP.md",
             "docs/ARCHITECTURE.md",
-            "docs/paved-path.md",
         }
         self.assertTrue(expected.issubset(targets), expected - targets)
 
