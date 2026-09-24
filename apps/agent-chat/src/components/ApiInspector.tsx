@@ -3,6 +3,9 @@ import {
   CALL_FILTERS,
   SERVICE_LABELS,
   applyCallEvent,
+  formatCall,
+  formatRequest,
+  formatResponse,
   isFailure,
   matchesFilter,
   type CallEntry,
@@ -236,7 +239,7 @@ export function ApiInspector({ baseUrl }: { baseUrl: string }) {
                     >
                       <td className="inspector-status">{statusText(entry)}</td>
                       <td>
-                        <span className={`inspector-service inspector-service-${entry.service}`}>{SERVICE_LABELS[entry.service]}</span>
+                        <span className="inspector-service">{SERVICE_LABELS[entry.service]}</span>
                       </td>
                       <td className="inspector-callcell" title={`${entry.method} ${entry.url}`}>
                         <span className="inspector-method">{entry.method}</span> {entry.summary}
@@ -274,19 +277,83 @@ function statusText(entry: CallEntry): string {
   return entry.status ? String(entry.status) : "ERR";
 }
 
+/** Clipboard API where allowed; a hidden textarea where it isn't (e.g. plain http on a LAN IP). */
+async function copyText(text: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return;
+  } catch {
+    // Fall through to the legacy path.
+  }
+  const area = document.createElement("textarea");
+  area.value = text;
+  area.setAttribute("readonly", "");
+  area.style.position = "fixed";
+  area.style.opacity = "0";
+  document.body.append(area);
+  area.select();
+  const ok = document.execCommand("copy");
+  area.remove();
+  if (!ok) throw new Error("Copy failed");
+}
+
+type CopyPart = "request" | "response" | "both";
+
+const COPY_LABELS: Record<CopyPart, string> = {
+  request: "Copy request",
+  response: "Copy response",
+  both: "Copy both",
+};
+
+function CopyButtons({ entry }: { entry: CallEntry }) {
+  const [done, setDone] = useState<{ part: CopyPart; ok: boolean } | null>(null);
+  const timer = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    setDone(null);
+    return () => window.clearTimeout(timer.current);
+  }, [entry.id]);
+
+  const copy = (part: CopyPart) => {
+    const text = part === "request" ? formatRequest(entry) : part === "response" ? formatResponse(entry) : formatCall(entry);
+    copyText(text).then(
+      () => setDone({ part, ok: true }),
+      () => setDone({ part, ok: false })
+    );
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => setDone(null), 1800);
+  };
+
+  return (
+    <div className="inspector-copy" role="group" aria-label="Copy this call">
+      {(Object.keys(COPY_LABELS) as CopyPart[]).map(part => (
+        <button key={part} type="button" className="button inspector-copy-button" onClick={() => copy(part)}>
+          {done?.part === part ? (done.ok ? "Copied" : "Copy failed") : COPY_LABELS[part]}
+        </button>
+      ))}
+      <span className="visually-hidden" role="status">
+        {done ? (done.ok ? `${COPY_LABELS[done.part].replace("Copy ", "")} copied` : "Copy failed") : ""}
+      </span>
+    </div>
+  );
+}
+
 function CallDetail({ entry }: { entry: CallEntry }) {
   return (
     <>
-      <div className="inspector-summary">
-        <span className="inspector-pill">{entry.method}</span>
-        <span className={`inspector-pill ${isFailure(entry) ? "inspector-pill-error" : "inspector-pill-ok"}`}>
-          {statusText(entry)}
-          {entry.statusText ? ` ${entry.statusText}` : ""}
-        </span>
-        <span className={`inspector-service inspector-service-${entry.service}`}>{SERVICE_LABELS[entry.service]}</span>
-        <span className="inspector-meta">
-          {entry.pending ? "in progress" : `${entry.durationMs} ms`} · {new Date(entry.startedAt).toLocaleTimeString()}
-        </span>
+      <div className="inspector-detail-head">
+        <div className="inspector-summary">
+          <span className="inspector-pill">{entry.method}</span>
+          <span className={`inspector-pill ${isFailure(entry) ? "inspector-pill-error" : "inspector-pill-ok"}`}>
+            {statusText(entry)}
+            {entry.statusText ? ` ${entry.statusText}` : ""}
+          </span>
+          <span className="inspector-service">{SERVICE_LABELS[entry.service]}</span>
+          <span className="inspector-meta">
+            {entry.pending ? "in progress" : `${entry.durationMs} ms`} · {new Date(entry.startedAt).toLocaleTimeString()}
+          </span>
+        </div>
+        <CopyButtons entry={entry} />
       </div>
       <p className="inspector-call">{entry.summary}</p>
       <p className="inspector-url">

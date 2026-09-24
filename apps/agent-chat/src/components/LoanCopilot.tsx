@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "@unofficialbox/box-open-elements/agent-chat";
 import "@unofficialbox/box-open-elements/run-trace";
-import type {
-  AgentChat,
-  AgentChatMessage,
-  AgentCitation,
-} from "@unofficialbox/box-open-elements/patterns/agent-chat";
+import type { AgentChat, AgentChatMessage } from "@unofficialbox/box-open-elements/patterns/agent-chat";
 import type { RunStep, RunTrace } from "@unofficialbox/box-open-elements";
 import { STARTER_PROMPTS } from "../prompts";
 import {
@@ -18,7 +14,6 @@ import {
   type TurnSummary,
 } from "../transport";
 import { ApiInspector } from "./ApiInspector";
-import { PromptLibrary } from "./PromptLibrary";
 import "./LoanCopilot.css";
 
 const newSessionId = () => `session-${Date.now().toString(36)}`;
@@ -50,10 +45,8 @@ export function LoanCopilot({ loan }: { loan?: string }) {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [nextOptions, setNextOptions] = useState<PromptOption[] | null>(null);
   const [messages, setMessages] = useState<AgentChatMessage[]>([]);
-  const [selectedSource, setSelectedSource] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [loanContext, setLoanContext] = useState<LoanContext | null>(null);
-  const [libraryOpen, setLibraryOpen] = useState(false);
 
   const chatRef = useRef<AgentChat>(null);
   const traceRef = useRef<RunTrace>(null);
@@ -97,19 +90,15 @@ export function LoanCopilot({ loan }: { loan?: string }) {
 
     const onMessages = (event: Event) =>
       setMessages((event as CustomEvent<{ messages: AgentChatMessage[] }>).detail.messages);
-    const onCitation = (event: Event) =>
-      setSelectedSource((event as CustomEvent<{ citation: AgentCitation }>).detail.citation.id);
     const onModify = () =>
       setNotice("To change a proposal, reply with the new values, e.g. “apply the rate at 6.75% instead”.");
     const onResolved = () => setNotice(null);
 
     chat.addEventListener("messages-changed", onMessages);
-    chat.addEventListener("citation-selected", onCitation);
     chat.addEventListener("proposal-modify-requested", onModify);
     chat.addEventListener("action-resolved", onResolved);
     return () => {
       chat.removeEventListener("messages-changed", onMessages);
-      chat.removeEventListener("citation-selected", onCitation);
       chat.removeEventListener("proposal-modify-requested", onModify);
       chat.removeEventListener("action-resolved", onResolved);
     };
@@ -121,18 +110,7 @@ export function LoanCopilot({ loan }: { loan?: string }) {
     }
   }, [steps]);
 
-  const sources = useMemo(() => {
-    const seen = new Map<string, AgentCitation>();
-    for (const message of messages) {
-      for (const citation of message.citations) {
-        seen.set(citation.id, citation);
-      }
-    }
-    return [...seen.values()];
-  }, [messages]);
-
   const ask = useCallback((prompt: string) => {
-    setLibraryOpen(false);
     void chatRef.current?.send(prompt);
   }, []);
 
@@ -142,7 +120,6 @@ export function LoanCopilot({ loan }: { loan?: string }) {
     setTodos([]);
     setNextOptions(null);
     setMessages([]);
-    setSelectedSource(null);
     setNotice(null);
     setLoanContext(null);
   };
@@ -174,23 +151,17 @@ export function LoanCopilot({ loan }: { loan?: string }) {
               {shownLoan.name && <span className="loan-title">{shownLoan.name}</span>}
               <span className="pill">{shownLoan.loanId}</span>
               {shownLoan.status && <span className="pill">{shownLoan.status}</span>}
-              {isDemo && <span className="pill pill-risk">Risk: High</span>}
             </>
           ) : (
             <span className="loan-title loan-title-empty">No loan selected. Name a borrower or loan ID.</span>
           )}
         </div>
         <div className="topbar-actions">
-          <span
-            className={`mode ${isDemo ? "mode-demo" : "mode-live"}`}
-            title={
-              isDemo
-                ? "Scripted replies; no Box or Salesforce calls. Set VITE_AGENT_API_URL for a live agent."
-                : "Connected to the loan agent backend"
-            }
-          >
-            {isDemo ? "Demo script" : "Live agent"}
-          </span>
+          {isDemo && (
+            <span className="mode-demo" title="Scripted replies; no Box or Salesforce calls. Set VITE_AGENT_API_URL for a live agent.">
+              Demo script
+            </span>
+          )}
           <button type="button" className="button" onClick={newChat}>
             New chat
           </button>
@@ -214,16 +185,13 @@ export function LoanCopilot({ loan }: { loan?: string }) {
               </button>
             </p>
           )}
-          <nav className="suggestions" aria-label={started ? "Next steps" : "Suggested prompts"}>
+          <nav className="suggestions" aria-label={started && nextOptions ? "Next steps" : "Suggested prompts"}>
             <span className="suggestions-label">{started && nextOptions ? "Next" : "Try"}</span>
             {chips.map(({ label, prompt }) => (
               <button key={label} type="button" className="chip" title={prompt} onClick={() => ask(prompt)}>
                 {label}
               </button>
             ))}
-            <button type="button" className="chip chip-library" onClick={() => setLibraryOpen(true)}>
-              Prompt library
-            </button>
           </nav>
         </section>
 
@@ -252,9 +220,7 @@ export function LoanCopilot({ loan }: { loan?: string }) {
 
           <section className="card">
             <h2 className="card-title">Decision trace</h2>
-            <p className="card-hint">
-              {isDemo ? "Routing is simulated in demo mode." : "TypeSafe routing, tool calls, and approval gates."}
-            </p>
+            {isDemo && <p className="card-hint">Routing is simulated in demo mode.</p>}
             {steps.length > 0 ? (
               <box-run-trace ref={traceRef} heading="This turn" />
             ) : (
@@ -262,34 +228,11 @@ export function LoanCopilot({ loan }: { loan?: string }) {
             )}
           </section>
 
-          <section className="card">
-            <h2 className="card-title">Sources</h2>
-            {sources.length > 0 ? (
-              <ul className="sources">
-                {sources.map(source => (
-                  <li key={source.id}>
-                    <button
-                      type="button"
-                      className={`source ${selectedSource === source.id ? "is-selected" : ""}`}
-                      aria-pressed={selectedSource === source.id}
-                      onClick={() => setSelectedSource(source.id)}
-                    >
-                      <span className="source-icon" aria-hidden="true" />
-                      {source.label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="empty">Documents and policies the copilot cites appear here.</p>
-            )}
-          </section>
         </aside>
       </main>
 
       {!isDemo && baseUrl && <ApiInspector baseUrl={baseUrl} />}
 
-      <PromptLibrary open={libraryOpen} onClose={() => setLibraryOpen(false)} onPick={ask} />
     </div>
   );
 }

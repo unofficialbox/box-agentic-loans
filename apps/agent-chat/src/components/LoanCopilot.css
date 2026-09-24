@@ -110,11 +110,6 @@
   white-space: nowrap;
 }
 
-.pill-risk {
-  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
-  color: color-mix(in srgb, var(--danger) 80%, var(--text));
-}
-
 .topbar-actions {
   display: flex;
   align-items: center;
@@ -122,34 +117,20 @@
   margin-inline-start: auto;
 }
 
-.mode {
+/* Shown only in demo mode, so nobody mistakes scripted replies for the live agent. */
+.mode-demo {
   padding: 0.125rem var(--space-3);
   border-radius: var(--radius-pill);
   font-size: 0.75rem;
   font-weight: 700;
-}
-
-.mode-demo {
   background: color-mix(in srgb, var(--warning) 18%, transparent);
   color: color-mix(in srgb, var(--warning) 45%, var(--text));
 }
 
-/* Live AI: gradient outline, Blueprint's treatment for an active AI control. */
-.mode-live {
-  border: 1px solid transparent;
-  background:
-    linear-gradient(var(--surface), var(--surface)) padding-box,
-    var(--box-ai) border-box;
-  color: var(--text);
-}
-
 .button,
 .chip,
-.source,
 .notice-dismiss,
-.icon-button,
-.library-tab,
-.library-card {
+.icon-button {
   appearance: none;
   cursor: pointer;
   color: inherit;
@@ -167,13 +148,11 @@
 
 .button:hover,
 .chip:hover,
-.source:hover,
-.icon-button:hover,
-.library-card:hover {
+.icon-button:hover {
   background: var(--surface-hover);
 }
 
-:is(.button, .chip, .source, .notice-dismiss, .icon-button, .library-tab, .library-card):focus-visible {
+:is(.button, .chip, .notice-dismiss, .icon-button):focus-visible {
   outline: none;
   box-shadow: var(--focus);
 }
@@ -191,11 +170,16 @@
   min-height: 0;
 }
 
+/* One card: the chat, any notice, and the suggested prompts under the composer. */
 .conversation {
   display: grid;
-  grid-template-rows: 1fr auto auto;
-  gap: var(--space-3);
+  grid-template-rows: minmax(0, 1fr) auto auto;
   min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius-4);
+  background: var(--surface);
+  box-shadow: var(--dropshadow-1);
 }
 
 /* Let the pattern fill the column: the thread grows, the composer stays put. */
@@ -207,9 +191,10 @@ box-agent-chat::part(panel) {
   box-sizing: border-box;
   height: 100%;
   grid-template-rows: auto 1fr auto;
-  background: var(--surface);
-  border-radius: var(--radius-4);
-  box-shadow: var(--dropshadow-1);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 box-agent-chat::part(thread) {
@@ -227,7 +212,7 @@ box-agent-chat::part(empty) {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin: 0;
+  margin: 0 var(--space-4) var(--space-3);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-3);
   background: var(--selected);
@@ -250,6 +235,8 @@ box-agent-chat::part(empty) {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--stroke);
 }
 
 .suggestions-label {
@@ -264,15 +251,6 @@ box-agent-chat::part(empty) {
   border: 1px solid var(--stroke);
   background: var(--surface);
   font-size: 0.8125rem;
-}
-
-.chip-library {
-  margin-inline-start: auto;
-  border-color: transparent;
-  background:
-    linear-gradient(var(--surface), var(--surface)) padding-box,
-    var(--box-ai) border-box;
-  font-weight: 700;
 }
 
 /* ── Right rail ──────────────────────────────────────────── */
@@ -381,41 +359,6 @@ box-agent-chat::part(empty) {
   }
 }
 
-.sources {
-  display: grid;
-  gap: var(--space-1);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.source {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  width: 100%;
-  padding: var(--space-2);
-  border: 0;
-  border-radius: var(--radius-2);
-  background: transparent;
-  text-align: start;
-  font-size: 0.8125rem;
-}
-
-.source.is-selected {
-  background: var(--selected);
-  color: var(--brand);
-  font-weight: 700;
-}
-
-.source-icon {
-  flex: none;
-  width: 0.625rem;
-  height: 0.75rem;
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--brand) 70%, transparent);
-}
-
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -425,117 +368,14 @@ box-agent-chat::part(empty) {
   white-space: nowrap;
 }
 
-/* ── Prompt library dialog ───────────────────────────────── */
-
-.library {
-  width: min(40rem, calc(100vw - 2rem));
-  max-height: min(36rem, calc(100vh - 2rem));
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-4);
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: var(--dropshadow-3);
-}
-
-.library::backdrop {
-  background: #0000004d;
-}
-
-.library-panel {
-  display: grid;
-  gap: var(--space-4);
-  padding: var(--space-6);
-}
-
-.library-header {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-4);
-}
-
-.library-title {
-  margin: 0 0 var(--space-2);
-  font-size: 1.125rem;
-  font-weight: 700;
-}
-
-.library-scope {
-  display: flex;
-  gap: var(--space-2);
-  margin: 0;
-}
-
-.library-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  border-bottom: 1px solid var(--stroke);
-}
-
-.library-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: var(--muted);
-  font-weight: 700;
-  font-size: 0.875rem;
-}
-
-.library-tab[aria-selected="true"] {
-  color: var(--text);
-  border-bottom-color: var(--brand);
-}
-
-.library-tab-count {
-  min-width: 1.25rem;
-  padding: 0 var(--space-1);
-  border-radius: var(--radius-pill);
-  background: var(--surface-hover);
-  font-size: 0.75rem;
-  text-align: center;
-}
-
-.library-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-  gap: var(--space-3);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.library-card {
-  display: grid;
-  gap: var(--space-1);
-  width: 100%;
-  height: 100%;
-  padding: var(--space-4);
-  border: 1px solid var(--stroke);
-  border-radius: var(--radius-4);
-  background: var(--surface);
-  text-align: start;
-}
-
-.library-card-title {
-  font-weight: 700;
-}
-
-.library-card-description {
-  font-size: 0.8125rem;
-  color: var(--muted);
-}
-
 /* ── Narrow screens: rail drops below the conversation ───── */
 
 @media (max-width: 56rem) {
   .copilot {
     height: auto;
     min-height: 100%;
+    grid-template-rows: auto auto auto;
+    align-content: start;
   }
 
   .workspace {
@@ -545,6 +385,11 @@ box-agent-chat::part(empty) {
 
   .conversation {
     grid-template-rows: auto auto auto;
+    align-content: start;
+  }
+
+  .workspace {
+    align-content: start;
   }
 
   box-agent-chat::part(thread) {
@@ -553,9 +398,5 @@ box-agent-chat::part(empty) {
 
   .topbar {
     padding: var(--space-3) var(--space-4);
-  }
-
-  .chip-library {
-    margin-inline-start: 0;
   }
 }
