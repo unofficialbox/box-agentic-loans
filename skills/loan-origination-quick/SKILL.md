@@ -160,7 +160,7 @@ All LOS tools accept a loan ID or a Salesforce record ID. For the demo, query `l
     { "key": "bankRate", "prompt": "the fixed interest rate the bank states" },
     { "key": "borrowerRequestedRate", "prompt": "the rate the borrower requests in its HARBORVIEW MARKUP notes" },
     { "key": "termMonths", "prompt": "the term in months" },
-    { "key": "ltv", "prompt": "the loan-to-value the borrower proposes in its markup, not the policy maximum the term sheet quotes" },
+    { "key": "ltv", "prompt": "what the borrower proposes to add to the collateral value in its markup (for example furniture, fixtures and equipment at book value)" },
     { "key": "dscr", "prompt": "the debt service coverage ratio the borrower proposes in its markup" },
     { "key": "dscrTesting", "prompt": "how often the borrower proposes the DSCR be tested" }
   ]
@@ -249,8 +249,8 @@ The borrower-portal steps happen in the browser window. The stages below run her
 | Stage | Tool behavior and expected evidence |
 |---|---|
 | Latest loan / critical risk | Using the cached loan and folder IDs → `search_files_metadata` with `losDocument`, folder scope, `policyRisk = :risk`. The canonical hit is the borrower-marked term sheet (ignore `(1)`/`(2)` duplicates), previewed inline. Do not answer with `extractLoanTerms`. |
-| Extract & policy check | `ai_extract_structured_from_fields` on the markup with the prompts above → `ai_qa_hub` on the policy library. Expected: $4.8M; 6.85% bank rate, 6.50% requested; 120 months; LTV 85%; DSCR 1.10x tested annually. If the extract returns 75% or 1.25x, it read the quoted policy thresholds; re-run with the prompts above. Hub: LOS-LTV-001/002 and LOS-DSCR-001/002, both requests outside the exceptions, Credit Risk owns the deviation. Preview the markup. |
-| Validate vs. record | `extractLoanTerms` on the markup: amount, rate, and term match the record; LTV and DSCR mismatch; nothing written. |
+| Extract & policy check | `ai_extract_structured_from_fields` on the markup with the prompts above → `ai_qa_hub` on the policy library. Expected: $4.8M; 6.85% bank rate, 6.50% requested; 120 months; DSCR 1.10x tested annually. The markup states no LTV percentage: it adds $850K of FF&E to collateral (Schedule A) so the same $4.8M reads about 70% instead of the roughly 85% the appraisal implies. If the extract returns 75% or 1.25x, it read the quoted policy thresholds; re-run with the prompts above. Hub: LOS-LTV-001/002 and LOS-DSCR-001/002, both requests outside the exceptions, Credit Risk owns the deviation. Preview the markup. |
+| Validate vs. record | `extractLoanTerms` on the markup: amount, rate, and term match the record; LTV and DSCR mismatch the seeded record, or read as new when the record is a fresh application; nothing written. |
 | Apply (confirmed) | Without "confirm", `applyLoanTerms` refuses; show that. With "confirm", it updates amount, rate (the 6.85% bank rate) and term only. Re-read the record and inspect `fieldsUpdated`. |
 | Covenant precedent | Fetch the two prior-loan packages for LN-2023-0311 and LN-2025-0148 **in parallel** (independent reads; issue both `getLoanPackage` calls together) → `ai_qa_multi_file` across the two executed agreements and the 2026 markup. Expected: 70% LTV and 1.30x DSCR tested quarterly, Section 8 and Schedule 1, signed by Priya Shah for Acme Bank and Jordan Pike for Harborview; the 2026 markup asks 1.10x annually. One table, then preview the 2025 agreement at Schedule 1. Do not answer with `extractLoanTerms`. |
 | Generate & sign | One request: complete nested Doc Gen input → exact output → background check → preview → `prepareSignatureRequest` with the same file and the confirmed signer. Respect the loan-status guard and report the actual result. |
