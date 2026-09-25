@@ -10,7 +10,7 @@ Quick reference guide for running the commercial loan origination demo. Six beat
 
 Before presenting:
 - [ ] Both connectors loaded (Box + LOS) and working
-- [ ] Test loans seeded: LN-2023-0311 (Closed), LN-2025-0148 (Closed), latest Harborview loan (Approved)
+- [ ] Test loans seeded: LN-2023-0311 (Closed), LN-2025-0148 (Closed), the Harborview distribution facility loan (Underwriting or Approved)
 - [ ] Dana Whitfield borrower account ready and tested
 - [ ] Claude Desktop custom instructions set (see below)
 
@@ -35,10 +35,10 @@ Sign in as Dana Whitfield → Start application → Upload 2 documents → Submi
 
 ### Beat 2: Find Critical Risk Documents (AI)
 ```
-What's the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?
+What's the status of Harborview's distribution facility loan? Which documents in that loan are flagged critical policy risk?
 ```
 
-**Expected**: Finds latest loan, metadata search returns term sheet with `policyRisk=Critical`, shows document preview
+**Expected**: Finds the distribution facility loan (not the application from Beat 1), metadata search returns term sheet with `policyRisk=Critical`, shows document preview
 
 ---
 

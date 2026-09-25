@@ -34,7 +34,7 @@ When the **LOS Loan Tools** and **Box** MCP connectors are loaded, the presenter
 
 | Need | Connector and tool |
 |---|---|
-| The latest loan, its folder and file IDs | LOS `listLoans(borrower='Harborview Logistics')`, then `getLoanPackage` |
+| The distribution facility loan, its folder and file IDs | LOS `listLoans(borrower='Harborview Logistics')`, then `getLoanPackage` |
 | Documents by type, risk or status | Box `search_files_metadata`, template `losDocument`, scoped to the loan folder |
 | What a document says | Box `ai_qa_single_file`, `ai_qa_multi_file`, `ai_extract_structured_from_fields` on file IDs |
 | Credit policy | Box `ai_qa_hub` on the configured Credit Policy Hub |
@@ -46,7 +46,7 @@ When the **LOS Loan Tools** and **Box** MCP connectors are loaded, the presenter
 
 **Static bindings, never discovered.** The metadata template key is `losDocument`. The Credit Policy Hub ID, the Doc Gen template ID, the Box enterprise ID and the signer come from Demo Setup or the environment configuration. Never call `list_metadata_templates`, `get_metadata_template_schema`, `list_hubs` or a folder listing; they return the whole enterprise and swamp the session.
 
-**Loan identification.** Resolve the loan every session from `listLoans` and use the most recent. In the borrower portal use the `recordId` the page passes. Never hardcode a loan ID; every LOS tool accepts a loan ID or a Salesforce record ID.
+**Loan identification.** Resolve the loan every session from `listLoans` and use the distribution facility loan, never the borrower's newest application from beat 1. In the borrower portal use the `recordId` the page passes. Never hardcode a loan ID; every LOS tool accepts a loan ID or a Salesforce record ID.
 
 **Metadata first, folder scoped.** Search with `from: enterprise_<BOX_ENTERPRISE_ID>.losDocument`, `ancestor_folder_id` from the loan package, and `query: policyRisk = :risk`. Use enterprise scope only for a portfolio-wide question. Fall back to keyword search only for unclassified documents or content that is not an attribute.
 

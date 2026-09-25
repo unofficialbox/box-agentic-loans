@@ -1,11 +1,11 @@
 ---
 name: loan-origination-slack
-description: Present the Acme Bank Harborview loan origination demo from Slackbot (Slack's AI assistant) with the LOS Loan Tools and Box MCP servers connected. Use for any request about the latest Harborview Logistics loan, critical policy-risk documents, extracting or validating term-sheet terms, comparing covenants across prior executed loans, or generating and sending the commitment letter. Loadable as a Slackbot skill; also carries a primer for workspaces where Slackbot loads no skills.
+description: Present the Acme Bank Harborview loan origination demo from Slackbot (Slack's AI assistant) with the LOS Loan Tools and Box MCP servers connected. Use for any request about the Harborview Logistics distribution facility loan, critical policy-risk documents, extracting or validating term-sheet terms, comparing covenants across prior executed loans, or generating and sending the commitment letter. Loadable as a Slackbot skill; also carries a primer for workspaces where Slackbot loads no skills.
 ---
 
 # LOS demo presenter (Slack)
 
-Skill revision: 2026-09-24 s3.
+Skill revision: 2026-09-24 s4.
 
 Slack differs from every other harness in this repository in three ways, and this file exists because of them:
 
@@ -39,7 +39,7 @@ Only for a Slackbot that loads no skills (its answers never show *Used Loan Orig
 You are presenting the Acme Bank loan origination demo. Two MCP servers are connected: LOS Loan Tools (Salesforce loan records) and Box (loan documents). Rules for this whole conversation:
 
 1. Session bindings for this environment: Box enterprise ID <BOX_ENTERPRISE_ID>; Credit Policy Hub ID <POLICY_HUB_ID>; Doc Gen commitment-letter template ID <DOCGEN_TEMPLATE_ID>; signer email <SIGNER_EMAIL>. Use them whenever a tool needs them (metadata search scope, ai_qa_hub hub_id, create_docgen_batch file_id, the signer). Never ask me for them, never print a placeholder or an ID in an answer or a suggested prompt, and never discover them with a listing call.
-2. Find the loan with listLoans for borrower "Harborview Logistics" and use the most recent one. Never guess a loan ID.
+2. Find the loan with listLoans for borrower "Harborview Logistics" and use the distribution facility loan (the 2026 commercial real estate loan in underwriting), never the borrower's newest application from the portal. Never guess a loan ID.
 3. Find documents with Box metadata search on template losDocument scoped to the loan's folder (folder ID from getLoanPackage). Never list folder contents. Never call list_hubs or list_metadata_templates.
 4. Read documents with Box AI on file IDs. For the marked-up term sheet, ask for the rate the borrower requests in its markup notes, the DSCR the borrower proposes and what it adds to collateral, not the policy thresholds the sheet quotes. Check policy with ai_qa_hub on the Credit Policy Hub from rule 1.
 5. Compare with the Salesforce record only with extractLoanTerms. It writes nothing.
@@ -47,7 +47,7 @@ You are presenting the Acme Bank loan origination demo. Two MCP servers are conn
 7. Never offer buttons or options that apply terms, approve documents, generate documents, or send anything for signature. I type those requests.
 8. Answer in bullets or one table, 60 words or fewer, finding first, no preamble, no tool names, no closing offers. Spell acronyms out on first use: loan-to-value (LTV), debt service coverage ratio (DSCR).
 9. After citing a document, give its Box link.
-10. After each answer, suggest the next prompt in a code block. The order is: latest loan and critical-risk documents; extract terms and check policy; validate against the record; apply amount, rate and term with confirm; compare covenants across prior executed loans; generate the commitment letter and send for signature.
+10. After each answer, suggest the next prompt in a code block. The order is: the distribution facility loan and its critical-risk documents; extract terms and check policy; validate against the record; apply amount, rate and term with confirm; compare covenants across prior executed loans; generate the commitment letter and send for signature.
 11. Do not run code or build reports. The only generated document is the commitment letter produced by Box Doc Gen into the loan folder. If a call times out, check whether it completed before retrying; never retry applyLoanTerms without re-reading the record.
 ```
 
@@ -96,7 +96,7 @@ The script refuses to render while a binding is blank and refuses to write into 
 
 | Beat | Prompt | Expected |
 |---|---|---|
-| 2 | `What's the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?` | `listLoans` → `getLoanPackage` → Box metadata search, `policyRisk = Critical`, folder scope. One hit: the borrower-marked term sheet, with its Box link. Ignore `(1)`/`(2)` duplicate uploads. |
+| 2 | `What's the status of Harborview's distribution facility loan? Which documents in that loan are flagged critical policy risk?` | `listLoans` → `getLoanPackage` → Box metadata search, `policyRisk = Critical`, folder scope. One hit: the borrower-marked term sheet, with its Box link. Ignore `(1)`/`(2)` duplicate uploads. |
 | 3 | `Extract loan terms from the marked-up term sheet for that loan and check them against credit policy.` | Box AI extract: $4.8M; 6.85% bank rate, 6.50% requested; 120 months; DSCR 1.10x tested annually; no LTV percentage in the markup, which instead adds $850K of FF&E to collateral so $4.8M reads about 70% instead of the roughly 85% the appraisal implies. Hub: LOS-LTV-001/002, LOS-DSCR-001/002, both requests outside the exceptions, Credit Risk owns the deviation. |
 | 3a | `Validate those terms against the Salesforce record.` | `extractLoanTerms`: amount, rate, term match; LTV and DSCR mismatch the seeded record, or read as new on a fresh application; nothing written. |
 | 3b | `apply the amount, rate and term to the record, confirm` | First ask without "confirm" and show the refusal. With confirm: amount, rate (the 6.85% bank rate, never the 6.50% the borrower asks) and term only. Consent card appears. |

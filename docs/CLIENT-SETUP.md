@@ -19,10 +19,10 @@ Ask your **Box admin** to confirm the Box MCP Server is enabled for you with the
 
 1. Both connections are listed and signed in.
 2. LOS shows seven tools: list loans, get loan package, extract loan terms, apply loan terms, classify document, approve documents, prepare signature request.
-3. This prompt returns the latest Harborview loan and shows (or links) the marked-up term sheet:
+3. This prompt returns the Harborview distribution facility loan and shows (or links) the marked-up term sheet:
 
 ```
-What's the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?
+What's the status of Harborview's distribution facility loan? Which documents in that loan are flagged critical policy risk?
 ```
 
 If step 3 answers with a filename but no document, say `show me the document` once.
