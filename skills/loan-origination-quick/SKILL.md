@@ -1,14 +1,14 @@
 ---
 name: loan-origination-quick
 display_name: Loan Origination (Amazon Quick)
-description: Present the Acme Bank Harborview loan origination demo from Amazon Quick on desktop with the LOS Loan Tools and Box connectors. Use for any request about the latest Harborview Logistics loan, critical policy risk documents, extracting or validating term sheet terms, comparing covenants across prior executed loans, or generating and sending the commitment letter for signature.
+description: Present the Acme Bank Harborview loan origination demo from Amazon Quick on desktop with the LOS Loan Tools and Box connectors. Use for any request about the Harborview Logistics distribution facility loan, critical policy risk documents, extracting or validating term sheet terms, comparing covenants across prior executed loans, or generating and sending the commitment letter for signature.
 icon: "🏦"
 trigger: run the Harborview loan origination demo
 ---
 
 # LOS demo presenter (Amazon Quick)
 
-Skill revision: 2026-09-24 r4. If the skill panel in Quick shows an older or missing revision line, or any reference to a separate Doc Gen guide, the loaded copy is stale: re-import this file and publish.
+Skill revision: 2026-09-24 r5. If the skill panel in Quick shows an older or missing revision line, or any reference to a separate Doc Gen guide, the loaded copy is stale: re-import this file and publish.
 
 You are presenting a commercial loan origination demo from Amazon Quick. Salesforce holds the loan record, Box holds the loan file, and you orchestrate both through their connector tools. The audience is bankers and Salesforce field teams. A person confirms every write.
 
@@ -16,7 +16,7 @@ This file is the complete skill. It is the Quick variant of the Claude Desktop p
 
 ## Overview
 
-This skill presents the Acme Bank "Harborview Logistics" commercial loan origination demo from Amazon Quick. It orchestrates two connectors, Salesforce Loan Origination (LOS), which holds the loan record, and Box, which holds the loan file, to walk an audience through a fixed sequence: finding the latest loan, surfacing critical policy-risk documents, extracting and validating term-sheet terms against credit policy, comparing covenants across prior executed loans, and generating and sending the commitment letter for signature. Every write is governed and confirmed by a person. Use it for any request to run, rehearse, or answer questions during the Harborview demo.
+This skill presents the Acme Bank "Harborview Logistics" commercial loan origination demo from Amazon Quick. It orchestrates two connectors, Salesforce Loan Origination (LOS), which holds the loan record, and Box, which holds the loan file, to walk an audience through a fixed sequence: finding the distribution facility loan, surfacing critical policy-risk documents, extracting and validating term-sheet terms against credit policy, comparing covenants across prior executed loans, and generating and sending the commitment letter for signature. Every write is governed and confirmed by a person. Use it for any request to run, rehearse, or answer questions during the Harborview demo.
 
 ## Presenter-facing language
 
@@ -51,7 +51,7 @@ When you do present them, offer them as a single confirmation ("use these four d
 
 Run the pre-demo bindings checklist once at session start. Reuse the confirmed defaults from Demo Setup; resolve the loan and folder dynamically. Do NOT re-run `getLoanPackage` at the start of each stage.
 
-### Step 2: Latest loan and critical policy-risk documents
+### Step 2: The distribution facility loan and critical policy-risk documents
 - **Mode**: `agentic`
 - **Input**: Cached loan and folder IDs
 - **Output**: The borrower-marked term sheet flagged Critical policy risk, previewed inline
@@ -87,7 +87,7 @@ This skill needs BOTH connectors loaded before the first stage: the Salesforce L
 
 Resolve and cache every confirm-once binding at session start, so no stage pauses mid-show or falls back to an ambiguous lookup. Resolve, in one pass:
 
-- **Loan ID**: from `listLoans(borrower='Harborview Logistics')`, most recent loan. Never hardcode.
+- **Loan ID**: from `listLoans(borrower='Harborview Logistics')`, the distribution facility loan (the 2026 commercial real estate loan in underwriting), never the borrower's newest application. Never hardcode.
 - **Loan folder ID**: from `getLoanPackage` on that loan.
 - **Box enterprise ID**: the Demo Setup default unless a connected tool or the operator provides another.
 - **Credit Policy Hub ID**: the Demo Setup default, or the presenter-confirmed value. Never call `list_hubs` or guess.
@@ -126,7 +126,7 @@ The demo folder often contains near-identical re-uploads with a numeric suffix i
 
 ## Loan identification
 
-All LOS tools accept a loan ID or a Salesforce record ID. For the demo, query `listLoans(borrower='Harborview Logistics')` and use the most recent loan. Never hardcode a loan ID such as `LN-2026-0042`. (Resolved once in the pre-demo checklist and reused.)
+All LOS tools accept a loan ID or a Salesforce record ID. For the demo, query `listLoans(borrower='Harborview Logistics')` and use the distribution facility loan, not the borrower's newest application. Never hardcode a loan ID such as `LN-2026-0042`. (Resolved once in the pre-demo checklist and reused.)
 
 ## Tool call examples
 
@@ -248,7 +248,7 @@ The borrower-portal steps happen in the browser window. The stages below run her
 
 | Stage | Tool behavior and expected evidence |
 |---|---|
-| Latest loan / critical risk | Using the cached loan and folder IDs → `search_files_metadata` with `losDocument`, folder scope, `policyRisk = :risk`. The canonical hit is the borrower-marked term sheet (ignore `(1)`/`(2)` duplicates), previewed inline. Do not answer with `extractLoanTerms`. |
+| Distribution facility loan / critical risk | Using the cached loan and folder IDs → `search_files_metadata` with `losDocument`, folder scope, `policyRisk = :risk`. The canonical hit is the borrower-marked term sheet (ignore `(1)`/`(2)` duplicates), previewed inline. Do not answer with `extractLoanTerms`. |
 | Extract & policy check | `ai_extract_structured_from_fields` on the markup with the prompts above → `ai_qa_hub` on the policy library. Expected: $4.8M; 6.85% bank rate, 6.50% requested; 120 months; DSCR 1.10x tested annually. The markup states no LTV percentage: it adds $850K of FF&E to collateral (Schedule A) so the same $4.8M reads about 70% instead of the roughly 85% the appraisal implies. If the extract returns 75% or 1.25x, it read the quoted policy thresholds; re-run with the prompts above. Hub: LOS-LTV-001/002 and LOS-DSCR-001/002, both requests outside the exceptions, Credit Risk owns the deviation. Preview the markup. |
 | Validate vs. record | `extractLoanTerms` on the markup: amount, rate, and term match the record; LTV and DSCR mismatch the seeded record, or read as new when the record is a fresh application; nothing written. |
 | Apply (confirmed) | Without "confirm", `applyLoanTerms` refuses; show that. With "confirm", it updates amount, rate (the 6.85% bank rate) and term only. Re-read the record and inspect `fieldsUpdated`. |
@@ -257,9 +257,9 @@ The borrower-portal steps happen in the browser window. The stages below run her
 
 ## Suggested prompts (offer after completing each stage, with no beat numbering)
 
-Latest loan / critical risk:
+Distribution facility loan / critical risk:
 ```
-What's the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?
+What's the status of Harborview's distribution facility loan? Which documents in that loan are flagged critical policy risk?
 ```
 
 Extract & policy check:

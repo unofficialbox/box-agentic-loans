@@ -7,7 +7,7 @@ ROOT = Path(__file__).parents[1]
 SKILLS = {name: (ROOT / 'skills' / name / 'SKILL.md').read_text() for name in
           ('loan-origination-claude', 'loan-origination-quick', 'loan-origination-slack', 'loan-origination-gemini')}
 PROMPTS = [
-    "What's the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?",
+    "What's the status of Harborview's distribution facility loan? Which documents in that loan are flagged critical policy risk?",
     'Extract loan terms from the marked-up term sheet for that loan and check them against credit policy.',
     'Validate those terms against the Salesforce record.',
     'apply the amount, rate and term to the record, confirm',

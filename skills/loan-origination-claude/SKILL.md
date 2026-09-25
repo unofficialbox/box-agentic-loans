@@ -5,7 +5,7 @@ description: Present the Acme Bank Harborview loan origination demo from Claude 
 
 # LOS demo presenter (Claude Desktop)
 
-Skill revision: 2026-09-24 c4. If the loaded copy shows an older or missing revision line, re-upload this file.
+Skill revision: 2026-09-24 c5. If the loaded copy shows an older or missing revision line, re-upload this file.
 
 You are presenting a commercial loan origination demo. Salesforce holds the loan record, Box holds the loan file, and you orchestrate both through their MCP tools. The audience is bankers and Salesforce field teams. Box stores the source documents; previews and extracted content travel to the authorized harness; Salesforce governs who may read or write a record; a person confirms every write.
 
@@ -65,11 +65,11 @@ Four environment bindings are cached for the session: Box enterprise ID, Credit 
 
 **All LOS tools accept EITHER loan ID or Salesforce record ID:**
 
-- **Demo beats**: Query for the latest Harborview loan with `listLoans(borrower='Harborview Logistics')` and use that loan's ID
+- **Demo beats**: Query `listLoans(borrower='Harborview Logistics')` and use the distribution facility loan (the 2026 commercial real estate loan in underwriting). The borrower's newest application from beat 1 is not the demo loan: its folder holds only what the borrower uploaded.
 - **Borrower portal**: Use `recordId` from React app URL params - NEVER hardcode the loan ID when the portal is passing a dynamic recordId
 - **Dynamic scenarios**: Use Salesforce record ID from context
 
-The tools (`getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `prepareSignatureRequest`) resolve both. NEVER use hardcoded loan IDs like "LN-2026-0042" - always query for the latest loan or use the dynamic recordId from context.
+The tools (`getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `prepareSignatureRequest`) resolve both. NEVER use hardcoded loan IDs like "LN-2026-0042" - always resolve the distribution facility loan from `listLoans` or use the dynamic recordId from context.
 
 ## Tool call examples (exact formats)
 
@@ -243,11 +243,11 @@ For `ai_extract_structured_from_fields` on the markup, name the fields so Box AI
 
 ## The beats
 
-Demo uses the latest Harborview loan (created in Beat 1). Query with `listLoans(borrower='Harborview Logistics')` to get the most recent loan ID. Beats 1 and 6 happen in browser.
+Beats 2 to 5 use the Harborview distribution facility loan, resolved every session from `listLoans(borrower='Harborview Logistics')`. Beat 1 creates a separate application in the portal; beats 1 and 6 happen in the browser.
 
 | Beat | Tool behavior and expected evidence |
 |---|---|
-| 2 | `listLoans(borrower='Harborview Logistics')` → get latest loan ID → `getLoanPackage` → get folder ID → `search_files_metadata` with template `losDocument`, folder scope, query `policyRisk = :risk`. One hit: borrower-marked term sheet, opened inline. "High or above" adds FY2025 financials and appraisal. |
+| 2 | `listLoans(borrower='Harborview Logistics')` → the distribution facility loan's ID → `getLoanPackage` → get folder ID → `search_files_metadata` with template `losDocument`, folder scope, query `policyRisk = :risk`. One hit: borrower-marked term sheet, opened inline. "High or above" adds FY2025 financials and appraisal. |
 | 3 | `getLoanPackage` → `ai_extract_structured_from_fields` on markup (loan amount, bank rate, borrower requested rate, term, DSCR as borrower proposes). Then `ai_qa_hub` on credit policy library (LTV/DSCR within policy or exception, cite IDs). Expected: $4.8M, 6.85% bank / 6.50% requested, 120mo, 1.10x DSCR annual. The markup states no LTV percentage: it adds $850K of FF&E to collateral (Schedule A) so the same $4.8M reads about 70% instead of the roughly 85% the appraisal implies. If the extract returns 75% or 1.25x it read the quoted policy thresholds; re-run with the field prompts above. Hub: LOS-LTV-001/002, LOS-DSCR-001/002 - outside exceptions. Preview markup inline. |
 | 3a | `extractLoanTerms`: amount/rate/term match; LTV/DSCR mismatch the seeded record, or read as new when the record is a fresh application; nothing written. |
 | 3b | `applyLoanTerms` refuses without "confirm". With confirm: updates amount, rate (the 6.85% bank rate) and term only. Never apply LTV or DSCR. Re-read the record and inspect `fieldsUpdated`; if status or another unexpected field changed, flag the discrepancy and hold signature preparation until the approval state is independently verified. An unexpected Approved status is not evidence of credit authorization. |
@@ -258,7 +258,7 @@ Demo uses the latest Harborview loan (created in Beat 1). Query with `listLoans(
 
 **Beat 2:**
 ```
-What's the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?
+What's the status of Harborview's distribution facility loan? Which documents in that loan are flagged critical policy risk?
 ```
 
 **Beat 3:**

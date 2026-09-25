@@ -3,12 +3,12 @@
   "kind": "chat-agent",
   "format_note": "Manifest of the Quick chat agent configuration for review and rebuild. Quick does not import this file; build the agent from it per docs/SETUP.md section 5b. Every ARN and ID stays a placeholder here; real values live only in the Quick account or in gitignored runtime files.",
   "name": "Loan Origination Agent",
-  "description": "Presents the Acme Bank \"Harborview Logistics\" commercial loan origination demo from Amazon Quick. Orchestrates the Salesforce Loan Origination (LOS) and Box connectors to find the latest loan, surface critical policy-risk documents, extract and validate term-sheet terms against credit policy, compare covenants across prior executed loans, and generate and send the commitment letter for signature. Every write is confirmed by a person.",
+  "description": "Presents the Acme Bank \"Harborview Logistics\" commercial loan origination demo from Amazon Quick. Orchestrates the Salesforce Loan Origination (LOS) and Box connectors to find the distribution facility loan, surface critical policy-risk documents, extract and validate term-sheet terms against credit policy, compare covenants across prior executed loans, and generate and send the commitment letter for signature. Every write is confirmed by a person.",
   "welcome_message": "",
   "starter_prompts": [
     "run the Harborview loan origination demo",
     "Demo Setup",
-    "What's the latest loan for Harborview Logistics?"
+    "What's the status of Harborview's distribution facility loan?"
   ],
   "capabilities": [
     {

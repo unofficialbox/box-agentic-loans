@@ -61,7 +61,7 @@
     "tell": "Find the risky changes first.",
     "show": "Open the flagged term sheet.",
     "land": "Prioritize critical risks before they delay closing.",
-    "click": "Claude: “What’s the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?”",
+    "click": "Claude: “What’s the status of Harborview’s distribution facility loan? Which documents in that loan are flagged critical policy risk?”",
     "details": "Use the application just created and scope the search to its folder.",
     "captures": [
       {

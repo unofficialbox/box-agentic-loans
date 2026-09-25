@@ -145,7 +145,7 @@
 
 | Order | Click / prompt |
 |---|---|
-| 1 | Claude: “What’s the latest loan for Harborview Logistics? Which documents in that loan are flagged critical policy risk?” |
+| 1 | Claude: “What’s the status of Harborview’s distribution facility loan? Which documents in that loan are flagged critical policy risk?” |
 
 ### Details
 
