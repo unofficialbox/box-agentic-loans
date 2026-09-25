@@ -125,7 +125,7 @@ The tools (`getLoanPackage`, `extractLoanTerms`, `applyLoanTerms`, `prepareSigna
     },
     {
       "key": "ltv",
-      "prompt": "the loan-to-value the borrower proposes in its markup, not the policy maximum the term sheet quotes"
+      "prompt": "what the borrower proposes to add to the collateral value in its markup (for example furniture, fixtures and equipment at book value)"
     },
     {
       "key": "dscr",
@@ -248,8 +248,8 @@ Demo uses the latest Harborview loan (created in Beat 1). Query with `listLoans(
 | Beat | Tool behavior and expected evidence |
 |---|---|
 | 2 | `listLoans(borrower='Harborview Logistics')` → get latest loan ID → `getLoanPackage` → get folder ID → `search_files_metadata` with template `losDocument`, folder scope, query `policyRisk = :risk`. One hit: borrower-marked term sheet, opened inline. "High or above" adds FY2025 financials and appraisal. |
-| 3 | `getLoanPackage` → `ai_extract_structured_from_fields` on markup (loan amount, bank rate, borrower requested rate, term, DSCR as borrower proposes). Then `ai_qa_hub` on credit policy library (LTV/DSCR within policy or exception, cite IDs). Expected: $4.8M, 6.85% bank / 6.50% requested, 120mo, LTV 85%, 1.10x DSCR annual. If the extract returns 75% or 1.25x it read the quoted policy thresholds; re-run with the field prompts above. Hub: LOS-LTV-001/002, LOS-DSCR-001/002 - outside exceptions. Preview markup inline. |
-| 3a | `extractLoanTerms`: amount/rate/term match, LTV/DSCR mismatch, nothing written. |
+| 3 | `getLoanPackage` → `ai_extract_structured_from_fields` on markup (loan amount, bank rate, borrower requested rate, term, DSCR as borrower proposes). Then `ai_qa_hub` on credit policy library (LTV/DSCR within policy or exception, cite IDs). Expected: $4.8M, 6.85% bank / 6.50% requested, 120mo, 1.10x DSCR annual. The markup states no LTV percentage: it adds $850K of FF&E to collateral (Schedule A) so the same $4.8M reads about 70% instead of the roughly 85% the appraisal implies. If the extract returns 75% or 1.25x it read the quoted policy thresholds; re-run with the field prompts above. Hub: LOS-LTV-001/002, LOS-DSCR-001/002 - outside exceptions. Preview markup inline. |
+| 3a | `extractLoanTerms`: amount/rate/term match; LTV/DSCR mismatch the seeded record, or read as new when the record is a fresh application; nothing written. |
 | 3b | `applyLoanTerms` refuses without "confirm". With confirm: updates amount, rate (the 6.85% bank rate) and term only. Never apply LTV or DSCR. Re-read the record and inspect `fieldsUpdated`; if status or another unexpected field changed, flag the discrepancy and hold signature preparation until the approval state is independently verified. An unexpected Approved status is not evidence of credit authorization. |
 | 4 | Resolve ambiguous duplicate agreements by loan identity, execution date, and signature evidence; a filename alone is not authoritative. Then `getLoanPackage` for LN-2023-0311 and LN-2025-0148 (two closed loans) → `ai_qa_multi_file` comparing LTV/DSCR covenants across executed agreements and 2026 markup (what Harborview agreed before, where in agreements, who signed). Expected: 70% LTV, 1.30x DSCR quarterly, Section 8 & Schedule 1, signed by Priya Shah for Acme Bank and Jordan Pike for Harborview; the 2026 markup asks 1.10x annually. Table format. Preview 2025 agreement at Schedule 1. |
 | 5 | One request covers generation and signing: complete nested input → exact output → background content check → preview → `prepareSignatureRequest` with the same file and confirmed signer. No second prompt or manual validation beat. Respect the loan-status guard and report the actual result. |
